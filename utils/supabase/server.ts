@@ -1,7 +1,7 @@
 // utils/supabase/server.ts
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { Profile } from './types'; // Import custom types
+import { Profile, Language } from './types'; // Import custom types
 
 // This is the standard server client creation function from the Vercel example
 export const createClient = () => {
@@ -57,4 +57,18 @@ export async function getProfileWithRoleServerSide(userId: string): Promise<Prof
     return null;
   }
   return profileData as Profile;
+}
+
+export async function getActiveLanguagesServerSide(): Promise<Language[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('languages')
+    .select('*')
+    .order('name', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching languages (server-side):', error.message);
+    return [];
+  }
+  return data || [];
 }

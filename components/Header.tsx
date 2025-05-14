@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { getProfileWithRoleServerSide } from '@/utils/supabase/server'; // Import server-side helper
 import { UserRole } from '@/utils/supabase/types';
 import HeaderAuth from '@/components/header-auth'; // Adjust the import path as necessary
+import LanguageSwitcher from './LanguageSwitcher';
 
 export default async function Header() {
   const supabase = createSupabaseServerClient();
@@ -25,6 +26,7 @@ export default async function Header() {
             <Link href="/cms/dashboard" className="hover:underline">CMS Dashboard</Link>
         )}
         <HeaderAuth />
+        <LanguageSwitcher />
       </div>
     </nav>
   );

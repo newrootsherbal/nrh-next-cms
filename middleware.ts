@@ -1,60 +1,89 @@
 // middleware.ts
-import { createServerClient as createSupabaseMiddlewareClient, type CookieOptions } from '@supabase/ssr'; // Renamed for clarity
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import type { Profile, UserRole } from '@/utils/supabase/types'; // Adjusted path
+import type { Profile, UserRole } from '@/utils/supabase/types';
 
-// Define minimum required roles for specific CMS paths
+const LANGUAGE_COOKIE_KEY = 'NEXT_USER_LOCALE'; // Must match LanguageProvider
+const DEFAULT_LOCALE = 'en'; // Hardcoded default for middleware simplicity
+// In a more advanced setup, you might fetch/cache supported locales here
+const SUPPORTED_LOCALES = ['en', 'fr']; // Keep this in sync with DB or make dynamic
+
+// CMS Route Permissions (from Phase 1)
 const cmsRoutePermissions: Record<string, UserRole[]> = {
-  '/cms': ['WRITER', 'ADMIN'],         // Base CMS access (e.g. /cms/dashboard)
-  '/cms/admin': ['ADMIN'],      // Admin-specific section
-  '/cms/users': ['ADMIN'],      // User management page
-  '/cms/settings': ['ADMIN'],   // CMS settings
-  // Add more specific paths and their required roles as needed
-  // Example: '/cms/pages/create': ['WRITER', 'ADMIN']
-  // Example: '/cms/pages/[id]/edit': ['WRITER', 'ADMIN']
+  '/cms': ['WRITER', 'ADMIN'],
+  '/cms/admin': ['ADMIN'],
+  '/cms/users': ['ADMIN'],
+  '/cms/settings': ['ADMIN'],
 };
 
 function getRequiredRolesForPath(pathname: string): UserRole[] | null {
-  // Check for exact matches first for more specific rules
-  const sortedPaths = Object.keys(cmsRoutePermissions).sort((a, b) => b.length - a.length);
-  for (const specificPath of sortedPaths) {
-    if (pathname === specificPath || pathname.startsWith(specificPath + (specificPath === '/' ? '' : '/'))) {
-        return cmsRoutePermissions[specificPath];
+    const sortedPaths = Object.keys(cmsRoutePermissions).sort((a, b) => b.length - a.length);
+    for (const specificPath of sortedPaths) {
+      if (pathname === specificPath || pathname.startsWith(specificPath + (specificPath === '/' ? '' : '/'))) {
+          return cmsRoutePermissions[specificPath];
+      }
     }
-  }
-  return null;
+    return null;
 }
 
 export async function middleware(request: NextRequest) {
+  const requestHeaders = new Headers(request.headers); // Clone request headers
   let response = NextResponse.next({
-    request: { headers: request.headers },
+    request: {
+      headers: requestHeaders, // Use the cloned headers
+    },
   });
 
-  // Use the Supabase client configured for middleware context
-  const supabase = createSupabaseMiddlewareClient(
+  // Supabase client for auth session refresh & role check
+  const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         get(name: string) { return request.cookies.get(name)?.value; },
         set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({ name, value, ...options });
-          response = NextResponse.next({ request: { headers: request.headers } });
-          response.cookies.set({ name, value, ...options });
+          request.cookies.set({ name, value, ...options }); // Apply to request cookies for chaining
+          response = NextResponse.next({ request: { headers: requestHeaders } }); // Recreate response with updated headers
+          response.cookies.set({ name, value, ...options }); // Apply to response cookies
         },
         remove(name: string, options: CookieOptions) {
           request.cookies.set({ name, value: '', ...options });
-          response = NextResponse.next({ request: { headers: request.headers } });
+          response = NextResponse.next({ request: { headers: requestHeaders } });
           response.cookies.set({ name, value: '', ...options });
         },
       },
     }
   );
 
-  const { data: { session } } = await supabase.auth.getSession();
+  await supabase.auth.getSession(); // Refresh Supabase session
+
+  // ** Language Handling **
+  let currentLocale = request.cookies.get(LANGUAGE_COOKIE_KEY)?.value;
+
+  if (!currentLocale || !SUPPORTED_LOCALES.includes(currentLocale)) {
+    // TODO: Add Accept-Language header parsing here for better default
+    // For now, simple default if cookie is invalid or not set
+    currentLocale = DEFAULT_LOCALE;
+  }
+
+  // Set custom header for Server Components to read the locale
+  requestHeaders.set('X-User-Locale', currentLocale);
+
+  // Ensure the cookie is set in the browser for subsequent requests and client-side JS
+  // Note: response.cookies.set can be problematic if `NextResponse.next` was already used to create `response`
+  // without passing the modified request.headers. It's safer to set it on a fresh response if needed or
+  // ensure the response object is consistently managed.
+  // The Supabase client's cookie handling in `set` above should manage `response` updates.
+  // Here we ensure our language cookie is also on the outgoing response.
+  if (request.cookies.get(LANGUAGE_COOKIE_KEY)?.value !== currentLocale) {
+      response.cookies.set(LANGUAGE_COOKIE_KEY, currentLocale, { path: '/', maxAge: 31536000, sameSite: 'lax' }); // 1 year
+  }
+
+
+  // ** Auth and CMS Route Protection (from Phase 1, adapted to use updated requestHeaders) **
+  const { data: { session } } = await supabase.auth.getSession(); // Use getSession to get session object
   const { pathname } = request.nextUrl;
 
-  // If the path starts with /cms, apply role-based access control
   if (pathname.startsWith('/cms')) {
     if (!session?.user) {
       return NextResponse.redirect(new URL(`/sign-in?redirect=${pathname}`, request.url));
@@ -74,48 +103,18 @@ export async function middleware(request: NextRequest) {
     const userRole = profile.role as UserRole;
     const requiredRoles = getRequiredRolesForPath(pathname);
 
-    if (requiredRoles) {
-      if (!requiredRoles.includes(userRole)) {
-        console.warn(`Middleware: User ${session.user.id} (Role: ${userRole}) denied access to ${pathname}. Required: ${requiredRoles.join(' OR ')}`);
-        return NextResponse.redirect(new URL(`/unauthorized?path=${pathname}&required=${requiredRoles.join(',')}`, request.url));
-      }
-    } else {
-      // If no specific rule found for a /cms path, it's an oversight or a new path.
-      // Default to deny or require a base role like ADMIN for safety for unconfigured /cms paths.
-      // For this setup, if it's /cms/* and not in cmsRoutePermissions, and getRequiredRolesForPath returned null,
-      // it implies it's not a specifically configured CMS path.
-      // We have a base '/cms': ['WRITER', 'ADMIN'] rule which should catch most cases.
-      // If a path like /cms/new-feature is not covered by any key in cmsRoutePermissions,
-      // it won't get requiredRoles. The current getRequiredRolesForPath logic might need refinement
-      // to ensure all /cms/* paths have some default if not explicitly matched.
-      // However, the current /cms rule should cover /cms/* as a base.
-      // Let's assume if requiredRoles is null for a /cms path, it means no specific sub-path rule was hit,
-      // but the base '/cms' rule already granted access if it was just '/cms' or '/cms/dashboard'.
-      // If it's a deeper path like /cms/unknown/path and requiredRoles is null, it might be an issue.
-      // The current `getRequiredRolesForPath` logic should catch `/cms/*` under the `/cms` key.
+    if (requiredRoles && !requiredRoles.includes(userRole)) {
+      console.warn(`Middleware: User ${session.user.id} (Role: ${userRole}) denied access to ${pathname}. Required: ${requiredRoles.join(' OR ')}`);
+      return NextResponse.redirect(new URL(`/unauthorized?path=${pathname}&required=${requiredRoles.join(',')}`, request.url));
     }
   }
 
+  // Return the potentially modified response (with new cookies and using potentially new request headers for NextResponse.next)
   return response;
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - /auth/** (Supabase auth callback routes)
-     * - /sign-in (login page)
-     * - /sign-up (signup page)
-     * - /forgot-password
-     * - /unauthorized (unauthorized page)
-     * - / (public homepage, if it should be public)
-     *
-     * This ensures middleware runs on relevant pages including /cms/*
-     * and any other protected routes you might add.
-     */
     '/((?!_next/static|_next/image|favicon.ico|auth/.*|sign-in|sign-up|forgot-password|unauthorized|api/auth/.*).*)',
   ],
 };

@@ -1,8 +1,8 @@
-// lib/supabase/types.ts
+// utils/supabase/types.ts
 export type UserRole = 'ADMIN' | 'WRITER' | 'USER';
 
 export interface Profile {
-  id: string; // UUID
+  id: string;
   updated_at?: string | null;
   username?: string | null;
   full_name?: string | null;
@@ -11,7 +11,12 @@ export interface Profile {
   role: UserRole;
 }
 
-// You can also generate types from your Supabase schema using:
-// npx supabase gen types typescript --project-id YOUR_PROJECT_ID --schema public > lib/supabase/database.types.ts
-// And then use Database['public']['Tables']['profiles']['Row'] for Profile type.
-// For this phase, manual types are fine.
+// New type for Language
+export interface Language {
+  id: number;
+  code: string; // e.g., 'en', 'fr'
+  name: string; // e.g., 'English', 'Français'
+  is_default: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
