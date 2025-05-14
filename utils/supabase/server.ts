@@ -1,29 +1,60 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+// utils/supabase/server.ts
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { Profile } from './types'; // Import custom types
 
-export const createClient = async () => {
-  const cookieStore = await cookies();
+// This is the standard server client creation function from the Vercel example
+export const createClient = () => {
+  const cookieStorePromise = cookies();
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return cookieStore.getAll();
+        async get(name: string) {
+          const cookieStore = await cookieStorePromise;
+          return cookieStore.get(name)?.value;
         },
-        setAll(cookiesToSet) {
+        set(name: string, value: string, options: CookieOptions) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, options);
-            });
+            (async () => {
+              const cookieStore = await cookieStorePromise;
+              cookieStore.set({ name, value, ...options });
+            })();
           } catch (error) {
             // The `set` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
+          }
+        },
+        remove(name: string, options: CookieOptions) {
+          try {
+            (async () => {
+              const cookieStore = await cookieStorePromise;
+              cookieStore.set({ name, value: '', ...options });
+            })();
+          } catch (error) {
+            // The `delete` method was called from a Server Component.
           }
         },
       },
-    },
+    }
   );
 };
+
+// Helper function to get profile with role (server-side)
+export async function getProfileWithRoleServerSide(userId: string): Promise<Profile | null> {
+  const supabase = createClient(); // Uses the server client defined above
+  const { data: profileData, error: profileError } = await supabase
+    .from('profiles')
+    .select('*') // Select all fields including role
+    .eq('id', userId)
+    .single();
+
+  if (profileError || !profileData) {
+    // Avoid logging full error in production if it contains sensitive info,
+    // but log message for debugging.
+    console.error('Error fetching profile (server-side):', profileError?.message);
+    return null;
+  }
+  return profileData as Profile;
+}

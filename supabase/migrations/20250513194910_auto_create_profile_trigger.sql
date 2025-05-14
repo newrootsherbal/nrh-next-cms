@@ -23,5 +23,8 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
+-- This comment is on a function in the 'public' schema, which is fine.
 comment on function public.handle_new_user is 'creates a public.profile row for a new auth.users entry.';
-comment on trigger on_auth_user_created on auth.users is 'after a new user signs up, create their profile.';
+
+-- The following line was causing the permission error and has been removed:
+-- comment on trigger on_auth_user_created on auth.users is 'after a new user signs up, create their profile.';
