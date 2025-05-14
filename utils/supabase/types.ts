@@ -89,6 +89,18 @@ export interface NavigationItem {
   updated_at: string;
 }
 
+export interface AuthUser {
+    id: string;
+    email?: string;
+    created_at?: string;
+    last_sign_in_at?: string;
+    // Add other fields from auth.users if needed
+}
+
+export interface UserWithProfile {
+    authUser: AuthUser; // Data from auth.users
+    profile: Profile | null; // Data from public.profiles
+}
 // It's highly recommended to generate the full database types using:
 // npx supabase gen types typescript --project-id YOUR_PROJECT_ID --schema public > utils/supabase/database.types.ts
 // And then import { Database } from './database.types'; in your Supabase client/server files.
