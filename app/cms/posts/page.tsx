@@ -12,27 +12,35 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, PlusCircle, Trash2, Edit3, PenTool } from "lucide-react"; // Changed FileText to PenToolSquare
+import { MoreHorizontal, PlusCircle, Trash2, Edit3, PenTool, Languages as LanguageIcon } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { deletePost } from "./actions";
 import type { Post, Language } from "@/utils/supabase/types";
 import { getActiveLanguagesServerSide } from "@/utils/supabase/server";
+import LanguageFilterSelect from "@/app/cms/components/LanguageFilterSelect"; // Reusing the component
 
-function DeletePostButton({ postId }: { postId: number }) {
+function DeletePostButton({ postId, postSlug }: { postId: number, postSlug: string }) {
+  // Wrap deletePost to accept FormData as required by the form action
   const deleteActionWithId = async (formData: FormData) => {
     await deletePost(postId);
   };
   return (
-    <form action={deleteActionWithId}>
+    <form action={deleteActionWithId} className="w-full">
       <button type="submit" className="w-full text-left">
         <DropdownMenuItem
-          className="text-red-600 hover:!text-red-600 hover:!bg-red-50 dark:hover:!bg-red-700/20"
-          onSelect={(e) => e.preventDefault()}
+          className="text-red-600 hover:!text-red-600 hover:!bg-red-50 dark:hover:!bg-red-700/20 cursor-pointer"
+          onSelect={(e) => {
+            e.preventDefault();
+            if (confirm(`Are you sure you want to delete this post? This action cannot be undone.`)) {
+              (e.currentTarget as HTMLButtonElement).form?.requestSubmit();
+            }
+          }}
         >
           <Trash2 className="mr-2 h-4 w-4" />
           Delete
@@ -42,46 +50,83 @@ function DeletePostButton({ postId }: { postId: number }) {
   );
 }
 
-async function getPostsWithLanguages(): Promise<{ post: Post; languageCode: string }[]> {
+async function getPostsWithDetails(filterLanguageId?: number): Promise<{ post: Post; languageCode: string }[]> {
   const supabase = createClient();
   const languages = await getActiveLanguagesServerSide();
   const langMap = new Map(languages.map(l => [l.id, l.code]));
 
-  const { data: posts, error } = await supabase
+  let query = supabase
     .from("posts")
-    .select("*")
+    .select("*, languages!inner(code)") // Join to get language code
     .order("created_at", { ascending: false });
+
+  if (filterLanguageId) {
+    query = query.eq("language_id", filterLanguageId);
+  }
+
+  const { data: postsData, error } = await query;
 
   if (error) {
     console.error("Error fetching posts:", error);
     return [];
   }
-  if (!posts) return [];
+  if (!postsData) return [];
 
-  return posts.map(p => ({
-    post: p,
-    languageCode: langMap.get(p.language_id)?.toUpperCase() || 'N/A'
-  }));
+  return postsData.map(p => {
+    const langInfo = p.languages as unknown as { code: string } | null;
+    return {
+      post: p as Post,
+      languageCode: langInfo?.code?.toUpperCase() || langMap.get(p.language_id)?.toUpperCase() || 'N/A',
+    };
+  });
 }
 
-export default async function CmsPostsListPage() {
-  const postsWithLang = await getPostsWithLanguages();
+interface CmsPostsListPageProps {
+  searchParams?: {
+    lang?: string; // Language ID as a string
+    success?: string;
+  };
+}
+
+export default async function CmsPostsListPage({ searchParams }: CmsPostsListPageProps) {
+  const allLanguages = await getActiveLanguagesServerSide();
+  const selectedLangId = searchParams?.lang ? parseInt(searchParams.lang, 10) : undefined;
+  const isValidLangId = selectedLangId ? allLanguages.some(l => l.id === selectedLangId) : true;
+  const filterLangId = isValidLangId ? selectedLangId : undefined;
+
+  const postsWithDetails = await getPostsWithDetails(filterLangId);
+  const successMessage = searchParams?.success;
 
   return (
     <div className="w-full">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
         <h1 className="text-2xl font-semibold">Manage Posts</h1>
-        <Link href="/cms/posts/new">
-          <Button variant="default">
-            <PlusCircle className="mr-2 h-4 w-4" /> Create New Post
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <LanguageFilterSelect
+            allLanguages={allLanguages}
+            currentFilterLangId={filterLangId}
+            basePath="/cms/posts"
+          />
+          <Link href="/cms/posts/new">
+            <Button variant="default">
+              <PlusCircle className="mr-2 h-4 w-4" /> Create New Post
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      {postsWithLang.length === 0 ? (
-        <div className="text-center py-10 border rounded-lg">
-          <PenTool className="mx-auto h-12 w-12 text-muted-foreground" /> {/* Icon changed */}
-          <h3 className="mt-2 text-sm font-medium text-foreground">No posts found</h3>
+      {successMessage && (
+        <div className="mb-4 p-3 rounded-md text-sm bg-green-100 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700">
+          {decodeURIComponent(successMessage)}
+        </div>
+      )}
+
+      {postsWithDetails.length === 0 ? (
+        <div className="text-center py-10 border rounded-lg dark:border-slate-700">
+          <PenTool className="mx-auto h-12 w-12 text-muted-foreground" />
+          <h3 className="mt-2 text-sm font-medium text-foreground">
+            {filterLangId ? "No posts found for the selected language." : "No posts found."}
+          </h3>
           <p className="mt-1 text-sm text-muted-foreground">
             Get started by creating a new post.
           </p>
@@ -94,62 +139,58 @@ export default async function CmsPostsListPage() {
           </div>
         </div>
       ) : (
-        <div className="rounded-lg border overflow-hidden">
+        <div className="rounded-lg border overflow-hidden dark:border-slate-700">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead className="w-[250px]">Title</TableHead>
+              <TableRow className="dark:border-slate-700">
+                <TableHead className="w-[300px] sm:w-[400px]">Title</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Language</TableHead>
-                <TableHead>Published At</TableHead>
-                <TableHead>Last Updated</TableHead>
+                <TableHead className="hidden md:table-cell">Slug</TableHead>
+                <TableHead className="hidden lg:table-cell">Published At</TableHead>
                 <TableHead className="text-right w-[80px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {postsWithLang.map(({ post, languageCode }) => (
-                <TableRow key={post.id}>
+              {postsWithDetails.map(({ post, languageCode }) => (
+                <TableRow key={post.id} className="dark:border-slate-700">
                   <TableCell className="font-medium">{post.title}</TableCell>
                   <TableCell>
                     <Badge
                       variant={
-                        post.status === "published"
-                          ? "default"
-                          : post.status === "draft"
-                            ? "secondary"
-                            : "destructive"
+                        post.status === "published" ? "default" :
+                        post.status === "draft" ? "secondary" : "destructive"
                       }
-                       className={
-                        post.status === "published" ? "bg-green-500 hover:bg-green-600 text-white" :
-                        post.status === "draft" ? "bg-yellow-400 hover:bg-yellow-500 text-yellow-900" :
-                        "bg-gray-400 hover:bg-gray-500 text-gray-900"
+                      className={
+                        post.status === "published" ? "bg-green-100 text-green-700 dark:bg-green-700/30 dark:text-green-300 dark:border-green-700/50" :
+                        post.status === "draft" ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-700/30 dark:text-yellow-300 dark:border-yellow-700/50" :
+                        "bg-slate-100 text-slate-700 dark:bg-slate-700/30 dark:text-slate-300 dark:border-slate-600"
                       }
                     >
                       {post.status.charAt(0).toUpperCase() + post.status.slice(1)}
                     </Badge>
                   </TableCell>
-                  <TableCell>{languageCode}</TableCell>
-                  <TableCell className="text-muted-foreground text-xs">
-                    {post.published_at ? new Date(post.published_at).toLocaleDateString() : 'N/A'}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(post.updated_at).toLocaleDateString()}
+                  <TableCell><Badge variant="outline" className="dark:border-slate-600">{languageCode}</Badge></TableCell>
+                  <TableCell className="text-muted-foreground text-xs hidden md:table-cell">/blog/{post.slug}</TableCell>
+                  <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">
+                    {post.published_at ? new Date(post.published_at).toLocaleDateString() : "Not yet"}
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">
                           <MoreHorizontal className="h-4 w-4" />
-                           <span className="sr-only">Post actions</span>
+                           <span className="sr-only">Post actions for {post.title}</span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <Link href={`/cms/posts/${post.id}/edit`} className="flex items-center">
+                          <Link href={`/cms/posts/${post.id}/edit`} className="flex items-center cursor-pointer">
                             <Edit3 className="mr-2 h-4 w-4" /> Edit
                           </Link>
                         </DropdownMenuItem>
-                        <DeletePostButton postId={post.id} />
+                        <DropdownMenuSeparator />
+                        <DeletePostButton postId={post.id} postSlug={post.slug}/>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
