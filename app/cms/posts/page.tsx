@@ -1,4 +1,5 @@
 // app/cms/posts/page.tsx
+import React from "react";
 import { createClient } from "@/utils/supabase/server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
