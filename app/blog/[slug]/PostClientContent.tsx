@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from "@/utils/supabase/client";
 import type { Post as PostType, Block as BlockType, Language, ImageBlockContent, Media } from "@/utils/supabase/types";
 import BlockRenderer from "../../../components/BlockRenderer";
@@ -9,156 +10,96 @@ import { useLanguage } from '@/context/LanguageContext';
 import Link from 'next/link';
 
 interface PostClientContentProps {
-  slug: string;
-  initialPostData: (PostType & { blocks: BlockType[]; language_code: string; language_id: number }) | null;
+  initialPostData: (PostType & { blocks: BlockType[]; language_code: string; language_id: number; translation_group_id: string; }) | null;
+  currentSlug: string; // The slug of the currently viewed page/post
 }
 
-// Client-side data fetching function for a specific language
-async function fetchPostContentForLanguage(
-  slug: string,
-  languageCode: string,
+// Fetches the slug for a given translation_group_id and target language_code
+async function getSlugForTranslatedPost(
+  translationGroupId: string,
+  targetLanguageCode: string,
   supabase: ReturnType<typeof createClient>
-): Promise<(PostType & { blocks: BlockType[]; language_code: string; language_id: number }) | null> {
-  const { data: langInfo, error: langError } = await supabase
-    .from("languages")
-    .select("id, code")
-    .eq("code", languageCode)
-    .single();
+): Promise<string | null> {
+  const { data: langInfo, error: langErr } = await supabase
+    .from("languages").select("id").eq("code", targetLanguageCode).single();
 
-  if (langError || !langInfo) {
-    console.warn(`Client (Posts): Language code '${languageCode}' not found for post slug '${slug}'.`);
+  if (langErr || !langInfo) {
+    console.warn(`Client (Posts): Target language '${targetLanguageCode}' not found for translation group '${translationGroupId}'.`);
     return null;
   }
 
-  const { data: postData, error: postError } = await supabase
+  const { data: post, error: postErr } = await supabase
     .from("posts")
-    .select("*, blocks(*)") // Fetch related blocks
-    .eq("slug", slug)
+    .select("slug")
+    .eq("translation_group_id", translationGroupId)
     .eq("language_id", langInfo.id)
     .eq("status", "published")
-    .or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`) // Check published_at
-    .order('order', { foreignTable: 'blocks', ascending: true })
-    .maybeSingle();
-
-  if (postError || !postData) {
-    if(postError) console.error(`Client (Posts): Error fetching post content for slug '${slug}', lang '${languageCode}':`, postError);
+    .or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`)
+    .single();
+  
+  if (postErr || !post) {
+    if (postErr) console.error(`Client (Posts): Error fetching translated post slug:`, postErr);
     return null;
   }
-
-  // Fetch media object_key for image blocks
-  let blocksWithMediaData: BlockType[] = postData.blocks || [];
-  if (blocksWithMediaData.length > 0) {
-    const imageBlockMediaIds = blocksWithMediaData
-      .filter(block => block.block_type === 'image' && block.content?.media_id)
-      .map(block => (block.content as ImageBlockContent).media_id)
-      .filter(id => id !== null && typeof id === 'string') as string[];
-
-    if (imageBlockMediaIds.length > 0) {
-      const { data: mediaItems, error: mediaError } = await supabase
-        .from('media')
-        .select('id, object_key')
-        .in('id', imageBlockMediaIds);
-
-      if (mediaError) {
-        console.error("Client (Posts): Error fetching media items for blocks:", mediaError);
-      } else if (mediaItems) {
-        const mediaMap = new Map(mediaItems.map(m => [m.id, m.object_key]));
-        blocksWithMediaData = blocksWithMediaData.map(block => {
-          if (block.block_type === 'image' && block.content?.media_id) {
-            const currentContent = block.content as ImageBlockContent;
-            const objectKey = mediaMap.get(currentContent.media_id!);
-            if (objectKey) {
-              return { ...block, content: { ...currentContent, object_key: objectKey } };
-            }
-          }
-          return block;
-        });
-      }
-    }
-  }
-
-  return {
-    ...postData,
-    blocks: blocksWithMediaData,
-    language_code: langInfo.code,
-    language_id: langInfo.id,
-  } as (PostType & { blocks: BlockType[]; language_code: string; language_id: number });
+  return post.slug;
 }
 
-export default function PostClientContent({ slug, initialPostData }: PostClientContentProps) {
-  const { currentLocale, isLoadingLanguages, defaultLanguage } = useLanguage();
+export default function PostClientContent({ initialPostData, currentSlug }: PostClientContentProps) {
+  const { currentLocale, isLoadingLanguages } = useLanguage();
+  const router = useRouter();
+  
+  // currentPostData is always for the slug in the URL.
+  // It's initially set by the server. It only changes if the URL itself changes (which happens on language switch).
   const [currentPostData, setCurrentPostData] = useState(initialPostData);
-  const [isLoadingContent, setIsLoadingContent] = useState(false);
-  const [contentError, setContentError] = useState<string | null>(null);
+  const [isLoadingTargetLang, setIsLoadingTargetLang] = useState(false); // For feedback during navigation
 
-  const supabase = createClient(); // Initialize client-side Supabase client
-
+  // This effect handles navigation when the language context changes
   useEffect(() => {
-    if (currentLocale) {
-      document.documentElement.lang = currentLocale;
+    if (!isLoadingLanguages && currentLocale && initialPostData && initialPostData.language_code !== currentLocale) {
+      // The current page's language (from initialPostData.language_code)
+      // does not match the user's selected language (currentLocale).
+      // We need to find the slug for the currentLocale version of this post and navigate.
+      setIsLoadingTargetLang(true);
+      const navigateToTranslatedVersion = async () => {
+        const targetSlug = await getSlugForTranslatedPost(initialPostData.translation_group_id, currentLocale, createClient());
+        if (targetSlug && targetSlug !== currentSlug) {
+          router.push(`/blog/${targetSlug}`); // Navigate to the translated slug's URL
+        } else if (!targetSlug) {
+          console.warn(`No published translation found for post group ${initialPostData.translation_group_id} in language ${currentLocale}`);
+          // Optionally, provide user feedback here (e.g., a toast message)
+          // For now, the user remains on the current page.
+        }
+        // If targetSlug === currentSlug, we are already on the correct page for the selected language.
+        setIsLoadingTargetLang(false);
+      };
+      navigateToTranslatedVersion();
     }
-  }, [currentLocale]);
+  }, [currentLocale, isLoadingLanguages, initialPostData, currentSlug, router]);
 
-  const loadContentForLocale = useCallback(async (localeToLoad: string) => {
-    if (!localeToLoad || !slug) return;
-
-    setIsLoadingContent(true);
-    setContentError(null);
-
-    // If initialData is already for the requested locale, use it
-    if (initialPostData && initialPostData.language_code === localeToLoad) {
-      setCurrentPostData(initialPostData);
-      if (initialPostData.meta_title || initialPostData.title) {
-        document.title = initialPostData.meta_title || initialPostData.title;
-      }
-      setIsLoadingContent(false);
-      return;
-    }
-    
-    const data = await fetchPostContentForLanguage(slug, localeToLoad, supabase);
-    if (data) {
-      setCurrentPostData(data);
-      if (data.meta_title || data.title) {
-        document.title = data.meta_title || data.title; // Update document title
-      }
-    } else {
-      setCurrentPostData(null); // Clear content if specific language version not found
-      setContentError(`Post content for "${slug}" is not available in ${localeToLoad}.`);
-      console.warn(`Post content for slug '${slug}' in language '${localeToLoad}' not found.`);
-    }
-    setIsLoadingContent(false);
-  }, [slug, initialPostData, supabase]);
-
+  // This effect updates the document based on the currently displayed data
   useEffect(() => {
-    if (!isLoadingLanguages && currentLocale) {
-      // Fetch if current data is not for currentLocale, or if no data yet
-      if (!currentPostData || currentPostData.language_code !== currentLocale) {
-        loadContentForLocale(currentLocale);
-      }
-    } else if (!isLoadingLanguages && !currentLocale && defaultLanguage) {
-      // If context hasn't settled, but we have a site default, try loading that if not already loaded
-      if (!currentPostData || currentPostData.language_id !== defaultLanguage.id) {
-         loadContentForLocale(defaultLanguage.code);
+    if (currentPostData?.language_code) {
+      document.documentElement.lang = currentPostData.language_code;
+      if (currentPostData.meta_title || currentPostData.title) {
+         document.title = currentPostData.meta_title || currentPostData.title;
       }
     }
-  }, [currentLocale, isLoadingLanguages, defaultLanguage, currentPostData, loadContentForLocale]);
+  }, [currentPostData]);
+
+  // Update currentPostData if initialPostData changes (e.g., after ISR revalidation of the current slug)
+  useEffect(() => {
+    setCurrentPostData(initialPostData);
+  }, [initialPostData]);
 
 
-  if (isLoadingLanguages && !currentPostData) {
-    return <div className="container mx-auto px-4 py-20 text-center"><p>Loading language settings...</p></div>;
-  }
-  if (isLoadingContent && !currentPostData) { // Show loading if fetching and no data to display yet
-     return <div className="container mx-auto px-4 py-20 text-center"><p>Loading post for {currentLocale || 'selected language'}...</p></div>;
-  }
-
-  if (!currentPostData) {
+  if (!currentPostData && !isLoadingLanguages && !isLoadingTargetLang) {
+    // This state means the initial slug from the URL didn't resolve to any data.
+    // The server component (page.tsx) would have already called notFound().
+    // This is a fallback or could indicate an issue if reached.
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <h1 className="text-2xl font-bold mb-4">Post Not Found</h1>
-        <p className="text-muted-foreground">
-          The post "{slug}" could not be loaded for the selected language ({currentLocale || 'unknown'}).
-        </p>
-        {contentError && <p className="text-red-500 mt-2">{contentError}</p>}
+        <p className="text-muted-foreground">The post for slug "{currentSlug}" could not be loaded.</p>
         <p className="mt-4">
           <Link href="/blog" className="text-primary hover:underline">Back to Blog</Link>
           <span className="mx-2">|</span>
@@ -167,13 +108,21 @@ export default function PostClientContent({ slug, initialPostData }: PostClientC
       </div>
     );
   }
+  
+  // If initialPostData was null but we are still loading language context or trying to navigate
+  if (!currentPostData && (isLoadingLanguages || isLoadingTargetLang)) {
+     return <div className="container mx-auto px-4 py-20 text-center"><p>Loading post content...</p></div>;
+  }
+
+  // If after all attempts, currentPostData is still null (should be caught by notFound in server component ideally)
+  if (!currentPostData) {
+     return <div className="container mx-auto px-4 py-20 text-center"><p>Could not load post content for "{currentSlug}".</p></div>;
+  }
 
   return (
     <article className="container mx-auto px-4 py-8">
-      {/* Optional: Display a loading indicator when switching languages but old content is still visible */}
-      {isLoadingContent && currentPostData && (
-          <div className="text-center py-2 text-sm text-muted-foreground">Updating to {currentLocale}...</div>
-      )}
+      {isLoadingTargetLang && <div className="text-center py-2 text-sm text-muted-foreground">Switching language...</div>}
+      
       <header className="mb-8 text-center border-b pb-6 dark:border-slate-700">
         <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2 text-slate-900 dark:text-slate-100">{currentPostData.title}</h1>
         {currentPostData.published_at && (
@@ -185,12 +134,12 @@ export default function PostClientContent({ slug, initialPostData }: PostClientC
       </header>
 
       {currentPostData.blocks && currentPostData.blocks.length > 0 ? (
-        <div className="prose dark:prose-invert lg:prose-xl max-w-none mx-auto"> {/* Apply prose for blog post styling */}
+        <div className="prose dark:prose-invert lg:prose-xl max-w-none mx-auto">
           <BlockRenderer blocks={currentPostData.blocks} />
         </div>
       ) : (
         <div className="text-center py-10 text-muted-foreground">
-          <p>This post has no content blocks for the language: {currentPostData.language_code.toUpperCase()}.</p>
+          <p>This post has no content blocks for the language: {currentPostData.language_code?.toUpperCase()}.</p>
         </div>
       )}
     </article>

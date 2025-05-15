@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation'; // For navigation on lang switch
 import { createClient } from "@/utils/supabase/client";
 import type { Page as PageType, Block as BlockType, Language, ImageBlockContent, Media } from "@/utils/supabase/types";
 import BlockRenderer from "../../components/BlockRenderer";
@@ -9,156 +10,102 @@ import { useLanguage } from '@/context/LanguageContext';
 import Link from 'next/link';
 
 interface PageClientContentProps {
-  slug: string;
-  initialPageData: (PageType & { blocks: BlockType[]; language_code: string; language_id: number }) | null;
+  initialPageData: (PageType & { blocks: BlockType[]; language_code: string; language_id: number; translation_group_id: string; }) | null;
+  currentSlug: string; // The slug of the currently viewed page
 }
 
-async function fetchPageContentForLanguage(
-  slug: string,
-  languageCode: string,
+// Fetches the slug for a given translation_group_id and target language_code
+async function getSlugForTranslatedPage(
+  translationGroupId: string,
+  targetLanguageCode: string,
   supabase: ReturnType<typeof createClient>
-): Promise<(PageType & { blocks: BlockType[]; language_code: string; language_id: number }) | null> {
-  const { data: langInfo, error: langError } = await supabase
-    .from("languages").select("id, code").eq("code", languageCode).single();
+): Promise<string | null> {
+  const { data: langInfo, error: langErr } = await supabase
+    .from("languages").select("id").eq("code", targetLanguageCode).single();
+  if (langErr || !langInfo) return null;
 
-  if (langError || !langInfo) {
-    console.warn(`Client: Language code '${languageCode}' not found for slug '${slug}'.`);
-    return null;
-  }
-
-  const { data: pageData, error: pageError } = await supabase
-    .from("pages").select("*, blocks(*)").eq("slug", slug)
-    .eq("language_id", langInfo.id).eq("status", "published")
-    .order('order', { foreignTable: 'blocks', ascending: true }).maybeSingle();
-
-  if (pageError || !pageData) {
-    if(pageError) console.error(`Client: Error fetching page content for slug '${slug}', lang '${languageCode}':`, pageError);
-    return null;
-  }
-
-  let blocksWithMediaData = pageData.blocks || [];
-  if (blocksWithMediaData.length > 0) {
-    const imageBlockMediaIds = blocksWithMediaData
-      .filter((block: BlockType) => (block as any).block_type === 'image' && (block as any).content?.media_id)
-      .map((block: BlockType) => ((block as any).content as ImageBlockContent).media_id)
-      .filter((id: any) => id !== null) as string[];
-
-    if (imageBlockMediaIds.length > 0) {
-      const { data: mediaItems, error: mediaError } = await supabase
-        .from('media').select('id, object_key').in('id', imageBlockMediaIds);
-      if (mediaError) {
-        console.error("Client: Error fetching media items for blocks:", mediaError);
-      } else if (mediaItems) {
-        const mediaMap = new Map(mediaItems.map((m: any) => [m.id, m.object_key]));
-        blocksWithMediaData = blocksWithMediaData.map((block: BlockType) => {
-          if ((block as any).block_type === 'image' && (block as any).content?.media_id) {
-            const currentContent = (block as any).content as ImageBlockContent;
-            const objectKey = mediaMap.get(currentContent.media_id!);
-            if (objectKey) {
-              return { ...block, content: { ...currentContent, object_key: objectKey } };
-            }
-          }
-          return block;
-        });
-      }
-    }
-  }
-
-  return {
-    ...pageData,
-    blocks: blocksWithMediaData,
-    language_code: langInfo.code,
-    language_id: langInfo.id,
-  } as (PageType & { blocks: BlockType[]; language_code: string; language_id: number });
+  const { data: page, error: pageErr } = await supabase
+    .from("pages")
+    .select("slug")
+    .eq("translation_group_id", translationGroupId)
+    .eq("language_id", langInfo.id)
+    .eq("status", "published")
+    .single();
+  
+  if (pageErr || !page) return null;
+  return page.slug;
 }
 
 
-export default function PageClientContent({ slug, initialPageData }: PageClientContentProps) {
-  // ... (useState, useLanguage, useEffect for HTML lang attribute remain the same) ...
-  const { currentLocale, isLoadingLanguages, defaultLanguage } = useLanguage();
-  const [currentPageData, setCurrentPageData] = useState(initialPageData); // Use initialPageData directly
-  const [isLoadingContent, setIsLoadingContent] = useState(false);
-  const [contentError, setContentError] = useState<string | null>(null);
-
-  const supabase = createClient();
-
-  useEffect(() => {
-    if (currentLocale) {
-      document.documentElement.lang = currentLocale;
-    }
-  }, [currentLocale]);
-
-  const loadContentForLocale = useCallback(async (localeToLoad: string) => {
-    if (!localeToLoad || !slug) return;
-    setIsLoadingContent(true);
-    setContentError(null);
-
-    // Check if initialData is for the requested locale
-    if (initialPageData && initialPageData.language_code === localeToLoad) {
-      setCurrentPageData(initialPageData);
-      if (initialPageData.meta_title || initialPageData.title) {
-        document.title = initialPageData.meta_title || initialPageData.title;
-      }
-      setIsLoadingContent(false);
-      return;
-    }
-    
-    // Fetch if different locale or if initialData was null for the default language
-    const data = await fetchPageContentForLanguage(slug, localeToLoad, supabase);
-    if (data) {
-      setCurrentPageData(data);
-      if (data.meta_title || data.title) {
-        document.title = data.meta_title || data.title;
-      }
-    } else {
-      setCurrentPageData(null); 
-      setContentError(`Content for "${slug}" is not available in ${localeToLoad}.`);
-    }
-    setIsLoadingContent(false);
-  }, [slug, initialPageData, supabase]);
+export default function PageClientContent({ initialPageData, currentSlug }: PageClientContentProps) {
+  const { currentLocale, isLoadingLanguages } = useLanguage();
+  const router = useRouter();
+  // currentPageData is the data for the slug currently in the URL.
+  // It's initially set by the server for the slug it resolved.
+  const [currentPageData, setCurrentPageData] = useState(initialPageData);
+  const [isLoadingTargetLang, setIsLoadingTargetLang] = useState(false);
 
   useEffect(() => {
-    if (!isLoadingLanguages && currentLocale) {
-      if (!currentPageData || currentPageData.language_code !== currentLocale) {
-        loadContentForLocale(currentLocale);
-      }
-    } else if (!isLoadingLanguages && !currentLocale && defaultLanguage && initialPageData?.language_code !== defaultLanguage.code) {
-      // If context hasn't settled, but we have a site default, and initial data isn't it, load default.
-       if (!currentPageData || currentPageData.language_id !== defaultLanguage.id) {
-            loadContentForLocale(defaultLanguage.code);
+    if (currentLocale && currentPageData && currentPageData.language_code !== currentLocale) {
+      // Current page's language doesn't match context, try to navigate to translated version
+      setIsLoadingTargetLang(true);
+      const fetchAndNavigate = async () => {
+        const targetSlug = await getSlugForTranslatedPage(currentPageData.translation_group_id, currentLocale, createClient());
+        if (targetSlug && targetSlug !== currentSlug) {
+          router.push(`/${targetSlug}`); // Navigate to the translated slug's URL
+        } else if (targetSlug && targetSlug === currentSlug) {
+          // Already on the correct page for the selected language, do nothing or refresh data if needed
+          // This case implies initialPageData was for the currentLocale if they match.
+        } else {
+          console.warn(`No published translation found for group ${currentPageData.translation_group_id} in language ${currentLocale}`);
+          // Optionally, provide feedback to the user that translation is not available
         }
+        setIsLoadingTargetLang(false);
+      };
+      fetchAndNavigate();
     }
-  }, [currentLocale, isLoadingLanguages, defaultLanguage, currentPageData, loadContentForLocale, initialPageData]);
+  }, [currentLocale, currentPageData, currentSlug, router, initialPageData]); // Rerun if initialPageData changes (e.g. after revalidation)
+
+  // Update HTML lang attribute based on the *actually displayed* content's language
+  useEffect(() => {
+    if (currentPageData?.language_code) {
+      document.documentElement.lang = currentPageData.language_code;
+      if (currentPageData.meta_title || currentPageData.title) {
+         document.title = currentPageData.meta_title || currentPageData.title;
+      }
+    }
+  }, [currentPageData]);
 
 
-  // ... (loading states and error display remain the same) ...
-  if (isLoadingLanguages && !currentPageData) {
-    return <div className="container mx-auto px-4 py-20 text-center"><p>Loading language settings...</p></div>;
-  }
-  if (isLoadingContent && !currentPageData) {
-     return <div className="container mx-auto px-4 py-20 text-center"><p>Loading content for {currentLocale || 'selected language'}...</p></div>;
-  }
-  if (!currentPageData) {
+  if (!currentPageData && !isLoadingLanguages && !isLoadingTargetLang) { // If initial data was null and no target lang found
     return (
       <div className="container mx-auto px-4 py-8 text-center">
-        <h1 className="text-2xl font-bold mb-4">Content Not Found</h1>
-        <p className="text-muted-foreground">The page "{slug}" could not be loaded for the selected language ({currentLocale || 'unknown'}).</p>
-        {contentError && <p className="text-red-500 mt-2">{contentError}</p>}
+        <h1 className="text-2xl font-bold mb-4">Page Not Found</h1>
+        <p className="text-muted-foreground">The page for slug "{currentSlug}" could not be loaded or is not available in any language.</p>
         <p className="mt-4"><Link href="/" className="text-primary hover:underline">Go to Homepage</Link></p>
       </div>
     );
   }
+  
+  if (!currentPageData && (isLoadingLanguages || isLoadingTargetLang)) {
+     return <div className="container mx-auto px-4 py-20 text-center"><p>Loading page content...</p></div>;
+  }
+  
+  if (!currentPageData) { // Fallback if still no data after loading attempts
+     return <div className="container mx-auto px-4 py-20 text-center"><p>Could not load page content.</p></div>;
+  }
+
 
   return (
     <article className="container mx-auto px-4 py-8">
-      {isLoadingContent && currentPageData && (
-          <div className="text-center py-2 text-sm text-muted-foreground">Updating to {currentLocale}...</div>
-      )}
+      {isLoadingTargetLang && <div className="text-center py-2 text-sm text-muted-foreground">Switching language...</div>}
+      
+      {/* Render blocks using the current page's data */}
       {currentPageData.blocks && currentPageData.blocks.length > 0 ? (
         <BlockRenderer blocks={currentPageData.blocks} />
       ) : (
         <div className="text-center py-10 text-muted-foreground">
-          <p>This page has no content blocks for the language: {currentPageData.language_code.toUpperCase()}.</p>
+          <p>This page has no content blocks for the language: {currentPageData.language_code?.toUpperCase()}.</p>
         </div>
       )}
     </article>
