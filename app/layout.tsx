@@ -6,6 +6,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import "./globals.css";
 import Header from "@/components/Header";
+import FooterNavigation from "@/components/FooterNavigation"; // Import FooterNavigation
 import { headers } from 'next/headers';
 
 const defaultUrl = process.env.VERCEL_URL
@@ -49,8 +50,12 @@ export default async function RootLayout({
                   </nav>
                   <div className="flex flex-col w-full">{children}</div>
 
-                  <footer className="w-full flex items-center justify-center border-t mx-auto text-center text-xs gap-8 py-16">
-                    <ThemeSwitcher />
+                  <footer className="w-full border-t py-8">
+                    <div className="max-w-7xl mx-auto flex flex-col items-center justify-center gap-6 text-center text-xs px-4">
+                      <FooterNavigation />
+                      <ThemeSwitcher />
+                      <p className="text-muted-foreground">© {new Date().getFullYear()} My Ultra-Fast CMS. All rights reserved.</p>
+                    </div>
                   </footer>
                 </div>
               </main>

@@ -127,7 +127,7 @@ export default function NavigationItemForm({
   if (dataLoading) return <div>Loading form data...</div>;
 
 
-  const menuLocations: MenuLocation[] = ['HEADER', 'FOOTER', 'SIDEBAR'];
+  const menuLocations: MenuLocation[] = ['HEADER', 'FOOTER'];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -139,6 +139,19 @@ export default function NavigationItemForm({
       <div>
         <Label htmlFor="label">Label</Label>
         <Input id="label" name="label" value={label} onChange={(e) => setLabel(e.target.value)} required className="mt-1" />
+      </div>
+      <div>
+        <Label htmlFor="page_id">Link to Internal Page (Optional)</Label>
+        <Select name="page_id" value={pageId} onValueChange={handlePageSelect}>
+          <SelectTrigger className="mt-1"><SelectValue placeholder="None (Manual URL)" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="___NONE___">None (Manual URL)</SelectItem>
+            {availablePages.map((p) => (
+              <SelectItem key={p.id} value={p.id.toString()}>{p.title} ({p.slug})</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground mt-1">Selecting a page will auto-fill the URL (can be overridden).</p>
       </div>
       <div>
         <Label htmlFor="url">URL</Label>
@@ -175,26 +188,13 @@ export default function NavigationItemForm({
         <Select name="parent_id" value={parentId} onValueChange={setParentId}>
           <SelectTrigger className="mt-1"><SelectValue placeholder="None (Top Level)" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="">None (Top Level)</SelectItem>
+            <SelectItem value="___NONE___">None (Top Level)</SelectItem>
             {availableParentItems.map((parent) => (
               <SelectItem key={parent.id} value={parent.id.toString()}>{parent.label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
          <p className="text-xs text-muted-foreground mt-1">Select a parent if this is a sub-menu item. Parents must be in the same language and menu location.</p>
-      </div>
-      <div>
-        <Label htmlFor="page_id">Link to Internal Page (Optional)</Label>
-        <Select name="page_id" value={pageId} onValueChange={handlePageSelect}>
-          <SelectTrigger className="mt-1"><SelectValue placeholder="None (Manual URL)" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">None (Manual URL)</SelectItem>
-            {availablePages.map((p) => (
-              <SelectItem key={p.id} value={p.id.toString()}>{p.title} ({p.slug})</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <p className="text-xs text-muted-foreground mt-1">Selecting a page will auto-fill the URL (can be overridden).</p>
       </div>
       <div className="flex justify-end space-x-3">
         <Button type="button" variant="outline" onClick={() => router.push("/cms/navigation")} disabled={isPending}>Cancel</Button>

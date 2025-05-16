@@ -17,27 +17,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { deleteNavigationItem } from "./actions";
+// import { deleteNavigationItem } from "./actions"; // No longer needed directly here
 import type { NavigationItem, Language, MenuLocation } from "@/utils/supabase/types";
 import { getActiveLanguagesServerSide } from "@/utils/supabase/server";
 import { Badge } from "@/components/ui/badge";
-
-function DeleteNavItemButton({ itemId }: { itemId: number }) {
-  const deleteActionWithId = deleteNavigationItem.bind(null, itemId);
-  return (
-    <form action={async () => { await deleteActionWithId(); }}>
-      <button type="submit" className="w-full text-left">
-        <DropdownMenuItem
-          className="text-red-600 hover:!text-red-600 hover:!bg-red-50 dark:hover:!bg-red-700/20"
-          onSelect={(e) => e.preventDefault()}
-        >
-          <Trash2 className="mr-2 h-4 w-4" />
-          Delete
-        </DropdownMenuItem>
-      </button>
-    </form>
-  );
-}
+import DeleteNavItemButton from "./components/DeleteNavItemButton"; // Import the new component
 
 interface NavItemWithDetails extends NavigationItem {
   languageCode: string;

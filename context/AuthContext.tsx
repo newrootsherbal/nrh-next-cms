@@ -54,7 +54,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       setIsLoading(false); // Initial auth check complete
     }).catch(e => {
-        console.error("AuthProvider: Error in getSession()", e);
+        console.error("AuthProvider: Error in getSession()", e); // Simplified error message
         setUser(null);
         setProfile(null);
         setRole(null);

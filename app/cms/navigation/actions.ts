@@ -41,8 +41,8 @@ export async function createNavigationItem(formData: FormData) {
     language_id: parseInt(formData.get("language_id") as string, 10),
     menu_key: formData.get("menu_key") as MenuLocation,
     order: parseInt(formData.get("order") as string, 10) || 0,
-    parent_id: formData.get("parent_id") ? parseInt(formData.get("parent_id") as string, 10) : null,
-    page_id: formData.get("page_id") ? parseInt(formData.get("page_id") as string, 10) : null,
+    parent_id: formData.get("parent_id") && formData.get("parent_id") !== "___NONE___" ? parseInt(formData.get("parent_id") as string, 10) : null,
+    page_id: formData.get("page_id") && formData.get("page_id") !== "___NONE___" ? parseInt(formData.get("page_id") as string, 10) : null,
   };
 
   if (!rawFormData.label || !rawFormData.url || isNaN(rawFormData.language_id) || !rawFormData.menu_key) {
@@ -86,8 +86,8 @@ export async function updateNavigationItem(itemId: number, formData: FormData) {
     language_id: parseInt(formData.get("language_id") as string, 10),
     menu_key: formData.get("menu_key") as MenuLocation,
     order: parseInt(formData.get("order") as string, 10) || 0,
-    parent_id: formData.get("parent_id") ? parseInt(formData.get("parent_id") as string, 10) : null,
-    page_id: formData.get("page_id") ? parseInt(formData.get("page_id") as string, 10) : null,
+    parent_id: formData.get("parent_id") && formData.get("parent_id") !== "___NONE___" ? parseInt(formData.get("parent_id") as string, 10) : null,
+    page_id: formData.get("page_id") && formData.get("page_id") !== "___NONE___" ? parseInt(formData.get("page_id") as string, 10) : null,
   };
 
    if (!rawFormData.label || !rawFormData.url || isNaN(rawFormData.language_id) || !rawFormData.menu_key) {
@@ -137,4 +137,40 @@ export async function deleteNavigationItem(itemId: number) {
 
   revalidatePath("/cms/navigation");
   redirect("/cms/navigation?success=Item deleted successfully");
+}
+
+export async function getNavigationMenu(menuKey: MenuLocation, languageCode: string): Promise<NavigationItem[]> {
+  const supabase = createClient();
+
+  // First, get the language ID from the language code
+  const { data: language, error: langError } = await supabase
+    .from("languages")
+    .select("id")
+    .eq("code", languageCode)
+    .single();
+
+  if (langError || !language) {
+    console.error(`Error fetching language ID for code ${languageCode}:`, langError);
+    return [];
+  }
+
+  const languageId = language.id;
+
+  // Then, fetch navigation items for that menu key and language ID
+  // For simplicity, this example fetches only top-level items (parent_id is null)
+  // and orders them. You might want to fetch all and build hierarchy in the component.
+  const { data: items, error: itemsError } = await supabase
+    .from("navigation_items")
+    .select("*")
+    .eq("menu_key", menuKey)
+    .eq("language_id", languageId)
+    // .is("parent_id", null) // Uncomment to fetch only top-level items initially
+    .order("order");
+
+  if (itemsError) {
+    console.error(`Error fetching navigation items for ${menuKey} (${languageCode}):`, itemsError);
+    return [];
+  }
+
+  return items || [];
 }
