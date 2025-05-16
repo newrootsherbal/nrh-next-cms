@@ -1,45 +1,43 @@
 // app/[slug]/page.tsx
 import React from 'react';
-import { createClient } from "@/utils/supabase/server";
+import { getSsgSupabaseClient } from "@/utils/supabase/ssg-client"; // Correct import
 import { notFound } from "next/navigation";
 import type { Metadata, ResolvingMetadata } from 'next';
-import type { Page as PageType, Block as BlockType, Language } from "@/utils/supabase/types"; // Removed unused Media, ImageBlockContent
+import type { Page as PageType, Block as BlockType, Language } from "@/utils/supabase/types";
 import PageClientContent from "./PageClientContent";
-import { getPageDataBySlug } from "./page.utils";
+import { getPageDataBySlug } from "./page.utils"; // This will now use getSsgSupabaseClient internally
 
 export const dynamicParams = true;
 export const revalidate = 3600;
 
-// Define the type for the resolved params object
 interface ResolvedPageParams {
   slug: string;
 }
 
-// Define the PageProps for the component and generateMetadata
 interface PageProps {
-  params: Promise<ResolvedPageParams>; // params is now a Promise
-  // searchParams?: { [key: string]: string | string[] | undefined }; // Add if you use searchParams
+  params: Promise<ResolvedPageParams>;
 }
 
-export async function generateStaticParams(): Promise<ResolvedPageParams[]> { // Return type uses ResolvedPageParams
-  const supabase = createClient();
+export async function generateStaticParams(): Promise<ResolvedPageParams[]> {
+  const supabase = getSsgSupabaseClient(); // Use the SSG-safe client
   const { data: pages, error } = await supabase
     .from("pages")
     .select("slug")
     .eq("status", "published");
 
   if (error || !pages) {
-    console.error("SSG: Error fetching page slugs for static params", error);
+    console.error("SSG: Error fetching page slugs for static params:", error);
     return [];
   }
   return pages.map((page) => ({ slug: page.slug }));
 }
 
 export async function generateMetadata(
-  { params: paramsPromise }: PageProps, // Destructure the promise
+  { params: paramsPromise }: PageProps,
   parent: ResolvingMetadata
 ): Promise<Metadata> {
-  const params = await paramsPromise; // Await the promise to get the actual params
+  const params = await paramsPromise;
+  // getPageDataBySlug now uses the SSG-safe client internally
   const pageData = await getPageDataBySlug(params.slug);
 
   if (!pageData) {
@@ -47,7 +45,7 @@ export async function generateMetadata(
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
-  const supabase = createClient();
+  const supabase = getSsgSupabaseClient(); // Use SSG-safe client for additional queries
   const { data: languages } = await supabase.from('languages').select('id, code');
   const { data: pageTranslations } = await supabase
     .from('pages')
@@ -75,8 +73,9 @@ export async function generateMetadata(
   };
 }
 
-export default async function DynamicPage({ params: paramsPromise }: PageProps) { // Destructure the promise
-  const params = await paramsPromise; // Await the promise
+export default async function DynamicPage({ params: paramsPromise }: PageProps) {
+  const params = await paramsPromise;
+  // getPageDataBySlug uses SSG-safe client, suitable for build and request time for public data
   const pageData = await getPageDataBySlug(params.slug);
 
   if (!pageData) {

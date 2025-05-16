@@ -1,30 +1,33 @@
 // app/blog/[slug]/page.tsx
 import React from 'react';
-import { createClient } from "@/utils/supabase/server";
+// Remove or alias the problematic import if only used by other functions:
+// import { createClient } from "@/utils/supabase/server";
+import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'; // Import base client
 import { notFound } from "next/navigation";
 import type { Metadata, ResolvingMetadata } from 'next';
-// Removed unused Media, ImageBlockContent from here as they are handled in page.utils.ts
 import type { Post as PostType, Block as BlockType, Language } from "@/utils/supabase/types";
 import PostClientContent from "./PostClientContent";
-import { getPostDataBySlug } from "./page.utils"; // Import from the new utility file
+import { getPostDataBySlug } from "./page.utils"; // This also uses createClient from server, see note below
+import { getSsgSupabaseClient } from "@/utils/supabase/ssg-client"; // Correct import
 
 export const dynamicParams = true;
 export const revalidate = 3600;
 
-// Define the type for the resolved params object
 interface ResolvedPostParams {
   slug: string;
 }
 
-// Define the PostPageProps for the component and generateMetadata
 interface PostPageProps {
-  params: Promise<ResolvedPostParams>; // params is now a Promise
-  // searchParams?: { [key: string]: string | string[] | undefined }; // Add if you use searchParams
+  params: Promise<ResolvedPostParams>;
 }
 
-// Generate static paths for all unique, published post slugs across all languages
-export async function generateStaticParams(): Promise<ResolvedPostParams[]> { // Return type uses ResolvedPostParams
-  const supabase = createClient();
+export async function generateStaticParams(): Promise<ResolvedPostParams[]> {
+  // Use a new Supabase client instance that doesn't rely on cookies
+  const supabase = createSupabaseJsClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
   const { data: posts, error } = await supabase
     .from("posts")
     .select("slug")
@@ -54,7 +57,7 @@ export async function generateMetadata(
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
-  const supabase = createClient();
+  const supabase = getSsgSupabaseClient();
   const { data: languages } = await supabase.from('languages').select('id, code');
   const { data: postTranslations } = await supabase
     .from('posts')
