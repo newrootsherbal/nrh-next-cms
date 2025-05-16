@@ -33,7 +33,7 @@ export default async function RootLayout({
     <html lang={serverDeterminedLocale} suppressHydrationWarning>
       <body className="bg-background text-foreground">
         <AuthProvider>
-          <LanguageProvider>
+          <LanguageProvider serverLocale={serverDeterminedLocale}>
             <ThemeProvider
               attribute="class"
               defaultTheme="system"

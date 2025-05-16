@@ -102,16 +102,16 @@ export const LanguageProvider = ({ children, serverLocale }: LanguageProviderPro
   // Ensure a locale is always provided, even if briefly defaulting during loading.
   const determinedLocale = currentLocale || serverLocale || DEFAULT_FALLBACK_LOCALE;
 
+  const contextValue = React.useMemo(() => ({
+    currentLocale: determinedLocale,
+    setCurrentLocale, // setCurrentLocale is already memoized with useCallback
+    availableLanguages,
+    defaultLanguage,
+    isLoadingLanguages,
+  }), [determinedLocale, setCurrentLocale, availableLanguages, defaultLanguage, isLoadingLanguages]);
+
   return (
-    <LanguageContext.Provider
-      value={{
-        currentLocale: determinedLocale,
-        setCurrentLocale,
-        availableLanguages,
-        defaultLanguage,
-        isLoadingLanguages,
-      }}
-    >
+    <LanguageContext.Provider value={contextValue}>
       {children}
     </LanguageContext.Provider>
   );

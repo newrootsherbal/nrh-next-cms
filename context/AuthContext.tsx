@@ -96,8 +96,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const isWriter = role === 'WRITER';
   const isUserRole = role === 'USER';
 
+  const contextValue = React.useMemo(() => ({
+    user,
+    profile,
+    role,
+    isLoading,
+    isAdmin,
+    isWriter,
+    isUserRole
+  }), [user, profile, role, isLoading, isAdmin, isWriter, isUserRole]);
+
   return (
-    <AuthContext.Provider value={{ user, profile, role, isLoading, isAdmin, isWriter, isUserRole }}>
+    <AuthContext.Provider value={contextValue}>
       {/* 3. Always render children. Consumers will use `isLoading` to show their own loaders. */}
       {children}
     </AuthContext.Provider>

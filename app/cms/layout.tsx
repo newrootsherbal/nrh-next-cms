@@ -223,7 +223,7 @@ export default function CmsLayout({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <div className={cn("flex-1 transition-all duration-300 ease-in-out w-full", sidebarOpen ? "md:ml-64" : "md:ml-0")}>
+      <div className="flex-1 transition-all duration-300 ease-in-out w-full">
         <header className="bg-background dark:bg-slate-800/30 border-b border-border h-16 flex items-center px-6 sticky top-0 z-30 w-full shrink-0">
             <Button variant="ghost" size="icon" className="md:hidden mr-3 -ml-2" onClick={() => setSidebarOpen(!sidebarOpen)}>
                 <Menu className="h-5 w-5" />
