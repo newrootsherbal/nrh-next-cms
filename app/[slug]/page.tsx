@@ -3,83 +3,29 @@ import React from 'react';
 import { createClient } from "@/utils/supabase/server";
 import { notFound } from "next/navigation";
 import type { Metadata, ResolvingMetadata } from 'next';
-import type { Page as PageType, Block as BlockType, Language, ImageBlockContent, Media } from "@/utils/supabase/types";
+import type { Page as PageType, Block as BlockType, Language } from "@/utils/supabase/types"; // Removed unused Media, ImageBlockContent
 import PageClientContent from "./PageClientContent";
+import { getPageDataBySlug } from "./page.utils";
 
 export const dynamicParams = true;
 export const revalidate = 3600;
 
+// Define the type for the resolved params object
+interface ResolvedPageParams {
+  slug: string;
+}
+
+// Define the PageProps for the component and generateMetadata
 interface PageProps {
-  params: { slug: string; };
+  params: Promise<ResolvedPageParams>; // params is now a Promise
+  // searchParams?: { [key: string]: string | string[] | undefined }; // Add if you use searchParams
 }
 
-// Fetch page data directly by slug. The language is inherent to the slug's DB entry.
-export async function getPageDataBySlug(slug: string): Promise<(PageType & { blocks: BlockType[]; language_code: string; language_id: number; translation_group_id: string; }) | null> {
-  const supabase = createClient();
-
-  const { data: pageData, error: pageError } = await supabase
-    .from("pages")
-    .select(`
-      *,
-      languages!inner (id, code), 
-      blocks (*)
-    `)
-    .eq("slug", slug)
-    .eq("status", "published")
-    .order('order', { foreignTable: 'blocks', ascending: true })
-    .maybeSingle();
-
-  if (pageError || !pageData) {
-    if(pageError) console.error(`Error fetching page data for slug '${slug}':`, pageError);
-    return null;
-  }
-
-  const langInfo = pageData.languages as unknown as { id: number; code: string };
-  if (!langInfo) {
-      console.error(`Language information missing for page slug '${slug}'`);
-      return null; // Or handle as critical error
-  }
-
-
-  let blocksWithMediaData: BlockType[] = pageData.blocks || [];
-  if (blocksWithMediaData.length > 0) {
-    const imageBlockMediaIds = blocksWithMediaData
-      .filter(block => block.block_type === 'image' && block.content?.media_id)
-      .map(block => (block.content as ImageBlockContent).media_id)
-      .filter(id => id !== null && typeof id === 'string') as string[];
-
-    if (imageBlockMediaIds.length > 0) {
-      const { data: mediaItems, error: mediaError } = await supabase
-        .from('media').select('id, object_key').in('id', imageBlockMediaIds);
-      if (mediaError) console.error("Error fetching media for blocks:", mediaError);
-      else if (mediaItems) {
-        const mediaMap = new Map(mediaItems.map(m => [m.id, m.object_key]));
-        blocksWithMediaData = blocksWithMediaData.map(block => {
-          if (block.block_type === 'image' && block.content?.media_id) {
-            const currentContent = block.content as ImageBlockContent;
-            const objectKey = mediaMap.get(currentContent.media_id!);
-            if (objectKey) return { ...block, content: { ...currentContent, object_key: objectKey } };
-          }
-          return block;
-        });
-      }
-    }
-  }
-
-  return {
-    ...pageData,
-    blocks: blocksWithMediaData,
-    language_code: langInfo.code,
-    language_id: langInfo.id,
-    // translation_group_id is already on pageData
-  } as (PageType & { blocks: BlockType[]; language_code: string; language_id: number; translation_group_id: string; });
-}
-
-export async function generateStaticParams(): Promise<PageProps['params'][]> {
+export async function generateStaticParams(): Promise<ResolvedPageParams[]> { // Return type uses ResolvedPageParams
   const supabase = createClient();
   const { data: pages, error } = await supabase
     .from("pages")
-    .select("slug") // Select all published slugs
+    .select("slug")
     .eq("status", "published");
 
   if (error || !pages) {
@@ -90,9 +36,10 @@ export async function generateStaticParams(): Promise<PageProps['params'][]> {
 }
 
 export async function generateMetadata(
-  { params }: PageProps,
+  { params: paramsPromise }: PageProps, // Destructure the promise
   parent: ResolvingMetadata
 ): Promise<Metadata> {
+  const params = await paramsPromise; // Await the promise to get the actual params
   const pageData = await getPageDataBySlug(params.slug);
 
   if (!pageData) {
@@ -104,8 +51,8 @@ export async function generateMetadata(
   const { data: languages } = await supabase.from('languages').select('id, code');
   const { data: pageTranslations } = await supabase
     .from('pages')
-    .select('language_id, slug') // Now slug will be different for each language
-    .eq('translation_group_id', pageData.translation_group_id) // Find by group
+    .select('language_id, slug')
+    .eq('translation_group_id', pageData.translation_group_id)
     .eq('status', 'published');
 
   const alternates: { [key: string]: string } = {};
@@ -113,7 +60,7 @@ export async function generateMetadata(
     pageTranslations.forEach(pt => {
       const langInfo = languages.find(l => l.id === pt.language_id);
       if (langInfo) {
-        alternates[langInfo.code] = `${siteUrl}/${pt.slug}`; // Use the specific slug for that language
+        alternates[langInfo.code] = `${siteUrl}/${pt.slug}`;
       }
     });
   }
@@ -122,25 +69,24 @@ export async function generateMetadata(
     title: pageData.meta_title || pageData.title,
     description: pageData.meta_description || "",
     alternates: {
-      canonical: `${siteUrl}/${params.slug}`, // The current page's URL
+      canonical: `${siteUrl}/${params.slug}`,
       languages: Object.keys(alternates).length > 0 ? alternates : undefined,
     },
   };
 }
 
-export default async function DynamicPage({ params }: PageProps) {
+export default async function DynamicPage({ params: paramsPromise }: PageProps) { // Destructure the promise
+  const params = await paramsPromise; // Await the promise
   const pageData = await getPageDataBySlug(params.slug);
 
   if (!pageData) {
-    // Implement smart redirect logic here later (Phase 7 advanced)
-    // For now, just 404 if the exact slug isn't found and published.
     notFound();
   }
 
   return (
     <PageClientContent
-      initialPageData={pageData} // Pass the directly fetched page data
-      currentSlug={params.slug} // Pass current slug for context
+      initialPageData={pageData}
+      currentSlug={params.slug}
     />
   );
 }
