@@ -4,7 +4,8 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import type { NavigationItem, MenuLocation } from "@/utils/supabase/types";
+import type { NavigationItem, MenuLocation, Language } from "@/utils/supabase/types";
+import { v4 as uuidv4 } from 'uuid'; // For generating translation_group_id
 
 type UpsertNavigationItemPayload = {
   language_id: number;
@@ -12,8 +13,9 @@ type UpsertNavigationItemPayload = {
   label: string;
   url: string;
   parent_id?: number | null;
-  order?: number; // Optional, default to 0 if not provided
+  order?: number;
   page_id?: number | null;
+  translation_group_id: string; // Now required
 };
 
 // Helper to check admin role
@@ -28,12 +30,20 @@ async function isAdminUser(supabase: ReturnType<typeof createClient>): Promise<b
   return profile?.role === "ADMIN";
 }
 
+// Helper to generate a placeholder label for new translations
+function generatePlaceholderLabel(originalLabel: string, langCode: string): string {
+  return `[${langCode.toUpperCase()}] ${originalLabel}`;
+}
+
 export async function createNavigationItem(formData: FormData) {
   const supabase = createClient();
 
   if (!(await isAdminUser(supabase))) {
     return { error: "Unauthorized: Admin role required." };
   }
+
+  const fromGroupId = formData.get("from_translation_group_id") as string | null;
+  const targetLangIdForTranslation = formData.get("target_language_id_for_translation") as string | null;
 
   const rawFormData = {
     label: formData.get("label") as string,
@@ -49,11 +59,17 @@ export async function createNavigationItem(formData: FormData) {
     return { error: "Missing required fields: label, URL, language, or menu key." };
   }
 
+  // Determine translation_group_id
+  // If 'from_group_id' is provided, it means we are creating a translation for an existing group.
+  // Otherwise, it's a new conceptual item, so generate a new group ID.
+  const translationGroupId = fromGroupId || uuidv4();
+
   const navData: UpsertNavigationItemPayload = {
     ...rawFormData,
+    translation_group_id: translationGroupId,
   };
 
-  const { data, error } = await supabase
+  const { data: newNavItem, error } = await supabase
     .from("navigation_items")
     .insert(navData)
     .select()
@@ -64,12 +80,54 @@ export async function createNavigationItem(formData: FormData) {
     return { error: `Failed to create item: ${error.message}` };
   }
 
+  let successMessage = "Navigation item created successfully.";
+
+  // If this was the first item in a new group (i.e., fromGroupId was null),
+  // and it's NOT a targeted translation creation (targetLangIdForTranslation is null),
+  // then create placeholders for other languages.
+  if (newNavItem && !fromGroupId && !targetLangIdForTranslation) {
+    const { data: languages, error: langError } = await supabase
+      .from("languages")
+      .select("id, code")
+      .neq("id", newNavItem.language_id); // Get other active languages
+
+    if (langError) {
+      console.error("Error fetching other languages for nav item auto-creation:", langError);
+    } else if (languages && languages.length > 0) {
+      let placeholderCreations = 0;
+      for (const lang of languages) {
+        // For placeholders, URL might be '#', page_id null, parent_id null initially.
+        // User would need to edit these.
+        const placeholderNavItemData: UpsertNavigationItemPayload = {
+          language_id: lang.id,
+          menu_key: newNavItem.menu_key,
+          label: generatePlaceholderLabel(newNavItem.label, lang.code),
+          url: '#', // Placeholder URL
+          parent_id: null, // Placeholders are top-level initially, or require complex parent mapping
+          order: newNavItem.order, // Or default to 0 for placeholders
+          page_id: null,
+          translation_group_id: newNavItem.translation_group_id, // Use same group ID
+        };
+        const { error: placeholderError } = await supabase.from("navigation_items").insert(placeholderNavItemData);
+        if (placeholderError) {
+          console.error(`Error auto-creating nav item for language ${lang.code}:`, placeholderError);
+        } else {
+          placeholderCreations++;
+        }
+      }
+      if (placeholderCreations > 0) {
+        successMessage += ` ${placeholderCreations} placeholder version(s) also created (please edit their details).`;
+      }
+    }
+  }
+
+
   revalidatePath("/cms/navigation");
-  if (data?.id) {
-    revalidatePath(`/cms/navigation/${data.id}/edit`);
-    redirect(`/cms/navigation/${data.id}/edit?success=Item created successfully`);
+  if (newNavItem?.id) {
+    revalidatePath(`/cms/navigation/${newNavItem.id}/edit`);
+    redirect(`/cms/navigation/${newNavItem.id}/edit?success=${encodeURIComponent(successMessage)}`);
   } else {
-    redirect(`/cms/navigation?success=Item created successfully`);
+    redirect(`/cms/navigation?success=${encodeURIComponent(successMessage)}`);
   }
 }
 
@@ -78,6 +136,18 @@ export async function updateNavigationItem(itemId: number, formData: FormData) {
 
   if (!(await isAdminUser(supabase))) {
     return { error: "Unauthorized: Admin role required." };
+  }
+
+  // Fetch existing item to ensure translation_group_id is not changed
+  // and language_id is not changed (editing a specific language version)
+  const { data: existingItem, error: fetchError } = await supabase
+    .from("navigation_items")
+    .select("translation_group_id, language_id")
+    .eq("id", itemId)
+    .single();
+
+  if (fetchError || !existingItem) {
+    return { error: "Original navigation item not found or error fetching it." };
   }
 
   const rawFormData = {
@@ -94,7 +164,11 @@ export async function updateNavigationItem(itemId: number, formData: FormData) {
      return { error: "Missing required fields: label, URL, language, or menu key." };
   }
 
-  const navData: Partial<UpsertNavigationItemPayload> = {
+  if (rawFormData.language_id !== existingItem.language_id) {
+      return { error: "Changing the language of an existing navigation item version is not allowed. Create a new translation instead." };
+  }
+
+  const navData: Partial<Omit<UpsertNavigationItemPayload, 'translation_group_id'>> = {
     ...rawFormData,
   };
 
@@ -120,11 +194,6 @@ export async function deleteNavigationItem(itemId: number) {
     return { error: "Unauthorized: Admin role required." };
   }
 
-  // Before deleting, check if any other items have this item as a parent_id
-  // and set their parent_id to null to avoid foreign key constraint issues if not using ON DELETE SET NULL for parent_id.
-  // The current schema uses ON DELETE CASCADE for parent_id, so children will be deleted.
-  // If you want to orphan children instead, you'd modify the FK or handle it here.
-
   const { error } = await supabase
     .from("navigation_items")
     .delete()
@@ -142,7 +211,6 @@ export async function deleteNavigationItem(itemId: number) {
 export async function getNavigationMenu(menuKey: MenuLocation, languageCode: string): Promise<NavigationItem[]> {
   const supabase = createClient();
 
-  // First, get the language ID from the language code
   const { data: language, error: langError } = await supabase
     .from("languages")
     .select("id")
@@ -156,15 +224,12 @@ export async function getNavigationMenu(menuKey: MenuLocation, languageCode: str
 
   const languageId = language.id;
 
-  // Then, fetch navigation items for that menu key and language ID
-  // For simplicity, this example fetches only top-level items (parent_id is null)
-  // and orders them. You might want to fetch all and build hierarchy in the component.
   const { data: items, error: itemsError } = await supabase
     .from("navigation_items")
-    .select("*")
+    .select("*") // Select all fields, including translation_group_id
     .eq("menu_key", menuKey)
     .eq("language_id", languageId)
-    // .is("parent_id", null) // Uncomment to fetch only top-level items initially
+    .order("parent_id", { nullsFirst: true }) // Ensure parents come before children for easier hierarchy building
     .order("order");
 
   if (itemsError) {

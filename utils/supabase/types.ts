@@ -49,7 +49,7 @@ export interface ButtonBlockContent {
   size?: 'default' | 'sm' | 'lg';
 }
 
-export type SpecificBlockContent = // Renamed from BlockContent to avoid conflict with Block.content
+export type SpecificBlockContent =
   | ({ type: "text" } & TextBlockContent)
   | ({ type: "heading" } & HeadingBlockContent)
   | ({ type: "image" } & ImageBlockContent)
@@ -61,7 +61,7 @@ export interface Block {
   post_id?: number | null;
   language_id: number;
   block_type: BlockType;
-  content: Partial<ImageBlockContent> | Partial<TextBlockContent> | Partial<HeadingBlockContent> | Partial<ButtonBlockContent> | any; // Store specific content structure
+  content: Partial<ImageBlockContent> | Partial<TextBlockContent> | Partial<HeadingBlockContent> | Partial<ButtonBlockContent> | any;
   order: number;
   created_at: string;
   updated_at: string;
@@ -79,7 +79,8 @@ export interface Page {
   meta_description?: string | null;
   created_at: string;
   updated_at: string;
-  blocks?: Block[]; // For fetching blocks along with the page
+  blocks?: Block[];
+  translation_group_id: string; // Added
 }
 
 export interface Post {
@@ -95,14 +96,15 @@ export interface Post {
   meta_description?: string | null;
   created_at: string;
   updated_at: string;
-  blocks?: Block[]; // For fetching blocks along with the post
+  blocks?: Block[];
+  translation_group_id: string; // Added
 }
 
-export interface Media { // Ensure this is fully defined as per your schema
+export interface Media {
   id: string; // uuid
   uploader_id?: string | null;
   file_name: string;
-  object_key: string; // This is crucial
+  object_key: string;
   file_type?: string | null;
   size_bytes?: number | null;
   description?: string | null;
@@ -123,6 +125,7 @@ export interface NavigationItem {
   page_id?: number | null;
   created_at: string;
   updated_at: string;
+  translation_group_id: string; // Added
 }
 
 export interface AuthUser {
@@ -136,11 +139,3 @@ export interface UserWithProfile {
     authUser: AuthUser;
     profile: Profile | null;
 }
-
-// Reminder: Generate full types with `npx supabase gen types typescript ...`
-
-// It's highly recommended to generate the full database types using:
-// npx supabase gen types typescript --project-id YOUR_PROJECT_ID --schema public > utils/supabase/database.types.ts
-// And then import { Database } from './database.types'; in your Supabase client/server files.
-// The types above are simplified. Your generated types will be more comprehensive.
-// For example, Database['public']['Tables']['pages']['Row']
