@@ -143,7 +143,7 @@ export default function CmsLayout({ children }: { children: ReactNode }) {
 
       <aside
         className={cn(
-          "fixed md:sticky top-0 left-0 z-40 h-screen w-64 bg-white shadow-lg transition-transform duration-300 ease-in-out dark:bg-slate-900 dark:border-r dark:border-slate-700/60",
+          "fixed md:sticky top-0 left-0 z-30 h-screen w-64 bg-white shadow-lg transition-transform duration-300 ease-in-out dark:bg-slate-900 dark:border-r dark:border-slate-700/60",
           sidebarOpen ? "translate-x-0" : "-translate-x-full",
           "md:translate-x-0 md:top-0 md:h-screen",
         )}
@@ -223,8 +223,9 @@ export default function CmsLayout({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
+      
       <div className="flex-1 transition-all duration-300 ease-in-out w-full">
-        <header className="bg-background dark:bg-slate-800/30 border-b border-border h-16 flex items-center px-6 sticky top-0 z-30 w-full shrink-0">
+        <header className="bg-background dark:bg-slate-800/30 border-b border-border h-16 flex items-center px-6 sticky top-0 z-20 w-full shrink-0">
             <Button variant="ghost" size="icon" className="md:hidden mr-3 -ml-2" onClick={() => setSidebarOpen(!sidebarOpen)}>
                 <Menu className="h-5 w-5" />
             </Button>

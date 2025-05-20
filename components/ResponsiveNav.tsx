@@ -144,7 +144,7 @@ export default function ResponsiveNav({
           <div
             className={`
               absolute top-full left-0 mt-0 w-56 bg-background border border-gray-200 dark:border-gray-700 rounded-md shadow-lg py-1
-              opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ease-in-out z-20
+              opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ease-in-out z-50
               ${isSubmenu ? 'left-full top-0 -mt-[2px] ml-0' : ''}
             `}
           > {/* -mt-[2px] to align better with parent item border */}
@@ -203,7 +203,7 @@ export default function ResponsiveNav({
 
       {/* Overlay for Mobile Menu - Fades In/Out */}
       <div
-        className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-30 transition-opacity ease-in-out duration-300 top-16 md:hidden ${
+        className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-50 transition-opacity ease-in-out duration-300 top-16 md:hidden ${
           isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
         }`}
         onClick={toggleMobileMenu}
