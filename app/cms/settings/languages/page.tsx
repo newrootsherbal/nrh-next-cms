@@ -20,7 +20,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { deleteLanguage } from "./actions";
 import type { Language } from "@/utils/supabase/types";
 import DeleteLanguageClientButton from './components/DeleteLanguageButton';
 
