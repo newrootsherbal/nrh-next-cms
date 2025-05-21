@@ -12,7 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, PlusCircle, Edit3, FileText, Languages as LanguageIcon } from "lucide-react"; // Removed Trash2
+import { MoreHorizontal, PlusCircle, Edit3, FileText, Languages as LanguageIcon } from "lucide-react"; // Trash2 removed from here
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,11 +20,11 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-// deletePage server action is now used by DeletePageButtonClient
+// Server action `deletePage` is used by DeletePageButtonClient
 import type { Page, Language } from "@/utils/supabase/types";
 import { getActiveLanguagesServerSide } from "@/utils/supabase/server";
 import LanguageFilterSelect from "@/app/cms/components/LanguageFilterSelect";
-import DeletePageButtonClient from "./components/DeletePageButtonClient"; // Import the new client component
+import DeletePageButtonClient from "./components/DeletePageButtonClient"; // Import the client component
 
 async function getPagesWithDetails(filterLanguageId?: number): Promise<{ page: Page; languageCode: string }[]> {
   const supabase = createClient();
@@ -168,6 +168,7 @@ export default async function CmsPagesListPage(props: CmsPagesListPageProps) {
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
+                        {/* Use the Client Component for the delete button */}
                         <DeletePageButtonClient pageId={page.id} pageTitle={page.title} />
                       </DropdownMenuContent>
                     </DropdownMenu>

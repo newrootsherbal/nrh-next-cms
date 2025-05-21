@@ -10,13 +10,14 @@ import BlockEditorArea from "@/app/cms/blocks/components/BlockEditorArea";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Eye, ArrowLeft } from "lucide-react";
-import ContentLanguageSwitcher from "@/app/cms/components/ContentLanguageSwitcher"; // Import new component
-import { getActiveLanguagesServerSide } from "@/utils/supabase/server"; // To get all languages
+import ContentLanguageSwitcher from "@/app/cms/components/ContentLanguageSwitcher";
+import { getActiveLanguagesServerSide } from "@/utils/supabase/server";
 
+// ... (Interface PageWithBlocks and getPageDataWithBlocks remain the same) ...
 interface PageWithBlocks extends Page {
   blocks: Block[];
-  language_code?: string; // From joined languages table
-  translation_group_id?: string; // Explicitly define the property type
+  language_code?: string;
+  translation_group_id: string;
 }
 
 async function getPageDataWithBlocks(id: number): Promise<PageWithBlocks | null> {
@@ -37,13 +38,13 @@ async function getPageDataWithBlocks(id: number): Promise<PageWithBlocks | null>
     return null;
   }
 
-  // Fix: pageData.languages may be an array or object depending on join
   const langCode = Array.isArray(pageData.languages)
     ? pageData.languages[0]?.code
     : (pageData.languages as Language)?.code;
 
   return { ...pageData, blocks: pageData.blocks || [], language_code: langCode } as PageWithBlocks;
 }
+
 
 export default async function EditPage(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -60,7 +61,7 @@ export default async function EditPage(props: { params: Promise<{ id: string }> 
 
   const [pageWithBlocks, allSiteLanguages] = await Promise.all([
     getPageDataWithBlocks(pageId),
-    getActiveLanguagesServerSide() // Fetch all languages for the switcher
+    getActiveLanguagesServerSide()
   ]);
 
   if (!pageWithBlocks) return notFound();
@@ -106,9 +107,7 @@ export default async function EditPage(props: { params: Promise<{ id: string }> 
         formAction={updatePageWithId}
         actionButtonText="Update Page Metadata"
         isEditing={true}
-        // Pass allSiteLanguages to PageForm if it needs to disable language select when only one lang exists
-        // or for other language-aware logic within the form itself.
-        // allSiteLanguages={allSiteLanguages} 
+        availableLanguagesProp={allSiteLanguages}
       />
 
       <Separator className="my-8" />

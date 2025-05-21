@@ -4,7 +4,7 @@
 import React from 'react';
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Trash2 } from "lucide-react";
-import { deletePage } from "../actions"; // Server action
+import { deletePage } from "../actions"; // Server action from app/cms/pages/actions.ts
 
 interface DeletePageButtonClientProps {
   pageId: number;
@@ -19,10 +19,12 @@ export default function DeletePageButtonClient({ pageId, pageTitle }: DeletePage
     event.preventDefault(); // Prevent DropdownMenu from closing before confirm
     if (confirm(`Are you sure you want to delete the page "${pageTitle}"? This action cannot be undone.`)) {
       // Find the form and submit it.
+      // This assumes the button is a direct child of the form.
       const form = (event.currentTarget as HTMLElement)?.closest('form');
       if (form) {
         form.requestSubmit();
       } else {
+        // This should ideally not happen with the current structure.
         console.error("Form not found for delete page button.");
       }
     }
@@ -33,7 +35,7 @@ export default function DeletePageButtonClient({ pageId, pageTitle }: DeletePage
       <button type="submit" className="w-full text-left">
         <DropdownMenuItem
           className="text-red-600 hover:!text-red-600 hover:!bg-red-50 dark:hover:!bg-red-700/20 cursor-pointer"
-          onSelect={handleSelect} // Now handleSelect is defined in a Client Component
+          onSelect={handleSelect} // Now handleSelect is defined and used within this Client Component
         >
           <Trash2 className="mr-2 h-4 w-4" />
           Delete

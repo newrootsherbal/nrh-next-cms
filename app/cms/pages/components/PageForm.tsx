@@ -13,16 +13,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea"; // Assuming you have this component
+import { Textarea } from "@/components/ui/textarea";
 import type { Page, PageStatus, Language } from "@/utils/supabase/types";
 import { useAuth } from "@/context/AuthContext";
-import { getActiveLanguagesClientSide } from "@/utils/supabase/client"; // Fetch languages client-side for the form
+// Remove: import { getActiveLanguagesClientSide } from "@/utils/supabase/client";
 
 interface PageFormProps {
-  page?: Page | null; // Existing page data for editing, null for new
+  page?: Page | null;
   formAction: (formData: FormData) => Promise<{ error?: string } | void>;
   actionButtonText?: string;
   isEditing?: boolean;
+  availableLanguagesProp: Language[]; // New prop
 }
 
 export default function PageForm({
@@ -30,6 +31,7 @@ export default function PageForm({
   formAction,
   actionButtonText = "Save Page",
   isEditing = false,
+  availableLanguagesProp, // Use the new prop
 }: PageFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -47,14 +49,16 @@ export default function PageForm({
     page?.meta_description || ""
   );
 
-  const [availableLanguages, setAvailableLanguages] = useState<Language[]>([]);
-  const [languagesLoading, setLanguagesLoading] = useState(true);
+  // Use the passed-in languages
+  const [availableLanguages, setAvailableLanguages] = useState<Language[]>(availableLanguagesProp);
+  // languagesLoading is no longer needed if languages are passed as props
+  // const [languagesLoading, setLanguagesLoading] = useState(true); // Remove or set to false initially
 
   const [formMessage, setFormMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
   useEffect(() => {
     const successMessage = searchParams.get('success');
-    const errorMessage = searchParams.get('error'); // From server action redirects
+    const errorMessage = searchParams.get('error');
     if (successMessage) {
       setFormMessage({ type: 'success', text: successMessage });
     } else if (errorMessage) {
@@ -62,39 +66,28 @@ export default function PageForm({
     }
   }, [searchParams]);
 
-
+  // Initialize languageId if creating new page and languages are available
   useEffect(() => {
-    async function fetchLanguages() {
-      setLanguagesLoading(true);
-      const langs = await getActiveLanguagesClientSide();
-      setAvailableLanguages(langs);
-      if (!page?.language_id && langs.length > 0) {
-        // Default to the first language if creating a new page and no language is selected
-        // Or find the default language
-        const defaultLang = langs.find(l => l.is_default) || langs[0];
-        if (defaultLang) {
-            setLanguageId(defaultLang.id.toString());
-        }
+    if (!page?.language_id && availableLanguages.length > 0 && !languageId) {
+      const defaultLang = availableLanguages.find(l => l.is_default) || availableLanguages[0];
+      if (defaultLang) {
+          setLanguageId(defaultLang.id.toString());
       }
-      setLanguagesLoading(false);
     }
-    fetchLanguages();
-  }, [page?.language_id]);
+  }, [page?.language_id, availableLanguages, languageId]);
 
 
-  // Auto-generate slug from title (simple version)
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
     setTitle(newTitle);
-    if (!isEditing || !slug) { // Only auto-slug if not editing an existing slug or if slug is empty
+    if (!isEditing || !slug) {
       setSlug(newTitle.toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]+/g, ""));
     }
   };
 
-
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setFormMessage(null); // Clear previous messages
+    setFormMessage(null);
     const formData = new FormData(event.currentTarget);
 
     startTransition(async () => {
@@ -102,13 +95,12 @@ export default function PageForm({
       if (result?.error) {
         setFormMessage({ type: 'error', text: result.error });
       }
-      // Success messages are handled by redirect query params for now
-      // or could be returned from server action too.
     });
   };
 
-  if (authLoading || languagesLoading) {
-    return <div>Loading form...</div>; // Or a proper spinner
+  // Removed languagesLoading from this condition
+  if (authLoading) {
+    return <div>Loading form...</div>;
   }
 
   if (!user) {
@@ -117,6 +109,7 @@ export default function PageForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* ... (rest of the form remains the same, but `availableLanguages` is now populated by the prop) ... */}
       {formMessage && (
         <div
           className={`p-3 rounded-md text-sm ${
@@ -229,7 +222,8 @@ export default function PageForm({
         >
           Cancel
         </Button>
-        <Button type="submit" disabled={isPending || languagesLoading || availableLanguages.length === 0}>
+        {/* Ensure button is not disabled due to removed languagesLoading */}
+        <Button type="submit" disabled={isPending || authLoading || availableLanguages.length === 0}>
           {isPending ? "Saving..." : actionButtonText}
         </Button>
       </div>
