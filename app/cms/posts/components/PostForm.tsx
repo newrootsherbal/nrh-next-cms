@@ -16,13 +16,14 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import type { Post, PageStatus, Language } from "@/utils/supabase/types";
 import { useAuth } from "@/context/AuthContext";
-import { getActiveLanguagesClientSide } from "@/utils/supabase/client";
+// Remove client-side language fetching: import { getActiveLanguagesClientSide } from "@/utils/supabase/client";
 
 interface PostFormProps {
   post?: Post | null;
   formAction: (formData: FormData) => Promise<{ error?: string } | void>;
   actionButtonText?: string;
   isEditing?: boolean;
+  availableLanguagesProp: Language[]; // New prop to accept languages
 }
 
 export default function PostForm({
@@ -30,6 +31,7 @@ export default function PostForm({
   formAction,
   actionButtonText = "Save Post",
   isEditing = false,
+  availableLanguagesProp, // Destructure the new prop
 }: PostFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -43,12 +45,10 @@ export default function PostForm({
   );
   const [status, setStatus] = useState<PageStatus>(post?.status || "draft");
   const [excerpt, setExcerpt] = useState(post?.excerpt || "");
-  // For published_at, format for datetime-local input: YYYY-MM-DDTHH:MM
   const [publishedAt, setPublishedAt] = useState<string>(() => {
     if (post?.published_at) {
       try {
         const date = new Date(post.published_at);
-        // Format to 'YYYY-MM-DDTHH:MM'
         const year = date.getFullYear();
         const month = (date.getMonth() + 1).toString().padStart(2, '0');
         const day = date.getDate().toString().padStart(2, '0');
@@ -56,7 +56,7 @@ export default function PostForm({
         const minutes = date.getMinutes().toString().padStart(2, '0');
         return `${year}-${month}-${day}T${hours}:${minutes}`;
       } catch (e) {
-        return ""; // Or handle invalid date string from DB
+        return "";
       }
     }
     return "";
@@ -66,41 +66,38 @@ export default function PostForm({
     post?.meta_description || ""
   );
 
-  const [availableLanguages, setAvailableLanguages] = useState<Language[]>([]);
-  const [languagesLoading, setLanguagesLoading] = useState(true);
+  // Use the passed-in languages directly
+  const [availableLanguages, setAvailableLanguages] = useState<Language[]>(availableLanguagesProp);
+  // No need for languagesLoading state if languages are passed as props
+  // const [languagesLoading, setLanguagesLoading] = useState(true); // REMOVE THIS
+
   const [formMessage, setFormMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
- useEffect(() => {
+  useEffect(() => {
     const successMessage = searchParams.get('success');
     const errorMessage = searchParams.get('error');
     if (successMessage) {
-      setFormMessage({ type: 'success', text: successMessage });
+      setFormMessage({ type: 'success', text: decodeURIComponent(successMessage) });
     } else if (errorMessage) {
-      setFormMessage({ type: 'error', text: errorMessage });
+      setFormMessage({ type: 'error', text: decodeURIComponent(errorMessage) });
     }
   }, [searchParams]);
 
-
+  // Initialize languageId if creating new post and languages are available
   useEffect(() => {
-    async function fetchLanguages() {
-      setLanguagesLoading(true);
-      const langs = await getActiveLanguagesClientSide();
-      setAvailableLanguages(langs);
-      if (!post?.language_id && langs.length > 0) {
-        const defaultLang = langs.find(l => l.is_default) || langs[0];
-        if (defaultLang) {
-            setLanguageId(defaultLang.id.toString());
-        }
+    if (!isEditing && availableLanguages.length > 0 && !languageId) { // check !isEditing too
+      const defaultLang = availableLanguages.find(l => l.is_default) || availableLanguages[0];
+      if (defaultLang) {
+          setLanguageId(defaultLang.id.toString());
       }
-      setLanguagesLoading(false);
     }
-    fetchLanguages();
-  }, [post?.language_id]);
+  }, [isEditing, availableLanguages, languageId]); // Add isEditing to dependency array
+
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
     setTitle(newTitle);
-    if (!isEditing || !slug) {
+    if (!isEditing || !slug) { // Only auto-generate slug if creating new or slug is empty
       setSlug(newTitle.toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]+/g, ""));
     }
   };
@@ -115,10 +112,12 @@ export default function PostForm({
       if (result?.error) {
         setFormMessage({ type: 'error', text: result.error });
       }
+      // Success is handled by redirect with query param in server action
     });
   };
 
-  if (authLoading || languagesLoading) {
+  // Remove languagesLoading from this condition
+  if (authLoading) {
     return <div>Loading form...</div>;
   }
   if (!user) {
@@ -131,8 +130,8 @@ export default function PostForm({
         <div
           className={`p-3 rounded-md text-sm ${
             formMessage.type === 'success'
-              ? 'bg-green-100 text-green-700 border border-green-200'
-              : 'bg-red-100 text-red-700 border border-red-200'
+              ? 'bg-green-100 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700'
+              : 'bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700'
           }`}
         >
           {formMessage.text}
@@ -151,7 +150,7 @@ export default function PostForm({
       <div>
         <Label htmlFor="language_id">Language</Label>
         {availableLanguages.length > 0 ? (
-        <Select name="language_id" value={languageId} onValueChange={setLanguageId} required>
+        <Select name="language_id" value={languageId} onValueChange={setLanguageId} required disabled={isEditing}>
           <SelectTrigger className="mt-1"><SelectValue placeholder="Select language" /></SelectTrigger>
           <SelectContent>
             {availableLanguages.map((lang) => (
@@ -160,7 +159,7 @@ export default function PostForm({
           </SelectContent>
         </Select>
         ) : (
-           <p className="text-sm text-muted-foreground mt-1">No languages available.</p>
+           <p className="text-sm text-muted-foreground mt-1">No languages available. Please add languages in CMS settings.</p>
         )}
       </div>
 
@@ -206,7 +205,8 @@ export default function PostForm({
 
       <div className="flex justify-end space-x-3">
         <Button type="button" variant="outline" onClick={() => router.push("/cms/posts")} disabled={isPending}>Cancel</Button>
-        <Button type="submit" disabled={isPending || languagesLoading || availableLanguages.length === 0}>
+        {/* Adjust disabled condition */}
+        <Button type="submit" disabled={isPending || authLoading || availableLanguages.length === 0}>
           {isPending ? "Saving..." : actionButtonText}
         </Button>
       </div>
