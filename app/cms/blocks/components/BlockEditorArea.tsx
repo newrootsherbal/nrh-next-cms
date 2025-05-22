@@ -151,30 +151,58 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
+
     if (over && active.id !== over.id) {
-      setBlocks((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
-        const newOrderedItems = arrayMove(items, oldIndex, newIndex);
+      // Capture the current state of blocks to use for potential revert
+      const originalBlocks = [...blocks]; // Create a shallow copy
 
-        // Update order property for all items
-        const itemsToUpdateDb = newOrderedItems.map((item, index) => ({
-          id: item.id,
-          order: index,
-        }));
+      const oldIndex = originalBlocks.findIndex((item) => item.id === active.id);
+      const newIndex = originalBlocks.findIndex((item) => item.id === over.id);
 
-        // Optimistically update UI
-        setBlocks(newOrderedItems.map((item, index) => ({ ...item, order: index })));
+      if (oldIndex === -1 || newIndex === -1) {
+        console.error("Drag and drop error: item not found.", { activeId: active.id, overId: over.id });
+        return; // Exit if items aren't found
+      }
 
-        startTransition(async () => {
-          const result = await updateMultipleBlockOrders(itemsToUpdateDb, parentType === "page" ? parentId : null, parentType === "post" ? parentId : null);
+      // Calculate the new visual order
+      const reorderedItemsArray = arrayMove(originalBlocks, oldIndex, newIndex);
+
+      // Create the final list of items with updated 'order' properties for UI and DB
+      const finalItemsWithUpdatedOrder = reorderedItemsArray.map((item, index) => ({
+        ...item,
+        order: index,
+      }));
+
+      // 1. Optimistically update the UI
+      setBlocks(finalItemsWithUpdatedOrder);
+
+      // 2. Prepare data for DB update
+      const itemsToUpdateDb = finalItemsWithUpdatedOrder.map(item => ({
+        id: item.id,
+        order: item.order,
+      }));
+
+      // 3. Perform server update and handle potential revert
+      startTransition(async () => {
+        try {
+          const result = await updateMultipleBlockOrders(
+            itemsToUpdateDb,
+            parentType === "page" ? parentId : null,
+            parentType === "post" ? parentId : null
+          );
+
           if (result?.error) {
             alert(`Error reordering blocks: ${result.error}`);
-            // Revert to original order if DB update fails
-            setBlocks(items.sort((a,b) => a.order - b.order));
+            // Revert to the state *before* this drag operation
+            setBlocks(originalBlocks.sort((a, b) => a.order - b.order));
           }
-        });
-        return newOrderedItems; // This state update might be redundant if the optimistic update is done above
+          // If successful, the optimistic update is already in place.
+        } catch (error) {
+          console.error("Failed to reorder blocks:", error);
+          alert("A critical error occurred while reordering the blocks. Please try again.");
+          // Revert to the state *before* this drag operation as a fallback
+          setBlocks(originalBlocks.sort((a, b) => a.order - b.order));
+        }
       });
     }
   }
