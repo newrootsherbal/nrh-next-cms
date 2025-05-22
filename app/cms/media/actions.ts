@@ -147,6 +147,81 @@ export async function deleteMediaItem(mediaId: string, objectKey: string) {
     encodedRedirect("success", "/cms/media", "Media item deleted successfully.");
 }
 
+export async function deleteMultipleMediaItems(items: Array<{ id: string; objectKey: string }>) {
+  const supabase = createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: "User not authenticated." };
+  }
+
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  if (!profile || !["ADMIN", "WRITER"].includes(profile.role)) {
+    return { error: "Forbidden: Insufficient permissions." };
+  }
+
+  if (!items || items.length === 0) {
+    return { error: "No items selected for deletion." };
+  }
+
+  const { DeleteObjectsCommand } = await import("@aws-sdk/client-s3"); // Use DeleteObjects for batch
+  const { s3Client } = await import("@/lib/cloudflare/r2-client");
+  const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME;
+
+  if (!R2_BUCKET_NAME) {
+    return { error: "R2 Bucket not configured for deletion." };
+  }
+
+  const r2ObjectsToDelete = items.map(item => ({ Key: item.objectKey }));
+  const itemIdsToDelete = items.map(item => item.id);
+  let r2DeletionError = null;
+  let dbDeletionError = null;
+
+  // Batch delete from R2
+  try {
+    if (r2ObjectsToDelete.length > 0) {
+      const deleteCommand = new DeleteObjectsCommand({
+        Bucket: R2_BUCKET_NAME,
+        Delete: { Objects: r2ObjectsToDelete },
+      });
+      const output = await s3Client.send(deleteCommand);
+      if (output.Errors && output.Errors.length > 0) {
+        console.error("Errors deleting some objects from R2:", output.Errors);
+        // Collect specific errors if needed, for now a general message
+        r2DeletionError = `Some objects failed to delete from R2: ${output.Errors.map(e => e.Key).join(', ')}`;
+      }
+    }
+  } catch (error: any) {
+    console.error("Error batch deleting from R2:", error);
+    r2DeletionError = `Failed to delete objects from R2: ${error.message}`;
+  }
+
+  // Batch delete from Supabase
+  try {
+    if (itemIdsToDelete.length > 0) {
+      const { error } = await supabase.from("media").delete().in("id", itemIdsToDelete);
+      if (error) {
+        throw error;
+      }
+    }
+  } catch (error: any) {
+    console.error("Error batch deleting media records from DB:", error);
+    dbDeletionError = `Failed to delete media records from DB: ${error.message}`;
+  }
+
+  if (r2DeletionError || dbDeletionError) {
+    // Construct a combined error message
+    const errors = [r2DeletionError, dbDeletionError].filter(Boolean).join(" | ");
+    // No redirect here, return error object for client-side handling
+    return { error: `Deletion process encountered issues: ${errors}` };
+  }
+
+  revalidatePath("/cms/media");
+  // No redirect here, return success object for client-side handling
+  return { success: "Selected media items deleted successfully." };
+}
+
+
 // Type for inserting media
 type InsertMediaPayload = Omit<Media, 'id' | 'created_at' | 'updated_at' | 'uploader_id'> & {
     uploader_id: string;

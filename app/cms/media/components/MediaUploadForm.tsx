@@ -32,10 +32,10 @@ export default function MediaUploadForm({ onUploadSuccess, returnJustData }: Med
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false); // For drag-and-drop visual feedback
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = event.target.files?.[0];
+  const processFile = (selectedFile: File | undefined | null) => {
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl); // Clean up previous preview
       setPreviewUrl(null);
@@ -49,8 +49,59 @@ export default function MediaUploadForm({ onUploadSuccess, returnJustData }: Med
         setPreviewUrl(URL.createObjectURL(selectedFile));
       }
     } else {
-      setFile(null); // Clear file if selection is cancelled
+      setFile(null); // Clear file if selection is cancelled or no file
     }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0];
+    processFile(selectedFile);
+  };
+
+  const handleDragEnter = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDraggingOver(true);
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    // You can add more checks here if needed, e.g., event.dataTransfer.types
+    setIsDraggingOver(true); // Ensure it stays true if dragging over children
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    // Check if the mouse is leaving the droppable area for real
+    // and not just moving over a child element.
+    // This can be tricky. A simpler approach is to rely on onDragEnter/onDrop to set it.
+    // For now, let's keep it simple:
+    setIsDraggingOver(false);
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDraggingOver(false);
+
+    const droppedFiles = event.dataTransfer.files;
+    if (droppedFiles && droppedFiles.length > 0) {
+      // Process the first file, like in handleFileChange
+      const droppedFile = droppedFiles[0];
+      processFile(droppedFile);
+      // If you want to clear the file input after a drop (optional)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleFileSelection = (selectedFile: File | undefined) => {
+    // This function is now processFile, the content above was moved into it.
+    // The old handleFileChange now calls processFile.
+    // The handleDrop also calls processFile.
   };
 
   const performXhrUpload = (presignedMethod: string, presignedUrl: string, currentFile: File): Promise<void> => {
@@ -132,8 +183,10 @@ export default function MediaUploadForm({ onUploadSuccess, returnJustData }: Med
           if (recordResult && 'success' in recordResult && recordResult.success && recordResult.data) {
             setUploadStatus("success");
             onUploadSuccess?.(recordResult.data);
+          } else if (recordResult && 'error' in recordResult) {
+            throw new Error(recordResult.error || "Media record action did not return expected data.");
           } else {
-            throw new Error(recordResult?.error || "Media record action did not return expected data.");
+            throw new Error("Media record action did not return expected data.");
           }
         } else {
           // If !returnJustData and recordMediaUpload didn't throw, it's unexpected.
@@ -179,9 +232,15 @@ export default function MediaUploadForm({ onUploadSuccess, returnJustData }: Med
           <div className="mt-2 flex items-center justify-center w-full">
             <label
               htmlFor="media-file-input"
-              className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-muted/30 hover:bg-muted/50 transition-colors"
+              className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-muted/30 hover:bg-muted/50 transition-colors ${
+                isDraggingOver ? "border-primary bg-primary-foreground/20" : "border-input"
+              }`}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
             >
-              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+              <div className="flex flex-col items-center justify-center pt-5 pb-6 pointer-events-none"> {/* pointer-events-none for children */}
                 <UploadCloud className="w-10 h-10 mb-3 text-muted-foreground" />
                 <p className="mb-2 text-sm text-muted-foreground">
                   <span className="font-semibold">Click to upload</span> or drag and drop
