@@ -7,66 +7,14 @@ import { CSS } from "@dnd-kit/utilities";
 import type { Block } from "@/utils/supabase/types";
 import { GripVertical } from "lucide-react";
 
-// Assuming EditableBlock is imported from its actual location
-// For this example, let's define its expected props interface
-interface EditableBlockProps {
-  block: Block;
-  onDelete: (blockId: number) => void;
-  isEditing: boolean;
-  onSetEditing: (isEditing: boolean) => void;
-  onSaveEdit: () => void;
-  onCancelEdit: () => void;
-  tempContent: any;
-  onTempContentChange: (newContent: any) => void;
-  // We'll add drag handle props if EditableBlock itself renders the handle
-  // For now, the handle is rendered here.
-}
+import EditableBlock, { EditableBlockProps } from "./EditableBlock"; // Import the actual component and its props
 
-// Re-import EditableBlock (adjust path as necessary)
-// This component was previously part of BlockEditorArea.tsx,
-// if you haven't extracted it, you'll need to do that or pass its content here.
-// For simplicity, let's assume EditableBlock is a separate component.
-// If EditableBlock was not extracted, you'd pass its rendering logic here.
+// interface SortableBlockItemProps extends EditableBlockProps {
+//   // No new props needed specifically for SortableBlockItem itself,
+//   // as it passes through all props to EditableBlock
+// }
 
-// Placeholder for the actual EditableBlock component - you'll import your existing one
-// For now, just to make this file type-check, let's use a simplified version of EditableBlock's props
-// You should replace this with your actual EditableBlock component and its props.
-const EditableBlock = ({
-  block,
-  isEditing,
-  // ... other props from EditableBlock
-  dragHandleProps // New prop for drag handle
-}: EditableBlockProps & { dragHandleProps?: any }) => {
-  // This is a simplified representation. Your actual EditableBlock will have its own rendering logic.
-  // The key is that the dragHandleProps (attributes and listeners) should be spread onto the element
-  // that acts as the drag handle, or the main draggable element.
-  return (
-    <div className="p-4 border rounded-lg bg-card shadow">
-      <div className="flex justify-between items-center mb-2">
-        <div className="flex items-center gap-2">
-          {dragHandleProps && (
-            <button {...dragHandleProps} className="cursor-grab p-1" aria-label="Drag to reorder">
-              <GripVertical className="h-5 w-5 text-muted-foreground" />
-            </button>
-          )}
-          <span className="font-medium capitalize">{block.block_type}</span>
-        </div>
-        {/* ... other controls from your EditableBlock ... */}
-      </div>
-      {isEditing ? <p>Editing {block.block_type}...</p> : <p>Preview for {block.block_type}</p>}
-    </div>
-  );
-};
-// END Placeholder for EditableBlock
-
-
-interface SortableBlockItemProps extends EditableBlockProps {
-  // No new props needed specifically for SortableBlockItem itself,
-  // as it passes through all props to EditableBlock
-}
-
-
-export function SortableBlockItem(props: SortableBlockItemProps) {
+export function SortableBlockItem(props: EditableBlockProps) {
   const {
     attributes,
     listeners,

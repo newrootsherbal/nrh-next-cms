@@ -12,7 +12,7 @@ import HeadingBlockEditor from "./HeadingBlockEditor";
 import ImageBlockSelector from "./ImageBlockSelector";
 import ButtonBlockEditor from "./ButtonBlockEditor";
 
-interface EditableBlockProps {
+export interface EditableBlockProps {
   block: Block;
   onDelete: (blockId: number) => void;
   isEditing: boolean;

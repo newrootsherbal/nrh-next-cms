@@ -16,9 +16,9 @@ import {
 import { Label } from "@/components/ui/label";
 import {
   createBlockForPage,
-  // deleteBlock, updateBlock, // These are now handled within EditableBlock/SortableBlockItem context if needed or directly
+  updateBlock, // Added updateBlock
   updateMultipleBlockOrders,
-} from "@/app/cms/blocks/actions"; // deleteBlock and updateBlock are used by EditableBlock
+} from "@/app/cms/blocks/actions";
 
 // DND Kit imports
 import {
@@ -106,16 +106,42 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
     setTempBlockContent(newContent);
   };
 
-  const handleSaveEdit = (blockId: number) => {
-    // Server action `updateBlock` is called from `EditableBlock`
-    // This function updates local state.
-    const blockToUpdate = blocks.find(b => b.id === blockId);
-    if (blockToUpdate) {
-        const updatedBlock = { ...blockToUpdate, content: tempBlockContent, updated_at: new Date().toISOString() };
-        setBlocks(prevBlocks => prevBlocks.map(b => b.id === blockId ? updatedBlock : b).sort((a,b) => a.order - b.order));
+  const handleSaveEdit = async (blockId: number) => {
+    if (tempBlockContent === null) {
+      console.warn("No temporary content to save for block:", blockId);
+      setEditingBlockId(null); // Still exit editing mode
+      return;
     }
-    setEditingBlockId(null);
-    setTempBlockContent(null);
+
+    startTransition(async () => {
+      try {
+        const result = await updateBlock(
+          blockId,
+          tempBlockContent,
+          parentType === "page" ? parentId : null,
+          parentType === "post" ? parentId : null
+        );
+
+        if (result && result.success && result.updatedBlock) {
+          setBlocks(prevBlocks =>
+            prevBlocks.map(b => (b.id === blockId ? result.updatedBlock as Block : b)).sort((a, b) => a.order - b.order)
+          );
+          setEditingBlockId(null);
+          setTempBlockContent(null);
+        } else if (result?.error) {
+          alert(`Error updating block: ${result.error}`);
+          // Consider not clearing editing state here, or providing more specific feedback
+        } else {
+          alert("An unknown error occurred while updating the block.");
+        }
+      } catch (error) {
+        console.error("Failed to save block:", error);
+        alert("A critical error occurred while saving the block. Please try again.");
+        // Optionally, reset editing state to allow user to retry or cancel
+        // setEditingBlockId(null);
+        // setTempBlockContent(null);
+      }
+    });
   };
 
   const handleCancelEdit = () => {
@@ -194,10 +220,9 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
                     if (isEditing) handleStartEdit(block);
                     else handleCancelEdit();
                 }}
-                onSaveEdit={() => {
-                    // The actual server call is in EditableBlock's save mechanism
-                    // This just updates local UI state after successful save from child
-                    handleSaveEdit(block.id);
+                onSaveEdit={async () => {
+                    // Server call is now initiated by handleSaveEdit
+                    await handleSaveEdit(block.id);
                 }}
                 onCancelEdit={handleCancelEdit}
                 tempContent={editingBlockId === block.id ? tempBlockContent : null}
