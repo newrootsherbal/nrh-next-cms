@@ -53,6 +53,31 @@ export default function MediaUploadForm({ onUploadSuccess, returnJustData }: Med
     }
   };
 
+  const performXhrUpload = (presignedMethod: string, presignedUrl: string, currentFile: File): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open(presignedMethod, presignedUrl, true);
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(percentComplete);
+        }
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve();
+        } else {
+          reject(new Error(`XHR Upload failed: ${xhr.statusText} - ${xhr.responseText}`));
+        }
+      };
+      xhr.onerror = () => reject(new Error("XHR Upload failed due to network error."));
+      xhr.onabort = () => reject(new Error("XHR Upload was aborted."));
+      xhr.ontimeout = () => reject(new Error("XHR Upload timed out."));
+      xhr.send(currentFile);
+    });
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!file) {
@@ -63,16 +88,21 @@ export default function MediaUploadForm({ onUploadSuccess, returnJustData }: Med
     setUploadStatus("uploading");
     setUploadProgress(0);
     setErrorMessage(null);
+
+    // Keep a reference to the file to use inside startTransition,
+    // as the 'file' state might be cleared by another event.
+    const currentFileForUpload = file;
+
     startTransition(async () => {
       try {
-        // 1. Get pre-signed URL from our API route
+        // 1. Get pre-signed URL
         const presignedUrlResponse = await fetch("/api/upload/presigned-url", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            filename: file.name,
-            contentType: file.type,
-            size: file.size,
+            filename: currentFileForUpload.name,
+            contentType: currentFileForUpload.type,
+            size: currentFileForUpload.size,
           }),
         });
 
@@ -82,91 +112,61 @@ export default function MediaUploadForm({ onUploadSuccess, returnJustData }: Med
         }
         const { presignedUrl, objectKey, method }: UploadResponse = await presignedUrlResponse.json();
 
-        // 2. Upload file directly to R2 using XMLHttpRequest for progress
-        await new Promise<void>((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            xhr.open(method, presignedUrl, true);
-            // xhr.setRequestHeader('Content-Type', file.type); // S3 presigned URLs for PUT usually don't need this if ContentType was in signed headers
+        // 2. Upload file directly to R2
+        await performXhrUpload(method, presignedUrl, currentFileForUpload);
+        setUploadProgress(100); // Ensure progress hits 100 after XHR completes
 
-            xhr.upload.onprogress = (event) => {
-              if (event.lengthComputable) {
-                const percentComplete = Math.round((event.loaded / event.total) * 100);
-                setUploadProgress(percentComplete);
-              }
-            };
+        // 3. Record media in Supabase (this is the server action that might redirect)
+        const recordResult = await recordMediaUpload(
+          {
+            fileName: currentFileForUpload.name,
+            objectKey: objectKey,
+            fileType: currentFileForUpload.type,
+            sizeBytes: currentFileForUpload.size,
+          },
+          returnJustData
+        );
 
-            xhr.onload = async () => {
-              if (xhr.status >= 200 && xhr.status < 300) {
-                // 3. Record media in Supabase
-                const recordResult = await recordMediaUpload(
-                  {
-                    fileName: file.name,
-                    objectKey: objectKey,
-                    fileType: file.type,
-                    sizeBytes: file.size,
-                    // description: "" // Optionally add a description field here
-                  },
-                  returnJustData // Pass the flag to the action
-                );
+        // This part is reached only if recordMediaUpload does NOT throw (i.e., no redirect)
+        if (returnJustData) {
+          if (recordResult && 'success' in recordResult && recordResult.success && recordResult.data) {
+            setUploadStatus("success");
+            onUploadSuccess?.(recordResult.data);
+          } else {
+            throw new Error(recordResult?.error || "Media record action did not return expected data.");
+          }
+        } else {
+          // If !returnJustData and recordMediaUpload didn't throw, it's unexpected.
+          // The redirect should have happened. Log a warning.
+          console.warn("recordMediaUpload was expected to redirect but completed without error.");
+          setUploadStatus("success"); // Still mark as success for UI consistency
+        }
 
-                // recordResult can now be { success: true, data: Media } | { error: string } | void (if redirecting)
-                if (returnJustData) {
-                  if (recordResult && 'success' in recordResult && recordResult.success && recordResult.data) {
-                    setUploadStatus("success");
-                    setFile(null);
-                    if (previewUrl) {
-                      URL.revokeObjectURL(previewUrl);
-                      setPreviewUrl(null);
-                    }
-                    if (fileInputRef.current) fileInputRef.current.value = "";
-                    onUploadSuccess?.(recordResult.data); // Call callback with new media data
-                    resolve();
-                  } else if (recordResult && 'error' in recordResult && recordResult.error) {
-                    reject(new Error(recordResult.error));
-                  } else {
-                    // This case should ideally not happen if returnJustData is true and action is well-behaved
-                    reject(new Error("Media record action did not return expected data."));
-                  }
-                } else { // Original behavior: expecting redirect or void, then refresh
-                  // If recordResult is not an error object from the modified action (meaning it redirected or had an issue not returning error obj)
-                  // This part is a bit tricky because the action now *can* return an error object.
-                  // Let's assume if returnJustData is false, we still check for explicit error return before relying on redirect.
-                  if (recordResult && typeof recordResult === 'object' && 'error' in recordResult && recordResult.error) {
-                     reject(new Error(recordResult.error));
-                  } else {
-                    // Assuming redirect happened or no error was explicitly returned by the action
-                    setUploadStatus("success");
-                    setFile(null);
-                    if (previewUrl) {
-                      URL.revokeObjectURL(previewUrl);
-                      setPreviewUrl(null);
-                    }
-                    if (fileInputRef.current) fileInputRef.current.value = "";
-                    router.refresh(); // Refresh the media list (original behavior)
-                    resolve();
-                  }
-                }
-              } else {
-                reject(new Error(`Upload failed: ${xhr.statusText} - ${xhr.responseText}`));
-              }
-            };
-            xhr.onerror = () => {
-              reject(new Error("Upload failed due to network error."));
-            };
-            xhr.onabort = () => {
-              reject(new Error("Upload was aborted by the user."));
-            };
-            xhr.ontimeout = () => {
-              reject(new Error("Upload timed out. Please try again."));
-            };
-            xhr.send(file);
-        });
+        // Common success cleanup (if no redirect occurred)
+        setFile(null);
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
 
       } catch (err: any) {
-        console.error("Upload process error:", err);
-        setUploadStatus("error");
-        setErrorMessage(err.message || "An unknown error occurred during upload.");
-        setUploadProgress(0);
+        const isRedirect = err.message === 'NEXT_REDIRECT' || (typeof err.digest === 'string' && err.digest.startsWith('NEXT_REDIRECT'));
+
+        if (isRedirect) {
+          // Redirect is happening. Reset UI to a clean state.
+          // isPending will become false automatically.
+          setUploadStatus("success"); // Clears "Uploading..." text from button if isPending becomes false
+          setFile(null);
+          if (previewUrl) URL.revokeObjectURL(previewUrl);
+          setPreviewUrl(null);
+          if (fileInputRef.current) fileInputRef.current.value = "";
+          // No error message needed, page will refresh.
+        } else {
+          // Genuine error
+          console.error("Upload process error:", err);
+          setUploadStatus("error");
+          setErrorMessage(err.message || "An unknown error occurred during upload.");
+          setUploadProgress(0); // Reset progress on actual error
+        }
       }
     });
   };
