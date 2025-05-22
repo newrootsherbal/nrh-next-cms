@@ -236,7 +236,7 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-0"> {/* SortableBlockItem already has mb-4 */}
+          <div> {/* Relying on SortableBlockItem's mb-4 for consistent spacing */}
             {blocks.map((block) => (
               <SortableBlockItem
                 key={block.id}

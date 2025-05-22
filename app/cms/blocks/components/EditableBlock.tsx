@@ -2,7 +2,7 @@
 "use client";
 
 import React from 'react'; // Ensure React is imported for JSX
-import type { Block } from "@/utils/supabase/types";
+import type { Block, ImageBlockContent } from "@/utils/supabase/types"; // Added ImageBlockContent
 import { Button } from "@/components/ui/button";
 import { GripVertical, Trash2, Edit2, Check, X } from "lucide-react";
 
@@ -11,6 +11,9 @@ import TextBlockEditor from "./TextBlockEditor";
 import HeadingBlockEditor from "./HeadingBlockEditor";
 import ImageBlockSelector from "./ImageBlockSelector";
 import ButtonBlockEditor from "./ButtonBlockEditor";
+
+// Define R2_BASE_URL, ideally this would come from a shared config or context
+const R2_BASE_URL = process.env.NEXT_PUBLIC_R2_BASE_URL || "";
 
 export interface EditableBlockProps {
   block: Block;
@@ -81,14 +84,26 @@ export default function EditableBlock({
         );
       }
       case "image": {
-        const { media_id, alt_text } = displayContent as { media_id?: number | null; alt_text?: string };
+        const { media_id, object_key, alt_text, caption } = displayContent as Partial<ImageBlockContent>;
 
-        if (media_id) {
-          // TODO: Enhance preview to show actual image using MediaImage component
+        if (object_key) {
+          return (
+            <div className="py-2">
+              <img
+                src={`${R2_BASE_URL}/${object_key}`}
+                alt={alt_text || "Image preview"}
+                className="max-w-full h-auto max-h-48 rounded object-contain mx-auto mb-2" // Adjusted max-h and added mb-2
+              />
+              {caption && <p className="text-xs text-muted-foreground text-center italic mt-1">{caption}</p>}
+              {!caption && !alt_text && <p className="text-xs text-muted-foreground text-center italic mt-1">Image loaded</p>}
+            </div>
+          );
+        } else if (media_id) {
+          // If object_key is missing but media_id exists, it might be an old record or an issue.
           return (
             <div className="py-2">
               <p className="text-sm text-muted-foreground">
-                Image: {alt_text || `Media ID ${media_id}`}
+                Image: {alt_text || `Media ID ${media_id}`} (Preview not available)
               </p>
             </div>
           );

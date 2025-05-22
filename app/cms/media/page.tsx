@@ -61,7 +61,7 @@ export default async function CmsMediaLibraryPage() {
                 <MediaImage
                   src={`${R2_BASE_URL}/${item.object_key}`}
                   alt={item.description || item.file_name}
-                  className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                  className="h-full w-full object-contain transition-transform group-hover:scale-105"
                 />
               ) : (
                 <div className="h-full w-full bg-muted flex flex-col items-center justify-center p-2">
