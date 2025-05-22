@@ -66,4 +66,72 @@
   body {
     @apply bg-background text-foreground;
   }
+  h1 {
+    @apply text-4xl font-bold mb-4 mt-6;
+  }
+  h2 {
+    @apply text-3xl font-bold mb-3 mt-5;
+  }
+  h3 {
+    @apply text-2xl font-bold mb-3 mt-4;
+  }
+  h4 {
+    @apply text-xl font-bold mb-2 mt-3;
+  }
+  h5 {
+    @apply text-lg font-semibold mb-2 mt-2;
+  }
+  h6 {
+    @apply text-base font-semibold mb-2 mt-2;
+  }
+
+  p {
+    @apply mb-4;
+  }
+
+  a {
+    @apply text-primary hover:underline;
+  }
+
+  ul,
+  ol {
+    @apply pl-6 mb-4;
+  }
+
+  li {
+    @apply mb-1;
+  }
+
+  blockquote {
+    @apply p-4 italic border-l-4 border-border bg-muted text-muted-foreground mb-4;
+  }
+
+  code {
+    @apply bg-muted text-muted-foreground px-1 py-0.5 rounded-sm font-mono text-sm;
+  }
+
+  pre {
+    @apply bg-muted p-4 rounded-md overflow-x-auto mb-4;
+  }
+
+  table {
+    @apply w-full border-collapse mb-4;
+  }
+
+  thead {
+    @apply bg-muted;
+  }
+
+  th,
+  td {
+    @apply border border-border p-2 text-left;
+  }
+
+  th {
+    @apply font-semibold;
+  }
+
+  hr {
+    @apply border-t border-border my-8;
+  }
 }

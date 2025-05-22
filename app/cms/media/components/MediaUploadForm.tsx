@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress"; // Assuming you have this shadcn/ui component
 import { UploadCloud, XCircle, CheckCircle2 } from "lucide-react";
 import { recordMediaUpload } from "../actions"; // Server action
+import type { Media } from "@/utils/supabase/types"; // Import Media type
 
 interface UploadResponse {
   presignedUrl: string;
@@ -16,10 +17,18 @@ interface UploadResponse {
   method: "PUT";
 }
 
-export default function MediaUploadForm() {
+interface MediaUploadFormProps {
+  onUploadSuccess?: (newMedia: Media) => void;
+  // If true, the form expects recordMediaUpload to return data instead of redirecting.
+  // And will use onUploadSuccess instead of router.refresh().
+  returnJustData?: boolean;
+}
+
+export default function MediaUploadForm({ onUploadSuccess, returnJustData }: MediaUploadFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null); // For image preview
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -27,11 +36,20 @@ export default function MediaUploadForm() {
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl); // Clean up previous preview
+      setPreviewUrl(null);
+    }
     if (selectedFile) {
       setFile(selectedFile);
       setUploadStatus("idle");
       setUploadProgress(0);
       setErrorMessage(null);
+      if (selectedFile.type.startsWith("image/")) {
+        setPreviewUrl(URL.createObjectURL(selectedFile));
+      }
+    } else {
+      setFile(null); // Clear file if selection is cancelled
     }
   };
 
@@ -80,22 +98,53 @@ export default function MediaUploadForm() {
             xhr.onload = async () => {
               if (xhr.status >= 200 && xhr.status < 300) {
                 // 3. Record media in Supabase
-                const recordResult = await recordMediaUpload({
-                  fileName: file.name,
-                  objectKey: objectKey,
-                  fileType: file.type,
-                  sizeBytes: file.size,
-                  // description: "" // Optionally add a description field here
-                });
+                const recordResult = await recordMediaUpload(
+                  {
+                    fileName: file.name,
+                    objectKey: objectKey,
+                    fileType: file.type,
+                    sizeBytes: file.size,
+                    // description: "" // Optionally add a description field here
+                  },
+                  returnJustData // Pass the flag to the action
+                );
 
-                if (recordResult?.error) {
-                  reject(new Error(recordResult.error));
-                } else {
-                  setUploadStatus("success");
-                  setFile(null);
-                  if (fileInputRef.current) fileInputRef.current.value = ""; // Reset file input
-                  router.refresh(); // Refresh the media list
-                  resolve();
+                // recordResult can now be { success: true, data: Media } | { error: string } | void (if redirecting)
+                if (returnJustData) {
+                  if (recordResult && 'success' in recordResult && recordResult.success && recordResult.data) {
+                    setUploadStatus("success");
+                    setFile(null);
+                    if (previewUrl) {
+                      URL.revokeObjectURL(previewUrl);
+                      setPreviewUrl(null);
+                    }
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                    onUploadSuccess?.(recordResult.data); // Call callback with new media data
+                    resolve();
+                  } else if (recordResult && 'error' in recordResult && recordResult.error) {
+                    reject(new Error(recordResult.error));
+                  } else {
+                    // This case should ideally not happen if returnJustData is true and action is well-behaved
+                    reject(new Error("Media record action did not return expected data."));
+                  }
+                } else { // Original behavior: expecting redirect or void, then refresh
+                  // If recordResult is not an error object from the modified action (meaning it redirected or had an issue not returning error obj)
+                  // This part is a bit tricky because the action now *can* return an error object.
+                  // Let's assume if returnJustData is false, we still check for explicit error return before relying on redirect.
+                  if (recordResult && typeof recordResult === 'object' && 'error' in recordResult && recordResult.error) {
+                     reject(new Error(recordResult.error));
+                  } else {
+                    // Assuming redirect happened or no error was explicitly returned by the action
+                    setUploadStatus("success");
+                    setFile(null);
+                    if (previewUrl) {
+                      URL.revokeObjectURL(previewUrl);
+                      setPreviewUrl(null);
+                    }
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                    router.refresh(); // Refresh the media list (original behavior)
+                    resolve();
+                  }
                 }
               } else {
                 reject(new Error(`Upload failed: ${xhr.statusText} - ${xhr.responseText}`));
@@ -103,6 +152,12 @@ export default function MediaUploadForm() {
             };
             xhr.onerror = () => {
               reject(new Error("Upload failed due to network error."));
+            };
+            xhr.onabort = () => {
+              reject(new Error("Upload was aborted by the user."));
+            };
+            xhr.ontimeout = () => {
+              reject(new Error("Upload timed out. Please try again."));
             };
             xhr.send(file);
         });
@@ -136,6 +191,12 @@ export default function MediaUploadForm() {
               <Input id="media-file-input" type="file" className="hidden" onChange={handleFileChange} ref={fileInputRef} />
             </label>
           </div>
+          {previewUrl && file && file.type.startsWith("image/") && (
+            <div className="mt-4">
+              <Label>Preview:</Label>
+              <img src={previewUrl} alt="Preview" className="mt-2 rounded-md max-h-48 w-auto object-contain border" />
+            </div>
+          )}
           {file && <p className="text-sm mt-2 text-muted-foreground">Selected: {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)</p>}
         </div>
 

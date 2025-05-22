@@ -46,8 +46,19 @@ export async function POST(request: NextRequest) {
     }
     // Add content type validation if needed
 
-    const fileExtension = filename.split('.').pop();
-    const uniqueKey = `uploads/${uuidv4()}${fileExtension ? '.' + fileExtension : ''}`; // Store in an 'uploads' folder
+    const fileExtension = filename.split('.').pop() || '';
+    const baseFilename = fileExtension ? filename.substring(0, filename.length - (fileExtension.length + 1)) : filename;
+
+    // Sanitize baseFilename to remove characters not suitable for URLs/filenames, replace spaces with hyphens
+    const sanitizedBaseFilename = baseFilename
+        .toLowerCase()
+        .replace(/\s+/g, '-') // Replace spaces with hyphens
+        .replace(/[^\w.-]+/g, ''); // Remove non-alphanumeric characters except hyphen and period
+
+    const now = new Date();
+    const timestamp = `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
+
+    const uniqueKey = `uploads/${sanitizedBaseFilename}_${timestamp}${fileExtension ? '.' + fileExtension : ''}`;
 
     const command = new PutObjectCommand({
       Bucket: R2_BUCKET_NAME,
@@ -65,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       presignedUrl,
-      objectKey: uniqueKey, // Send back the key for the client to use when creating the media record
+      objectKey: `${uniqueKey}`, // Send back the key prefixed with bucket name
       method: "PUT",
     });
 

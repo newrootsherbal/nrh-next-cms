@@ -81,14 +81,27 @@ export default function EditableBlock({
         );
       }
       case "image": {
-        const mediaId = (displayContent as any).media_id;
-        return (
-          <div className="py-2">
-            <p className="text-sm text-muted-foreground">
-              Image Block Preview: Media ID {mediaId ? mediaId : <span className="italic">not set</span>}
-            </p>
-          </div>
-        );
+        const { media_id, alt_text } = displayContent as { media_id?: number | null; alt_text?: string };
+
+        if (media_id) {
+          // TODO: Enhance preview to show actual image using MediaImage component
+          return (
+            <div className="py-2">
+              <p className="text-sm text-muted-foreground">
+                Image: {alt_text || `Media ID ${media_id}`}
+              </p>
+            </div>
+          );
+        } else {
+          return (
+            <div className="py-2 flex flex-col items-center justify-center space-y-2 min-h-[100px] border border-dashed rounded-md">
+              <p className="text-sm text-muted-foreground">No image selected</p>
+              <Button variant="outline" size="sm" onClick={() => onSetEditing(true)}>
+                Add Image
+              </Button>
+            </div>
+          );
+        }
       }
       case "button": {
         const variant = (displayContent as any).variant || 'default';

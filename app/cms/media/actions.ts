@@ -14,11 +14,12 @@ export async function recordMediaUpload(payload: {
   fileType: string;
   sizeBytes: number;
   description?: string;
-}) {
+}, returnJustData?: boolean): Promise<{ success: true; data: Media } | { error: string } | void>  {
   const supabase = createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
   if (authError || !user) {
+    if (returnJustData) return { error: "User not authenticated for media record." };
     return encodedRedirect("error", "/cms/media", "User not authenticated for media record.");
   }
 
@@ -28,6 +29,7 @@ export async function recordMediaUpload(payload: {
     .eq("id", user.id)
     .single();
   if (!profile || !["ADMIN", "WRITER"].includes(profile.role)) {
+    if (returnJustData) return { error: "Forbidden: Insufficient permissions to record media." };
     return encodedRedirect("error", "/cms/media", "Forbidden: Insufficient permissions to record media.");
   }
 
@@ -48,12 +50,16 @@ export async function recordMediaUpload(payload: {
 
   if (error) {
     console.error("Error recording media upload:", error);
+    if (returnJustData) return { error: `Failed to record media: ${error.message}` };
     return encodedRedirect("error", "/cms/media", `Failed to record media: ${error.message}`);
   }
 
   revalidatePath("/cms/media");
-  // Instead of returning success, redirect
-  encodedRedirect("success", "/cms/media", "Media recorded successfully.");
+  if (returnJustData) {
+    return { success: true, data: newMedia as Media };
+  } else {
+    encodedRedirect("success", "/cms/media", "Media recorded successfully.");
+  }
 }
 
 
