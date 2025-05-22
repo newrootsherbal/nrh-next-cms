@@ -53,7 +53,11 @@ export const LanguageProvider = ({ children, serverLocale }: LanguageProviderPro
 
   useEffect(() => {
     const fetchAndSetLanguages = async () => {
-      setIsLoadingLanguages(true);
+      // Only set loading true if languages haven't been fetched yet or are empty
+      // to prevent flicker/disappearance on refresh if languages are already known.
+      if (availableLanguages.length === 0) {
+        setIsLoadingLanguages(true);
+      }
       const fetchedLanguages = await getActiveLanguagesClientSide();
       setAvailableLanguages(fetchedLanguages);
 
