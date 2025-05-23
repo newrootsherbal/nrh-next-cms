@@ -63,22 +63,24 @@ export async function middleware(request: NextRequest) {
 
   requestHeaders.set('X-User-Locale', currentLocale!);
 
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user }, error: userError } = await supabase.auth.getUser(); // Use getUser for revalidation
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith('/cms')) {
-    if (!session?.user) {
+    if (userError || !user) { // Check for error or no user
+      // No console.log needed here for normal unauthenticated access, redirect is sufficient
       return NextResponse.redirect(new URL(`/sign-in?redirect=${pathname}`, request.url));
     }
 
+    // User is authenticated, now check profile for role
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', session.user.id)
+      .eq('id', user.id) // Use user.id from getUser()
       .single<Pick<Profile, 'role'>>();
 
     if (profileError || !profile) {
-      console.error(`Middleware: Profile error for user ${session.user.id} accessing ${pathname}`, profileError?.message);
+      console.error(`Middleware: Profile error for user ${user.id} accessing ${pathname}. Error: ${profileError?.message}. Redirecting to unauthorized.`);
       return NextResponse.redirect(new URL('/unauthorized?error=profile_issue', request.url));
     }
 
@@ -86,9 +88,11 @@ export async function middleware(request: NextRequest) {
     const requiredRoles = getRequiredRolesForPath(pathname);
 
     if (requiredRoles && !requiredRoles.includes(userRole)) {
-      console.warn(`Middleware: User ${session.user.id} (Role: ${userRole}) denied access to ${pathname}. Required: ${requiredRoles.join(' OR ')}`);
+      console.warn(`Middleware: User ${user.id} (Role: ${userRole}) denied access to ${pathname}. Required: ${requiredRoles.join(' OR ')}. Redirecting to unauthorized.`);
       return NextResponse.redirect(new URL(`/unauthorized?path=${pathname}&required=${requiredRoles.join(',')}`, request.url));
     }
+    // If user has the required role, allow access (NextResponse.next() is handled later)
+    // No console.log needed for successful access
   }
 
   // If response is already a redirect (e.g., from CMS auth checks), return it.

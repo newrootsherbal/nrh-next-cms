@@ -53,7 +53,11 @@ export const signInAction = async (formData: FormData) => {
     return encodedRedirect("error", "/sign-in", error.message);
   }
 
-  return redirect("/cms/dashboard");
+  // Redirect to the homepage after successful sign-in
+  // The /auth/callback route is not strictly needed for password sign-in
+  // as the session is established directly. Role-based access to specific
+  // pages like /cms/dashboard will be handled by middleware.
+  return redirect("/");
 };
 
 export const forgotPasswordAction = async (formData: FormData) => {
