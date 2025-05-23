@@ -4,7 +4,8 @@ import { getSsgSupabaseClient } from "@/utils/supabase/ssg-client"; // Correct i
 import { notFound } from "next/navigation";
 import type { Metadata, ResolvingMetadata } from 'next';
 import PageClientContent from "./PageClientContent";
-import { getPageDataBySlug } from "./page.utils"; // This will now use getSsgSupabaseClient internally
+import { getPageDataBySlug } from "./page.utils";
+import BlockRenderer from "../../components/BlockRenderer";
 
 export const dynamicParams = true;
 export const revalidate = 3600;
@@ -81,10 +82,11 @@ export default async function DynamicPage({ params: paramsPromise }: PageProps) 
     notFound();
   }
 
+  const pageBlocks = pageData ? <BlockRenderer blocks={pageData.blocks} languageId={pageData.language_id} /> : null;
+
   return (
-    <PageClientContent
-      initialPageData={pageData}
-      currentSlug={params.slug}
-    />
+    <PageClientContent initialPageData={pageData} currentSlug={params.slug}>
+      {pageBlocks}
+    </PageClientContent>
   );
 }

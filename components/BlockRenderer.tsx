@@ -1,16 +1,18 @@
 // app/components/BlockRenderer.tsx
 import React from 'react';
-import type { Block, ImageBlockContent, TextBlockContent, HeadingBlockContent, ButtonBlockContent } from "@/utils/supabase/types";
+import type { Block, ImageBlockContent, TextBlockContent, HeadingBlockContent, ButtonBlockContent, PostsGridBlockContent } from "@/utils/supabase/types"; // Added PostsGridBlockContent
 import { Button as UIButton } from '@/components/ui/button';
+import PostsGridBlock from './blocks/PostsGridBlock'; // Added import for PostsGridBlock
 import Link from 'next/link'; // Import Link for button block
 
 const R2_BASE_URL = process.env.NEXT_PUBLIC_R2_BASE_URL || "";
 
 interface BlockRendererProps {
   blocks: Block[];
+  languageId: number; // Added languageId
 }
 
-const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
+const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks, languageId }) => { // Added languageId
   if (!blocks || blocks.length === 0) {
     return null;
   }
@@ -86,6 +88,15 @@ const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
                   )}
                 </UIButton>
               </div>
+            );
+          case "posts_grid":
+            // const postsGridContent = content as PostsGridBlockContent; // content is already 'any'
+            return (
+              <PostsGridBlock
+                key={block.id}
+                block={block}
+                languageId={languageId}
+              />
             );
           default:
             return (

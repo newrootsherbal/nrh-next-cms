@@ -5,13 +5,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from "@/utils/supabase/client";
 import type { Post as PostType, Block as BlockType, Language, ImageBlockContent, Media } from "@/utils/supabase/types";
-import BlockRenderer from "../../../components/BlockRenderer";
 import { useLanguage } from '@/context/LanguageContext';
 import Link from 'next/link';
 
 interface PostClientContentProps {
   initialPostData: (PostType & { blocks: BlockType[]; language_code: string; language_id: number; translation_group_id: string; }) | null;
   currentSlug: string; // The slug of the currently viewed page/post
+  children: React.ReactNode;
 }
 
 // Fetches the slug for a given translation_group_id and target language_code
@@ -44,7 +44,7 @@ async function getSlugForTranslatedPost(
   return post.slug;
 }
 
-export default function PostClientContent({ initialPostData, currentSlug }: PostClientContentProps) {
+export default function PostClientContent({ initialPostData, currentSlug, children }: PostClientContentProps) {
   const { currentLocale, isLoadingLanguages } = useLanguage();
   const router = useRouter();
   
@@ -133,15 +133,9 @@ export default function PostClientContent({ initialPostData, currentSlug }: Post
         {currentPostData.excerpt && <p className="mt-4 text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">{currentPostData.excerpt}</p>}
       </header>
 
-      {currentPostData.blocks && currentPostData.blocks.length > 0 ? (
-        <div className="prose dark:prose-invert lg:prose-xl max-w-none mx-auto">
-          <BlockRenderer blocks={currentPostData.blocks} />
-        </div>
-      ) : (
-        <div className="text-center py-10 text-muted-foreground">
-          <p>This post has no content blocks for the language: {currentPostData.language_code?.toUpperCase()}.</p>
-        </div>
-      )}
+      <div className="prose dark:prose-invert lg:prose-xl max-w-none mx-auto">
+        {children}
+      </div>
     </article>
   );
 }

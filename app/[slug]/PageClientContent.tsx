@@ -5,13 +5,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation'; // For navigation on lang switch
 import { createClient } from "@/utils/supabase/client";
 import type { Page as PageType, Block as BlockType, Language, ImageBlockContent, Media } from "@/utils/supabase/types";
-import BlockRenderer from "../../components/BlockRenderer";
 import { useLanguage } from '@/context/LanguageContext';
 import Link from 'next/link';
 
 interface PageClientContentProps {
   initialPageData: (PageType & { blocks: BlockType[]; language_code: string; language_id: number; translation_group_id: string; }) | null;
   currentSlug: string; // The slug of the currently viewed page
+  children: React.ReactNode;
 }
 
 // Fetches the slug for a given translation_group_id and target language_code
@@ -37,7 +37,7 @@ async function getSlugForTranslatedPage(
 }
 
 
-export default function PageClientContent({ initialPageData, currentSlug }: PageClientContentProps) {
+export default function PageClientContent({ initialPageData, currentSlug, children }: PageClientContentProps) {
   const { currentLocale, isLoadingLanguages } = useLanguage();
   const router = useRouter();
   // currentPageData is the data for the slug currently in the URL.
@@ -100,14 +100,8 @@ export default function PageClientContent({ initialPageData, currentSlug }: Page
     <article className="container mx-auto px-4 py-8">
       {isLoadingTargetLang && <div className="text-center py-2 text-sm text-muted-foreground">Switching language...</div>}
       
-      {/* Render blocks using the current page's data */}
-      {currentPageData.blocks && currentPageData.blocks.length > 0 ? (
-        <BlockRenderer blocks={currentPageData.blocks} />
-      ) : (
-        <div className="text-center py-10 text-muted-foreground">
-          <p>This page has no content blocks for the language: {currentPageData.language_code?.toUpperCase()}.</p>
-        </div>
-      )}
+      {/* Render blocks passed as children */}
+      {children}
     </article>
   );
 }

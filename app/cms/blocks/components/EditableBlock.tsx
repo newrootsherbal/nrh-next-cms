@@ -11,6 +11,7 @@ import TextBlockEditor from "./TextBlockEditor";
 import HeadingBlockEditor from "./HeadingBlockEditor";
 import ImageBlockSelector from "./ImageBlockSelector";
 import ButtonBlockEditor from "./ButtonBlockEditor";
+import PostsGridBlockEditor from "./PostsGridBlockEditor"; // Added import
 
 // Define R2_BASE_URL, ideally this would come from a shared config or context
 const R2_BASE_URL = process.env.NEXT_PUBLIC_R2_BASE_URL || "";
@@ -50,6 +51,8 @@ export default function EditableBlock({
         return <ImageBlockSelector content={currentContent} onChange={onTempContentChange} />;
       case "button":
         return <ButtonBlockEditor content={currentContent} onChange={onTempContentChange} />;
+      case "posts_grid": // Added case for posts_grid
+        return <PostsGridBlockEditor block={block} />; // Pass block prop instead of content and onChange
       default:
         return <p>Unsupported block type: {block.block_type}</p>;
     }
@@ -127,6 +130,18 @@ export default function EditableBlock({
             <Button variant={variant} size={size}>
               {typeof text === "string" && text.trim().length > 0 ? text : "Button"}
             </Button>
+          </div>
+        );
+      }
+      case "posts_grid": { // Added case for posts_grid preview
+        const { number_of_posts, category_id } = displayContent as any;
+        return (
+          <div className="py-2">
+            <p className="text-sm text-muted-foreground">
+              Posts Grid: Showing {number_of_posts || 'all'} posts
+              {category_id ? ` from category ${category_id}` : ''}.
+            </p>
+            <p className="text-xs text-muted-foreground italic">(Full preview available on the live site)</p>
           </div>
         );
       }

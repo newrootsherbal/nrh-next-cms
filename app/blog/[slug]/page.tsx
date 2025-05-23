@@ -7,7 +7,8 @@ import { notFound } from "next/navigation";
 import type { Metadata, ResolvingMetadata } from 'next';
 import type { Post as PostType, Block as BlockType, Language } from "@/utils/supabase/types";
 import PostClientContent from "./PostClientContent";
-import { getPostDataBySlug } from "./page.utils"; // This also uses createClient from server, see note below
+import { getPostDataBySlug } from "./page.utils";
+import BlockRenderer from "../../../components/BlockRenderer";
 import { getSsgSupabaseClient } from "@/utils/supabase/ssg-client"; // Correct import
 
 export const dynamicParams = true;
@@ -102,10 +103,11 @@ export default async function DynamicPostPage({ params: paramsPromise }: PostPag
     notFound();
   }
 
+  const postBlocks = initialPostData ? <BlockRenderer blocks={initialPostData.blocks} languageId={initialPostData.language_id} /> : null;
+
   return (
-    <PostClientContent
-      initialPostData={initialPostData}
-      currentSlug={params.slug}
-    />
+    <PostClientContent initialPostData={initialPostData} currentSlug={params.slug}>
+      {postBlocks}
+    </PostClientContent>
   );
 }

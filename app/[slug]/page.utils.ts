@@ -1,47 +1,91 @@
 // app/[slug]/page.utils.ts
-// import { createClient } from "@/utils/supabase/server"; // Remove this
-import { getSsgSupabaseClient } from "@/utils/supabase/ssg-client"; // Use the new SSG client utility
-import type { Page as PageType, Block as BlockType, ImageBlockContent } from "@/utils/supabase/types";
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { getSsgSupabaseClient } from "../../utils/supabase/ssg-client";
+import type { Page as PageType, Block as BlockType, ImageBlockContent } from "../../utils/supabase/types";
+// SupabaseClient import removed as it's unused
 
+// Interface to represent a page object after the initial database query and selection
+interface SelectedPageType extends PageType { // Assumes PageType includes fields like id, slug, status, language_id, translation_group_id
+  language_details: { id: number; code: string } | null; // From the join; kept nullable due to original code's caution
+  blocks: BlockType[];
+}
 
-export async function getPageDataBySlug(slug: string): Promise<(PageType & { blocks: BlockType[]; language_code: string; language_id: number; translation_group_id: string; }) | null> {
-  const supabase = getSsgSupabaseClient(); // Use the SSG-safe client
+export async function getPageDataBySlug(slug: string): Promise<(PageType & { blocks: BlockType[]; language_code: string; language_id: number; translation_group_id: string | null; }) | null> {
+  const supabase = getSsgSupabaseClient();
 
-  const { data: pageData, error: pageError } = await supabase
+  const { data: candidatePagesData, error: pageError } = await supabase
     .from("pages")
     .select(`
       *,
-      languages!inner (id, code),
+      language_details:languages!inner(id, code), 
       blocks (*)
     `)
     .eq("slug", slug)
     .eq("status", "published")
-    .order('order', { foreignTable: 'blocks', ascending: true })
-    .maybeSingle();
+    .order('order', { foreignTable: 'blocks', ascending: true });
 
-  if (pageError || !pageData) {
-    if(pageError) console.error(`Error fetching page data for slug '${slug}':`, pageError.message);
+  if (pageError) {
     return null;
   }
 
-  const langInfo = pageData.languages as unknown as { id: number; code: string };
-  if (!langInfo || !langInfo.id || !langInfo.code) {
-      console.error(`Language information missing or incomplete for page slug '${slug}'. DB response:`, pageData.languages);
-      // Attempt to fetch language code directly if language_id is present but join failed
-      if (!pageData.language_id) return null; // Cannot proceed without language_id
-      const {data: fallbackLang} = await supabase.from("languages").select("id, code").eq("id", pageData.language_id).single();
-      if (!fallbackLang) return null; // Still no language info
-      Object.assign(langInfo, {id: fallbackLang.id, code: fallbackLang.code });
+  const candidatePages: SelectedPageType[] = (candidatePagesData || []) as SelectedPageType[];
+
+
+  if (candidatePages.length === 0) {
+    return null;
   }
 
-  if (!pageData.translation_group_id) {
-      console.error(`Page with slug '${slug}' is missing a translation_group_id.`);
-      return null; // Or handle as appropriate, maybe it's an older page
+  let selectedPage: SelectedPageType | null = null;
+
+  if (candidatePages.length === 1) {
+    selectedPage = candidatePages[0];
+  } else {
+    const enPage = candidatePages.find(p => p.language_details && p.language_details.code === 'en');
+    if (enPage) {
+      selectedPage = enPage;
+    } else {
+      return null;
+    }
+  }
+  
+  if (!selectedPage) {
+    return null;
+  }
+  
+  let languageCode: string | undefined = selectedPage.language_details?.code;
+  let languageId: number | undefined = selectedPage.language_details?.id;
+
+  if (!languageCode || typeof languageId !== 'number') {
+    
+    if (typeof selectedPage.language_id === 'number') {
+        const { data: fallbackLang, error: langFetchError } = await supabase
+            .from("languages")
+            .select("id, code")
+            .eq("id", selectedPage.language_id)
+            .single();
+
+        if (langFetchError) {
+            return null;
+        }
+        
+        if (fallbackLang) {
+            languageCode = fallbackLang.code;
+            languageId = fallbackLang.id;
+        } else {
+            return null;
+        }
+    } else {
+        return null;
+    }
   }
 
+  if (typeof languageCode !== 'string' || typeof languageId !== 'number') {
+      return null;
+  }
 
-  let blocksWithMediaData: BlockType[] = pageData.blocks || [];
+  if (!selectedPage.translation_group_id) {
+  }
+
+  let blocksWithMediaData: BlockType[] = selectedPage.blocks || [];
   if (blocksWithMediaData.length > 0) {
     const imageBlockMediaIds = blocksWithMediaData
       .filter(block => block.block_type === 'image' && block.content?.media_id)
@@ -51,8 +95,8 @@ export async function getPageDataBySlug(slug: string): Promise<(PageType & { blo
     if (imageBlockMediaIds.length > 0) {
       const { data: mediaItems, error: mediaError } = await supabase
         .from('media').select('id, object_key').in('id', imageBlockMediaIds);
-      if (mediaError) console.error("SSG (Pages): Error fetching media items for blocks:", mediaError);
-      else if (mediaItems) {
+      if (mediaError) {
+      } else if (mediaItems) {
         const mediaMap = new Map(mediaItems.map(m => [m.id, m.object_key]));
         blocksWithMediaData = blocksWithMediaData.map(block => {
           if (block.block_type === 'image' && block.content?.media_id) {
@@ -65,12 +109,14 @@ export async function getPageDataBySlug(slug: string): Promise<(PageType & { blo
       }
     }
   }
+  
+  const { language_details, blocks, ...basePageData } = selectedPage;
 
   return {
-    ...pageData,
+    ...(basePageData as PageType),
     blocks: blocksWithMediaData,
-    language_code: langInfo.code,
-    language_id: langInfo.id,
-    translation_group_id: pageData.translation_group_id,
-  } as (PageType & { blocks: BlockType[]; language_code: string; language_id: number; translation_group_id: string; });
+    language_code: languageCode,
+    language_id: languageId,
+    translation_group_id: selectedPage.translation_group_id,
+  };
 }

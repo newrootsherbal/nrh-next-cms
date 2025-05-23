@@ -23,7 +23,7 @@ export interface Language {
 export type PageStatus = 'draft' | 'published' | 'archived';
 
 // --- Block Type Definitions ---
-export const availableBlockTypes = ["text", "heading", "image", "button"] as const;
+export const availableBlockTypes = ["text", "heading", "image", "button", "posts_grid"] as const;
 export type BlockType = (typeof availableBlockTypes)[number];
 
 export interface TextBlockContent {
@@ -49,11 +49,19 @@ export interface ButtonBlockContent {
   size?: 'default' | 'sm' | 'lg';
 }
 
+export interface PostsGridBlockContent {
+  postsPerPage: number;
+  columns: number;
+  showPagination: boolean;
+  title?: string;
+}
+
 export type SpecificBlockContent =
   | ({ type: "text" } & TextBlockContent)
   | ({ type: "heading" } & HeadingBlockContent)
   | ({ type: "image" } & ImageBlockContent)
-  | ({ type: "button" } & ButtonBlockContent);
+  | ({ type: "button" } & ButtonBlockContent)
+  | ({ type: "posts_grid" } & PostsGridBlockContent);
 
 export interface Block {
   id: number;
@@ -61,7 +69,7 @@ export interface Block {
   post_id?: number | null;
   language_id: number;
   block_type: BlockType;
-  content: Partial<ImageBlockContent> | Partial<TextBlockContent> | Partial<HeadingBlockContent> | Partial<ButtonBlockContent> | any;
+  content: Partial<ImageBlockContent> | Partial<TextBlockContent> | Partial<HeadingBlockContent> | Partial<ButtonBlockContent> | Partial<PostsGridBlockContent> | any;
   order: number;
   created_at: string;
   updated_at: string;

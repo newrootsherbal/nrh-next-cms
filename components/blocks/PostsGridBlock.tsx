@@ -1,0 +1,74 @@
+// components/blocks/PostsGridBlock.tsx
+import React from 'react';
+import type { Block, Post } from '../../utils/supabase/types';
+import { createClient } from '../../utils/supabase/server'; // Added import
+import Link from 'next/link';
+import PostsGridClient from './PostsGridClient';
+import { fetchPaginatedPublishedPosts } from '../../app/actions/postActions'; // fetchInitialPublishedPosts removed
+
+interface PostsGridBlockProps {
+  block: Block;
+  languageId: number;
+}
+
+const PostsGridBlock: React.FC<PostsGridBlockProps> = async ({ block, languageId }) => {
+  const {
+    title = "Recent Posts",
+    postsPerPage = 12,
+    columns = 3,
+    showPagination = true,
+  } = block.content as { title?: string, postsPerPage?: number, columns?: number, showPagination?: boolean };
+
+  const supabase = createClient();
+
+  const { data: postsData, error: queryError, count } = await supabase
+    .from('posts')
+    .select('id, title, slug, excerpt, published_at, language_id, status, created_at, updated_at, translation_group_id', { count: 'exact' })
+    .eq('status', 'published')
+    .eq('language_id', languageId)
+    .order('published_at', { ascending: false })
+    .limit(postsPerPage);
+
+  let initialPosts: Post[] = [];
+  let totalCount: number = 0;
+  let postsError: string | null = null;
+
+  if (queryError) {
+    console.error("Error fetching initial posts directly in PostsGridBlock:", queryError);
+    postsError = queryError.message;
+  } else {
+    initialPosts = (postsData as Post[]) || [];
+    totalCount = count || 0;
+  }
+
+  if (postsError) {
+    return <div className="text-red-500">Error loading posts: {postsError}</div>;
+  }
+
+  if (!initialPosts || initialPosts.length === 0) {
+    return (
+      <section className="py-8">
+        {title && <h2 className="text-2xl font-semibold mb-4">{title}</h2>}
+        <p>No posts found.</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="py-8">
+      {title && <h2 className="text-2xl font-semibold mb-6">{title}</h2>}
+      <PostsGridClient
+        initialPosts={initialPosts}
+        initialPage={1}
+        postsPerPage={postsPerPage}
+        totalCount={totalCount}
+        columns={columns}
+        languageId={languageId}
+        showPagination={showPagination}
+        fetchAction={fetchPaginatedPublishedPosts} // Pass the server action for pagination
+      />
+    </section>
+  );
+};
+
+export default PostsGridBlock;

@@ -1,8 +1,23 @@
 // app/cms/pages/new/page.tsx
 import PageForm from "../components/PageForm";
 import { createPage } from "../actions"; // Server action for creating a page
+import { createClient } from "../../../../utils/supabase/server";
+import type { Language } from "../../../../utils/supabase/types";
 
-export default function NewPage() {
+export default async function NewPage() {
+  const supabase = createClient();
+  const { data: fetchedLanguages, error: languagesError } = await supabase
+    .from("languages")
+    .select("*")
+    .order("name");
+
+  if (languagesError) {
+    console.error("Error fetching languages for NewPage:", languagesError.message);
+    // Optionally, you could redirect or show a more user-friendly error
+  }
+
+  const availableLanguages: Language[] = fetchedLanguages || [];
+
   return (
     <div className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Create New Page</h1>
@@ -10,6 +25,7 @@ export default function NewPage() {
         formAction={createPage}
         actionButtonText="Create Page"
         isEditing={false}
+        availableLanguagesProp={availableLanguages}
       />
     </div>
   );

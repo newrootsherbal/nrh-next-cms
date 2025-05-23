@@ -57,6 +57,9 @@ export async function createBlockForPage(pageId: number, languageId: number, blo
     case "button":
       initialContent = { text: "Click Me", url: "#", variant: "default", size: "default" };
       break;
+    case "posts_grid":
+      initialContent = { postsPerPage: 12, columns: 3, showPagination: true, title: "Recent Posts" };
+      break;
     default:
       return { error: "Unknown block type." };
   }
