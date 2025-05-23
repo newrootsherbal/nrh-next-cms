@@ -83,7 +83,7 @@ export default async function RootLayout({
                     <div className="max-w-7xl mx-auto flex flex-col items-center justify-center gap-6 text-center text-xs px-4">
                       <FooterNavigation />
                       
-                      <div className="flex flex-row items-center f gap-2">
+                      <div className="flex flex-row items-center gap-2">
                         <p className="text-muted-foreground">© {new Date().getFullYear()} My Ultra-Fast CMS. All rights reserved.</p>
                         <ThemeSwitcher />
                       </div>
