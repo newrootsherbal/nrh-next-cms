@@ -57,7 +57,7 @@ export default async function RootLayout({
 
   return (
     <html lang={serverDeterminedLocale} suppressHydrationWarning>
-      <body className="bg-background text-foreground">
+      <body className="bg-background text-foreground min-h-screen">
         <AuthProvider>
           <LanguageProvider
             serverLocale={serverDeterminedLocale}
@@ -77,13 +77,16 @@ export default async function RootLayout({
                       {!hasEnvVars ? <EnvVarWarning /> : <Header />}
                     </div>
                   </nav>
-                  <div className="flex flex-col w-full">{children}</div>
+                  <div className="flex flex-col w-full flex-grow">{children}</div>
 
                   <footer className="w-full border-t py-8">
                     <div className="max-w-7xl mx-auto flex flex-col items-center justify-center gap-6 text-center text-xs px-4">
                       <FooterNavigation />
-                      <ThemeSwitcher />
-                      <p className="text-muted-foreground">© {new Date().getFullYear()} My Ultra-Fast CMS. All rights reserved.</p>
+                      
+                      <div className="flex flex-row items-center f gap-2">
+                        <p className="text-muted-foreground">© {new Date().getFullYear()} My Ultra-Fast CMS. All rights reserved.</p>
+                        <ThemeSwitcher />
+                      </div>
                     </div>
                   </footer>
                 </div>
