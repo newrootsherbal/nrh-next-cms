@@ -4,15 +4,16 @@ import type { Post as PostType, Block as BlockType, ImageBlockContent, Language 
 
 // Fetches post data by its language-specific slug.
 // Includes logic to fetch object_key for image blocks.
-export async function getPostDataBySlug(slug: string): Promise<(PostType & { blocks: BlockType[]; language_code: string; language_id: number; translation_group_id: string; }) | null> {
+export async function getPostDataBySlug(slug: string): Promise<(PostType & { blocks: BlockType[]; language_code: string; language_id: number; translation_group_id: string; feature_image_url?: string | null; }) | null> {
   const supabase = createClient();
 
   const { data: postData, error: postError } = await supabase
     .from("posts")
     .select(`
       *,
-      languages!inner (id, code), 
-      blocks (*)
+      languages!inner (id, code),
+      blocks (*),
+      media ( object_key )
     `)
     .eq("slug", slug) // Find the post by its unique slug for this language
     .eq("status", "published")
@@ -72,7 +73,8 @@ export async function getPostDataBySlug(slug: string): Promise<(PostType & { blo
     ...postData,
     blocks: blocksWithMediaData,
     language_code: langInfo.code,
-    language_id: langInfo.id, 
+    language_id: langInfo.id,
     translation_group_id: postData.translation_group_id,
-  } as (PostType & { blocks: BlockType[]; language_code: string; language_id: number; translation_group_id: string; });
+    feature_image_url: postData.media?.object_key ? `${process.env.NEXT_PUBLIC_R2_BASE_URL}/${postData.media.object_key}` : null,
+  } as (PostType & { blocks: BlockType[]; language_code: string; language_id: number; translation_group_id: string; feature_image_url?: string | null; });
 }

@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/utils/supabase/server";
 import PostForm from "../../components/PostForm"; // Adjusted path
 import { updatePost } from "../../actions";
-import type { Post as PostType, Block as BlockType, Language } from "@/utils/supabase/types"; // Ensure Language is imported
+import type { Post as PostType, Block as BlockType, Language, Media } from "@/utils/supabase/types"; // Ensure Language and Media are imported
 import { notFound, redirect } from "next/navigation";
 import BlockEditorArea from "@/app/cms/blocks/components/BlockEditorArea";
 import Link from "next/link";
@@ -73,6 +73,38 @@ export default async function EditPostPage(props: { params: Promise<{ id: string
     return notFound();
   }
 
+  let initialFeatureImageUrl: string | null = null;
+  let initialFeatureImageIdProp: string | null = null;
+
+  // The PostType defines feature_image_id as number | null.
+  // However, Media.id is a string (uuid), and PostForm expects a string UUID.
+  // This assumes that postWithBlocks.feature_image_id, despite its 'number' typing,
+  // actually holds a value that can be used to identify a media item by its UUID,
+  // or that the type definition for Post.feature_image_id is outdated.
+  // Casting to `unknown` then `string` for the query.
+  const featureImageIdFromDb = postWithBlocks.feature_image_id as unknown as (string | number | null);
+
+  if (featureImageIdFromDb) {
+    const { data: mediaItem, error: mediaError } = await supabase
+      .from("media")
+      .select("id, object_key")
+      .eq("id", String(featureImageIdFromDb)) // Query using the ID as string
+      .single();
+
+    if (mediaError) {
+      console.error(`Error fetching media item for feature_image_id '${featureImageIdFromDb}':`, mediaError.message);
+      // Not critical enough to notFound(), form will just not have initial image.
+    } else if (mediaItem) {
+      initialFeatureImageIdProp = mediaItem.id; // string UUID from media table
+      const r2BaseUrl = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
+      if (r2BaseUrl && mediaItem.object_key) {
+        initialFeatureImageUrl = `${r2BaseUrl}/${mediaItem.object_key}`;
+      } else if (!r2BaseUrl) {
+        console.warn("NEXT_PUBLIC_R2_PUBLIC_URL is not set. Cannot construct feature image URL for edit page.");
+      }
+    }
+  }
+
   const updatePostWithId = updatePost.bind(null, postId);
   const publicPostUrl = `/blog/${postWithBlocks.slug}`;
 
@@ -107,11 +139,13 @@ export default async function EditPostPage(props: { params: Promise<{ id: string
       </div>
 
       <PostForm
-        post={postWithBlocks}
+        post={postWithBlocks as PostType & { feature_image_id?: string | null }} // Asserting feature_image_id might be string for PostForm
         formAction={updatePostWithId}
         actionButtonText="Update Post Metadata"
         isEditing={true}
-        availableLanguagesProp={allSiteLanguages} // Pass languages as a prop
+        availableLanguagesProp={allSiteLanguages}
+        initialFeatureImageUrl={initialFeatureImageUrl}
+        initialFeatureImageId={initialFeatureImageIdProp}
       />
 
       <Separator className="my-8" />

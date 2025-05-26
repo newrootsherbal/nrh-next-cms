@@ -106,6 +106,9 @@ export interface Post {
   updated_at: string;
   blocks?: Block[];
   translation_group_id: string; // Added
+  feature_image_id?: string | null;
+  feature_image_url?: string | null;
+  media?: { object_key: string; } | null; // Added to reflect the joined media object
 }
 
 export interface Media {

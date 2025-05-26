@@ -18,6 +18,21 @@ async function verifyAdmin(supabase: ReturnType<typeof createClient>): Promise<b
   return profile?.role === "ADMIN";
 }
 
+export async function getLanguages(): Promise<{ data: Language[] | null; error: string | null; }> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("languages")
+    .select("*")
+    .order("is_default", { ascending: false }) // Default first
+    .order("name", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching languages:", error);
+    return { data: null, error: `Failed to fetch languages: ${error.message}` };
+  }
+  return { data, error: null };
+}
+
 type UpsertLanguagePayload = {
   code: string;
   name: string;

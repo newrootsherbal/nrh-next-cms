@@ -123,6 +123,15 @@ export default function PostClientContent({ initialPostData, currentSlug, childr
     <article className="container mx-auto px-4 py-8">
       {isLoadingTargetLang && <div className="text-center py-2 text-sm text-muted-foreground">Switching language...</div>}
       
+      {currentPostData?.feature_image_url && (
+        <div className="mb-8 -mt-8 sm:-mx-4 md:-mx-8 lg:-mx-12 xl:-mx-16"> {/* Adjust negative margins for full-bleed effect if container has padding */}
+          <img
+            src={currentPostData.feature_image_url}
+            alt={`Hero image for ${currentPostData.title}`}
+            className="w-full h-auto max-h-[400px] md:max-h-[500px] object-cover rounded-md shadow-lg" // Adjust max-h as needed, add rounded corners/shadow
+          />
+        </div>
+      )}
       <header className="mb-8 text-center border-b pb-6 dark:border-slate-700">
         <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2 text-slate-900 dark:text-slate-100">{currentPostData.title}</h1>
         {currentPostData.published_at && (

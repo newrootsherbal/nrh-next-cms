@@ -129,19 +129,19 @@ export default function MediaUploadForm({ onUploadSuccess, returnJustData }: Med
     });
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const performUpload = async () => {
     if (!file) {
       setErrorMessage("Please select a file to upload.");
       return;
+    }
+    if (isPending || uploadStatus === "uploading") { // Prevent concurrent uploads
+        return;
     }
 
     setUploadStatus("uploading");
     setUploadProgress(0);
     setErrorMessage(null);
 
-    // Keep a reference to the file to use inside startTransition,
-    // as the 'file' state might be cleared by another event.
     const currentFileForUpload = file;
 
     startTransition(async () => {
@@ -165,9 +165,9 @@ export default function MediaUploadForm({ onUploadSuccess, returnJustData }: Med
 
         // 2. Upload file directly to R2
         await performXhrUpload(method, presignedUrl, currentFileForUpload);
-        setUploadProgress(100); // Ensure progress hits 100 after XHR completes
+        setUploadProgress(100);
 
-        // 3. Record media in Supabase (this is the server action that might redirect)
+        // 3. Record media in Supabase
         const recordResult = await recordMediaUpload(
           {
             fileName: currentFileForUpload.name,
@@ -178,7 +178,6 @@ export default function MediaUploadForm({ onUploadSuccess, returnJustData }: Med
           returnJustData
         );
 
-        // This part is reached only if recordMediaUpload does NOT throw (i.e., no redirect)
         if (returnJustData) {
           if (recordResult && 'success' in recordResult && recordResult.success && recordResult.data) {
             setUploadStatus("success");
@@ -189,13 +188,10 @@ export default function MediaUploadForm({ onUploadSuccess, returnJustData }: Med
             throw new Error("Media record action did not return expected data.");
           }
         } else {
-          // If !returnJustData and recordMediaUpload didn't throw, it's unexpected.
-          // The redirect should have happened. Log a warning.
           console.warn("recordMediaUpload was expected to redirect but completed without error.");
-          setUploadStatus("success"); // Still mark as success for UI consistency
+          setUploadStatus("success");
         }
 
-        // Common success cleanup (if no redirect occurred)
         setFile(null);
         if (previewUrl) URL.revokeObjectURL(previewUrl);
         setPreviewUrl(null);
@@ -204,29 +200,30 @@ export default function MediaUploadForm({ onUploadSuccess, returnJustData }: Med
       } catch (err: any) {
         const isRedirect = err.message === 'NEXT_REDIRECT' || (typeof err.digest === 'string' && err.digest.startsWith('NEXT_REDIRECT'));
 
-        if (isRedirect) {
-          // Redirect is happening. Reset UI to a clean state.
-          // isPending will become false automatically.
-          setUploadStatus("success"); // Clears "Uploading..." text from button if isPending becomes false
+        if (isRedirect && !returnJustData) { // Check !returnJustData for expected redirects
+          setUploadStatus("success");
           setFile(null);
           if (previewUrl) URL.revokeObjectURL(previewUrl);
           setPreviewUrl(null);
           if (fileInputRef.current) fileInputRef.current.value = "";
-          // No error message needed, page will refresh.
         } else {
-          // Genuine error
           console.error("Upload process error:", err);
           setUploadStatus("error");
           setErrorMessage(err.message || "An unknown error occurred during upload.");
-          setUploadProgress(0); // Reset progress on actual error
+          setUploadProgress(0);
         }
       }
     });
   };
 
+  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    performUpload();
+  };
+
   return (
     <div className="p-6 border rounded-lg shadow-sm bg-card mb-6">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleFormSubmit} className="space-y-4">
         <div>
           <Label htmlFor="media-file" className="text-base font-medium">Upload New Media</Label>
           <div className="mt-2 flex items-center justify-center w-full">
@@ -275,7 +272,7 @@ export default function MediaUploadForm({ onUploadSuccess, returnJustData }: Med
           </div>
         )}
 
-        <Button type="submit" disabled={isPending || uploadStatus === "uploading" || !file} className="w-full sm:w-auto">
+        <Button type="button" onClick={performUpload} disabled={isPending || uploadStatus === "uploading" || !file} className="w-full sm:w-auto">
           {isPending || uploadStatus === "uploading" ? `Uploading ${uploadProgress}%...` : "Upload File"}
         </Button>
       </form>

@@ -17,6 +17,12 @@ export async function createPost(formData: FormData) {
     return encodedRedirect("error", "/cms/posts/new", "User not authenticated.");
   }
 
+  const featureImageIdStr_create = formData.get("feature_image_id") as string;
+  let featureImageId_create: string | null = null;
+  if (featureImageIdStr_create && featureImageIdStr_create.trim() !== "") {
+    featureImageId_create = featureImageIdStr_create;
+  }
+
   const rawFormData = {
     title: formData.get("title") as string,
     slug: formData.get("slug") as string,
@@ -26,6 +32,7 @@ export async function createPost(formData: FormData) {
     published_at: formData.get("published_at") as string || null,
     meta_title: formData.get("meta_title") as string || null,
     meta_description: formData.get("meta_description") as string || null,
+    feature_image_id: featureImageId_create,
   };
 
   if (!rawFormData.title || !rawFormData.slug || isNaN(rawFormData.language_id) || !rawFormData.status) {
@@ -46,12 +53,13 @@ export async function createPost(formData: FormData) {
     published_at: publishedAtISO,
     author_id: user.id,
     translation_group_id: newTranslationGroupId,
+    feature_image_id: rawFormData.feature_image_id,
   };
 
   const { data: newPost, error: createError } = await supabase
     .from("posts")
     .insert(postData)
-    .select("id, title, slug, language_id, translation_group_id, excerpt") // Added excerpt
+    .select("id, title, slug, language_id, translation_group_id, excerpt, feature_image_id") // Added excerpt, feature_image_id
     .single();
 
   if (createError) {
@@ -128,15 +136,22 @@ export async function updatePost(postId: number, formData: FormData) {
     return encodedRedirect("error", "/cms/posts", "Original post not found or error fetching it.");
   }
 
+  const featureImageIdStr_update = formData.get("feature_image_id") as string;
+  let featureImageId_update: string | null = null;
+  if (featureImageIdStr_update && featureImageIdStr_update.trim() !== "") {
+    featureImageId_update = featureImageIdStr_update;
+  }
+
   const rawFormData = {
     title: formData.get("title") as string,
     slug: formData.get("slug") as string,
-    language_id: parseInt(formData.get("language_id") as string, 10),
+    language_id: existingPost.language_id, // Use existing post's language_id
     status: formData.get("status") as PageStatus,
     excerpt: formData.get("excerpt") as string || null,
     published_at: formData.get("published_at") as string || null,
     meta_title: formData.get("meta_title") as string || null,
     meta_description: formData.get("meta_description") as string || null,
+    feature_image_id: featureImageId_update,
   };
 
   if (!rawFormData.title || !rawFormData.slug || isNaN(rawFormData.language_id) || !rawFormData.status) {
@@ -162,6 +177,7 @@ export async function updatePost(postId: number, formData: FormData) {
     published_at: publishedAtISO,
     meta_title: rawFormData.meta_title,
     meta_description: rawFormData.meta_description,
+    feature_image_id: rawFormData.feature_image_id,
   };
 
   const { error: updateError } = await supabase
@@ -249,4 +265,5 @@ type UpsertPostPayload = {
   meta_title?: string | null;
   meta_description?: string | null;
   translation_group_id: string;
+  feature_image_id?: string | null;
 };

@@ -86,6 +86,17 @@ export async function generateMetadata(
       type: 'article',
       publishedTime: postData.published_at || postData.created_at,
       url: `${siteUrl}/blog/${params.slug}`,
+      images: postData.feature_image_url
+        ? [
+            {
+              url: postData.feature_image_url,
+              // You can optionally add width, height, and alt here if known
+              // width: 1200, // Example
+              // height: 630, // Example
+              // alt: postData.meta_title || postData.title, // Example
+            },
+          ]
+        : undefined, // Or an empty array if you prefer: [],
     },
     alternates: {
       canonical: `${siteUrl}/blog/${params.slug}`,

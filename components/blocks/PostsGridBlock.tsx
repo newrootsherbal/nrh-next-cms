@@ -23,7 +23,7 @@ const PostsGridBlock: React.FC<PostsGridBlockProps> = async ({ block, languageId
 
   const { data: postsData, error: queryError, count } = await supabase
     .from('posts')
-    .select('id, title, slug, excerpt, published_at, language_id, status, created_at, updated_at, translation_group_id', { count: 'exact' })
+    .select('id, title, slug, excerpt, published_at, language_id, status, created_at, updated_at, translation_group_id, feature_image_id, media ( object_key )', { count: 'exact' })
     .eq('status', 'published')
     .eq('language_id', languageId)
     .order('published_at', { ascending: false })
@@ -37,7 +37,7 @@ const PostsGridBlock: React.FC<PostsGridBlockProps> = async ({ block, languageId
     console.error("Error fetching initial posts directly in PostsGridBlock:", queryError);
     postsError = queryError.message;
   } else {
-    initialPosts = (postsData as Post[]) || [];
+    initialPosts = postsData?.map(p => ({ ...p, feature_image_url: p.media?.object_key ? `${process.env.NEXT_PUBLIC_R2_BASE_URL}/${p.media.object_key}` : null })) as Post[] || [];
     totalCount = count || 0;
   }
 

@@ -33,7 +33,7 @@ async function getPostsWithDetails(filterLanguageId?: number): Promise<{ post: P
 
   let query = supabase
     .from("posts")
-    .select("*, languages!inner(code)")
+    .select("*, languages!inner(code), media ( object_key )")
     .order("created_at", { ascending: false });
 
   if (filterLanguageId) {
@@ -51,7 +51,7 @@ async function getPostsWithDetails(filterLanguageId?: number): Promise<{ post: P
   return postsData.map(p => {
     const langInfo = p.languages as unknown as { code: string } | null;
     return {
-      post: p as Post,
+      post: { ...p, feature_image_url: p.media?.object_key ? `${process.env.NEXT_PUBLIC_R2_BASE_URL}/${p.media.object_key}` : null } as Post,
       languageCode: langInfo?.code?.toUpperCase() || langMap.get(p.language_id)?.toUpperCase() || 'N/A',
     };
   });

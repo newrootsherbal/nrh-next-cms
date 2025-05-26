@@ -226,3 +226,39 @@ export async function deleteMultipleMediaItems(items: Array<{ id: string; object
 type InsertMediaPayload = Omit<Media, 'id' | 'created_at' | 'updated_at' | 'uploader_id'> & {
     uploader_id: string;
 };
+
+export async function getMediaItems(
+    page: number = 1,
+    limit: number = 50 // Default to 50 items per page
+  ): Promise<{ data?: Media[]; error?: string; hasMore?: boolean }> {
+    const supabase = createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+        return { error: "User not authenticated." };
+    }
+
+    // Optional: Check user role if only certain roles can view all media
+    // const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    // if (!profile || !["ADMIN", "WRITER"].includes(profile.role)) {
+    //     return { error: "Forbidden: Insufficient permissions." };
+    // }
+
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    const { data, error, count } = await supabase
+        .from("media")
+        .select("*", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .range(from, to);
+
+    if (error) {
+        console.error("Error fetching media items:", error);
+        return { error: `Failed to fetch media items: ${error.message}` };
+    }
+
+    const hasMore = count ? to < count -1 : false;
+
+    return { data: data as Media[], hasMore };
+}

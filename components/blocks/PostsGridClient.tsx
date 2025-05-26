@@ -45,6 +45,12 @@ const PostsGridClient: React.FC<PostsGridClientProps> = ({
     setError(null);
     try {
       const result = await fetchAction(languageId, newPage, postsPerPage);
+      // Log the posts received from the fetchAction
+      console.log('PostsGridClient - Paginated posts received:', JSON.stringify(result.posts, null, 2));
+      if (result.posts && result.posts.length > 0) {
+        console.log('PostsGridClient - First paginated post feature_image_url:', result.posts[0].feature_image_url);
+      }
+
       if (result.error) {
         setError(result.error);
         setPosts([]);
@@ -78,8 +84,16 @@ const PostsGridClient: React.FC<PostsGridClientProps> = ({
         {posts.map((post) => (
           <Link href={`/blog/${post.slug}`} key={post.id} className="block group">
             <div className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-card text-card-foreground">
-              {/* Basic Post Card Structure - Enhance as needed */}
-              {/* Example: post.featured_image_url && <img src={post.featured_image_url} alt={post.title} className="w-full h-48 object-cover" /> */}
+              {/* Basic Post Card Structure - Enhanced with Feature Image */}
+              {post.feature_image_url && (
+                <div className="aspect-video overflow-hidden"> {/* Or other aspect ratio as desired, e.g., aspect-[16/9] or aspect-square */}
+                  <img
+                    src={post.feature_image_url}
+                    alt={`Feature image for ${post.title}`} // Or a more generic alt text if titles can be very long
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" // Added hover effect
+                  />
+                </div>
+              )}
               <div className="p-4">
                 <h3 className="text-lg font-semibold mb-2 group-hover:text-primary">{post.title}</h3>
                 {post.excerpt && <p className="text-sm text-muted-foreground mb-3 line-clamp-3">{post.excerpt}</p>}
