@@ -259,7 +259,7 @@ export default VideoEmbedBlockRenderer;
 4. Configure the video settings and save
 5. View the page/post to see your rendered video block
 
-**That's it!** No need to modify `utils/supabase/types.ts` or any other files. The registry system handles all the TypeScript interface definitions and validation automatically.
+**That's it!** The registry system handles all the TypeScript interface definitions and validation automatically.
 
 ## Architecture
 

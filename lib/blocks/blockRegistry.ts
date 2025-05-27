@@ -82,10 +82,21 @@ export interface PostsGridBlockContent {
   title?: string;
 }
 
+export interface VideoEmbedBlockContent {
+  /** The video URL (YouTube, Vimeo, etc.) */
+  url: string;
+  /** Optional title for the video */
+  title?: string;
+  /** Whether the video should autoplay */
+  autoplay?: boolean;
+  /** Whether to show video controls */
+  controls?: boolean;
+}
+
 /**
  * Available block types - defined here as the source of truth
  */
-export const availableBlockTypes = ["text", "heading", "image", "button", "posts_grid"] as const;
+export const availableBlockTypes = ["text", "heading", "image", "button", "posts_grid", "video_embed"] as const;
 export type BlockType = (typeof availableBlockTypes)[number];
 
 /**
@@ -412,6 +423,62 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
         'Grid automatically adapts to smaller screens',
         'Posts are filtered by current language',
         'Pagination improves performance for large post collections',
+      ],
+    },
+  },
+  
+  video_embed: {
+    type: "video_embed",
+    label: "Video Embed",
+    initialContent: {
+      url: "",
+      title: "",
+      autoplay: false,
+      controls: true
+    } as VideoEmbedBlockContent,
+    editorComponentFilename: "VideoEmbedBlockEditor.tsx",
+    rendererComponentFilename: "VideoEmbedBlockRenderer.tsx",
+    contentSchema: {
+      url: {
+        type: 'string',
+        required: true,
+        description: 'The video URL (YouTube, Vimeo, etc.)',
+        default: '',
+      },
+      title: {
+        type: 'string',
+        required: false,
+        description: 'Optional title for the video',
+        default: '',
+      },
+      autoplay: {
+        type: 'boolean',
+        required: false,
+        description: 'Whether the video should autoplay',
+        default: false,
+      },
+      controls: {
+        type: 'boolean',
+        required: false,
+        description: 'Whether to show video controls',
+        default: true,
+      },
+    },
+    documentation: {
+      description: 'Embeds videos from popular platforms with customizable playback options',
+      examples: [
+        '{ url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", title: "Rick Roll", controls: true }',
+        '{ url: "https://vimeo.com/123456789", autoplay: false, controls: true }',
+      ],
+      useCases: [
+        'Tutorial and educational videos',
+        'Product demonstrations',
+        'Marketing and promotional content',
+      ],
+      notes: [
+        'Supports YouTube, Vimeo, and other major video platforms',
+        'Autoplay may be restricted by browser policies',
+        'Videos are responsive and adapt to container width',
       ],
     },
   },
