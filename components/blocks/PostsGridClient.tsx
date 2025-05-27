@@ -88,6 +88,7 @@ const PostsGridClient: React.FC<PostsGridClientProps> = ({
                     alt={`Feature image for ${post.title}`}
                     width={post.feature_image_width}
                     height={post.feature_image_height}
+                    priority
                     className="h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                 </div>
