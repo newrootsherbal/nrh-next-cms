@@ -12,9 +12,10 @@ export const dynamicParams = true;
 export const revalidate = 3600;
 
 export async function generateMetadata(
-  { params }: { params: {} }, // params will be empty for app/blog/page.tsx, slug is hardcoded
+  { params }: { params: Promise<{}>}, // params will be empty for app/blog/page.tsx, slug is hardcoded
   parent: ResolvingMetadata
 ): Promise<Metadata> {
+  await params; // Await the params promise even though it's empty
   const slug = "blog"; // Hardcoded slug
   const pageData = await getPageDataBySlug(slug);
 
