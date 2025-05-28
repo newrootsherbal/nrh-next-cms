@@ -14,6 +14,7 @@ const config = {
     "text-accent",
     "text-muted",
     "text-destructive",
+    "text-background",
   ],
   prefix: "",
   theme: {

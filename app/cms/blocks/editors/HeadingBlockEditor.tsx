@@ -31,6 +31,7 @@ export default function HeadingBlockEditor({ content, onChange }: HeadingBlockEd
     { value: 'accent', label: 'Accent', swatchClass: 'bg-accent' },
     { value: 'muted', label: 'Muted', swatchClass: 'bg-muted-foreground' }, // Using muted-foreground for swatch as text-muted is for text
     { value: 'destructive', label: 'Destructive', swatchClass: 'bg-destructive' },
+    { value: 'background', label: 'Background', swatchClass: 'bg-background' },
   ] as const;
 
   const handleTextAlignChange = (value: string) => {
