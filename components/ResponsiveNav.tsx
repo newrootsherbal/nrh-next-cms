@@ -2,7 +2,9 @@
 
 import Link from 'next/link';
 import React, { useState, useEffect, useMemo } from 'react'; // Added React for JSX namespace
+import { usePathname } from 'next/navigation';
 import type { NavigationItem } from '../utils/supabase/types'; // Relative path from components/
+import { useCurrentContent } from '@/context/CurrentContentContext';
 
 // Define a type for hierarchical navigation items
 interface HierarchicalNavigationItem extends NavigationItem {
@@ -62,6 +64,27 @@ export default function ResponsiveNav({
   const [expandedMobileItems, setExpandedMobileItems] = useState<Record<string, boolean>>({});
 
   const hierarchicalNavItems = useMemo(() => buildHierarchy(navItems), [navItems]);
+  const { currentContent } = useCurrentContent();
+  const pathname = usePathname(); // Keep for other potential uses, or if preliminary check is still desired
+
+  let editPathDetails: { href: string; label: string } | null = null;
+
+  if (canAccessCms && currentContent.id && currentContent.type) {
+    if (currentContent.type === 'page') {
+      editPathDetails = {
+        href: `/cms/pages/${currentContent.id}/edit`,
+        label: "Edit Page",
+      };
+    } else if (currentContent.type === 'post') {
+      editPathDetails = {
+        href: `/cms/posts/${currentContent.id}/edit`,
+        label: "Edit Post",
+      };
+    }
+  }
+  // The old path-based logic for determining editPathDetails is removed
+  // as the context is now the source of truth for ID and type.
+  // The link will only show if canAccessCms is true and context provides valid id and type.
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -167,6 +190,11 @@ export default function ResponsiveNav({
 
         {/* Right side: Auth, LangSwitcher (desktop), Hamburger (mobile) */}
         <div className="hidden md:flex items-center space-x-4">
+          {canAccessCms && editPathDetails && (
+            <Link href={editPathDetails.href} className="hover:underline font-semibold text-sm text-foreground mr-3">
+              {editPathDetails.label}
+            </Link>
+          )}
           {canAccessCms && (
             <Link href={cmsDashboardLinkHref} className="hover:underline font-semibold text-sm text-foreground">
               {cmsDashboardLinkLabel}
@@ -218,6 +246,17 @@ export default function ResponsiveNav({
         <div className="fixed top-16 left-0 h-[calc(100vh-4rem)] w-full max-w-sm bg-background text-foreground shadow-xl p-5 z-50 flex flex-col">
           <nav className="flex-grow flex flex-col space-y-1 overflow-y-auto pt-6"> 
             {renderMobileNavItems(hierarchicalNavItems)}
+            {canAccessCms && editPathDetails && (
+              <Link
+                href={editPathDetails.href}
+                className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:bg-gray-100 dark:hover:bg-gray-700"
+                onClick={() => {
+                  toggleMobileMenu();
+                }}
+              >
+                {editPathDetails.label}
+              </Link>
+            )}
             {canAccessCms && (
               <Link
                 href={cmsDashboardLinkHref}

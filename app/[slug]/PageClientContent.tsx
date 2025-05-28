@@ -1,11 +1,12 @@
 // app/[slug]/PageClientContent.tsx
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation'; // For navigation on lang switch
 import { createClient } from "@/utils/supabase/client";
 import type { Page as PageType, Block as BlockType, Language, ImageBlockContent, Media } from "@/utils/supabase/types";
 import { useLanguage } from '@/context/LanguageContext';
+import { useCurrentContent } from '@/context/CurrentContentContext';
 import Link from 'next/link';
 
 interface PageClientContentProps {
@@ -41,11 +42,16 @@ interface PageClientContentProps {
 
 export default function PageClientContent({ initialPageData, currentSlug, children, translatedSlugs }: PageClientContentProps) {
   const { currentLocale, isLoadingLanguages } = useLanguage();
+  const { currentContent, setCurrentContent } = useCurrentContent();
   const router = useRouter();
   // currentPageData is the data for the slug currently in the URL.
   // It's initially set by the server for the slug it resolved.
   const [currentPageData, setCurrentPageData] = useState(initialPageData);
   const [isLoadingTargetLang, setIsLoadingTargetLang] = useState(false);
+
+  // Memoize pageId and pageSlug
+  const pageId = useMemo(() => currentPageData?.id, [currentPageData?.id]);
+  const pageSlug = useMemo(() => currentPageData?.slug, [currentPageData?.slug]);
 
   useEffect(() => {
     if (currentLocale && currentPageData && currentPageData.language_code !== currentLocale && translatedSlugs) {
@@ -75,6 +81,39 @@ export default function PageClientContent({ initialPageData, currentSlug, childr
     }
   }, [currentPageData]);
 
+  // Effect for setting or updating the context
+  useEffect(() => {
+    const newType = 'page' as const;
+    const slugToSet = pageSlug ?? null; // Ensures slug is string or null
+
+    const needsUpdate = pageId &&
+                        (currentContent.id !== pageId ||
+                         currentContent.type !== newType ||
+                         currentContent.slug !== slugToSet);
+
+    const needsClearing = !pageId &&
+                          (currentContent.id !== null ||
+                           currentContent.type !== null ||
+                           currentContent.slug !== null);
+
+    if (needsUpdate) {
+      setCurrentContent({ id: pageId, type: newType, slug: slugToSet });
+    } else if (needsClearing) {
+      setCurrentContent({ id: null, type: null, slug: null });
+    }
+  }, [pageId, pageSlug, setCurrentContent]);
+
+  // Separate useEffect for cleanup
+  useEffect(() => {
+    const idToClean = pageId; // Capture the pageId when this effect runs
+
+    return () => {
+      // Cleanup logic: only clear context if the current context ID matches the ID this instance was managing
+      if (idToClean && currentContent.id === idToClean) {
+        setCurrentContent({ id: null, type: null, slug: null });
+      }
+    };
+  }, [pageId, setCurrentContent]); // MODIFIED: Removed currentContent.id from dependencies
 
   if (!currentPageData && !isLoadingLanguages && !isLoadingTargetLang) { // If initial data was null and no target lang found
     return (
@@ -96,7 +135,7 @@ export default function PageClientContent({ initialPageData, currentSlug, childr
 
 
   return (
-    <article className="w-full mx-auto px-4 py-8">
+    <article className="w-full mx-auto py-8">
       {isLoadingTargetLang && <div className="text-center py-2 text-sm text-muted-foreground">Switching language...</div>}
       
       {/* Render blocks passed as children */}

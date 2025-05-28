@@ -1,11 +1,12 @@
 // app/blog/[slug]/PostClientContent.tsx
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from "@/utils/supabase/client";
 import type { Post as PostType, Block as BlockType, Language, ImageBlockContent, Media } from "@/utils/supabase/types";
 import { useLanguage } from '@/context/LanguageContext';
+import { useCurrentContent } from '@/context/CurrentContentContext';
 import Link from 'next/link';
 
 interface PostClientContentProps {
@@ -48,12 +49,17 @@ interface PostClientContentProps {
 
 export default function PostClientContent({ initialPostData, currentSlug, children, translatedSlugs }: PostClientContentProps) {
   const { currentLocale, isLoadingLanguages } = useLanguage();
+  const { currentContent, setCurrentContent } = useCurrentContent();
   const router = useRouter();
   
   // currentPostData is always for the slug in the URL.
   // It's initially set by the server. It only changes if the URL itself changes (which happens on language switch).
   const [currentPostData, setCurrentPostData] = useState(initialPostData);
   const [isLoadingTargetLang, setIsLoadingTargetLang] = useState(false); // For feedback during navigation
+
+  // Memoize postId and postSlug
+  const postId = useMemo(() => currentPostData?.id, [currentPostData?.id]);
+  const postSlug = useMemo(() => currentPostData?.slug, [currentPostData?.slug]);
 
   // This effect handles navigation when the language context changes
   useEffect(() => {
@@ -91,6 +97,39 @@ export default function PostClientContent({ initialPostData, currentSlug, childr
     setCurrentPostData(initialPostData);
   }, [initialPostData]);
 
+  // Effect for setting or updating the context
+  useEffect(() => {
+    const newType = 'post' as const;
+    const slugToSet = postSlug ?? null; // Ensures slug is string or null
+
+    const needsUpdate = postId &&
+                        (currentContent.id !== postId ||
+                         currentContent.type !== newType ||
+                         currentContent.slug !== slugToSet);
+
+    const needsClearing = !postId &&
+                          (currentContent.id !== null ||
+                           currentContent.type !== null ||
+                           currentContent.slug !== null);
+
+    if (needsUpdate) {
+      setCurrentContent({ id: postId, type: newType, slug: slugToSet });
+    } else if (needsClearing) {
+      setCurrentContent({ id: null, type: null, slug: null });
+    }
+  }, [postId, postSlug, setCurrentContent]);
+
+  // Separate useEffect for cleanup
+  useEffect(() => {
+    const idToClean = postId; // Capture the postId when this effect runs
+
+    return () => {
+      // Cleanup logic: only clear context if the current context ID matches the ID this instance was managing
+      if (idToClean && currentContent.id === idToClean) {
+        setCurrentContent({ id: null, type: null, slug: null });
+      }
+    };
+  }, [postId, setCurrentContent]); // MODIFIED: Removed currentContent.id from dependencies
 
   if (!currentPostData && !isLoadingLanguages && !isLoadingTargetLang) {
     // This state means the initial slug from the URL didn't resolve to any data.
