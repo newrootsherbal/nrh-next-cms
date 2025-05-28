@@ -1,5 +1,5 @@
 import React from "react";
-import type { HeadingBlockContent } from "@/utils/supabase/types";
+import type { HeadingBlockContent } from "@/lib/blocks/blockRegistry";
 
 interface HeadingBlockRendererProps {
   content: HeadingBlockContent;
@@ -19,8 +19,19 @@ const HeadingBlockRenderer: React.FC<HeadingBlockRendererProps> = ({
       : 2;
   const Tag: React.ElementType = `h${level}`;
   
+  let alignmentClass = "";
+  if (content.textAlign) {
+    alignmentClass = `text-${content.textAlign}`;
+  }
+
+  let colorClass = "";
+  if (content.textColor) {
+    colorClass = `text-${content.textColor}`;
+  }
+
+  const combinedClasses = `my-6 font-bold ${alignmentClass} ${colorClass}`.trim();
   return (
-    <Tag className="my-6 font-bold">
+    <Tag className={combinedClasses}>
       {content.text_content}
     </Tag>
   );

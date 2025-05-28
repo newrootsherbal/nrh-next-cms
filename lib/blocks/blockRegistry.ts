@@ -31,6 +31,10 @@ export interface HeadingBlockContent {
   level: 1 | 2 | 3 | 4 | 5 | 6;
   /** The text content of the heading */
   text_content: string;
+  /** Text alignment of the heading */
+  textAlign?: 'left' | 'center' | 'right' | 'justify';
+  /** Color of the heading text, based on theme colors */
+  textColor?: 'primary' | 'secondary' | 'accent' | 'muted' | 'destructive';
 }
 
 /**
@@ -252,7 +256,7 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
   heading: {
     type: "heading",
     label: "Heading",
-    initialContent: { level: 1, text_content: "New Heading" } as HeadingBlockContent,
+    initialContent: { level: 1, text_content: "New Heading", textAlign: 'left', textColor: undefined } as HeadingBlockContent,
     editorComponentFilename: "HeadingBlockEditor.tsx",
     rendererComponentFilename: "HeadingBlockRenderer.tsx",
     contentSchema: {
@@ -273,6 +277,26 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
         required: true,
         description: 'The text content of the heading',
         default: 'New Heading',
+      },
+      textAlign: {
+        type: 'union',
+        required: false,
+        description: 'Text alignment of the heading',
+        default: 'left',
+        unionValues: ['left', 'center', 'right', 'justify'] as const,
+        constraints: {
+          enum: ['left', 'center', 'right', 'justify'] as const,
+        },
+      },
+      textColor: {
+        type: 'union',
+        required: false,
+        description: 'Color of the heading text, based on theme colors',
+        default: undefined, // Or a specific default like 'primary' if desired
+        unionValues: ['primary', 'secondary', 'accent', 'muted', 'destructive'] as const,
+        constraints: {
+          enum: ['primary', 'secondary', 'accent', 'muted', 'destructive'] as const,
+        },
       },
     },
     documentation: {

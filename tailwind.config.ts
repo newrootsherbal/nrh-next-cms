@@ -8,6 +8,13 @@ const config = {
     "./app/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
   ],
+  safelist: [
+    "text-primary",
+    "text-secondary",
+    "text-accent",
+    "text-muted",
+    "text-destructive",
+  ],
   prefix: "",
   theme: {
     container: {

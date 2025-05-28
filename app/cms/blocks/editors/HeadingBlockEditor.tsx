@@ -5,7 +5,7 @@ import React from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { HeadingBlockContent } from "@/utils/supabase/types";
+import type { HeadingBlockContent } from "@/lib/blocks/blockRegistry";
 
 interface HeadingBlockEditorProps {
   content: Partial<HeadingBlockContent>;
@@ -21,6 +21,25 @@ export default function HeadingBlockEditor({ content, onChange }: HeadingBlockEd
 
   const handleLevelChange = (value: string) => {
     onChange({ ...content, level: parseInt(value, 10) as HeadingBlockContent['level'] } as HeadingBlockContent);
+  };
+
+  const textAlignOptions = ['left', 'center', 'right', 'justify'] as const;
+
+  const textColorOptions = [
+    { value: 'primary', label: 'Primary', swatchClass: 'bg-primary' },
+    { value: 'secondary', label: 'Secondary', swatchClass: 'bg-secondary' },
+    { value: 'accent', label: 'Accent', swatchClass: 'bg-accent' },
+    { value: 'muted', label: 'Muted', swatchClass: 'bg-muted-foreground' }, // Using muted-foreground for swatch as text-muted is for text
+    { value: 'destructive', label: 'Destructive', swatchClass: 'bg-destructive' },
+  ] as const;
+
+  const handleTextAlignChange = (value: string) => {
+    onChange({ ...content, textAlign: value as HeadingBlockContent['textAlign'] } as HeadingBlockContent);
+  };
+
+  const handleTextColorChange = (value: string) => {
+    const newTextColor = value === "" ? undefined : value as HeadingBlockContent['textColor'];
+    onChange({ ...content, textColor: newTextColor } as HeadingBlockContent);
   };
 
   return (
@@ -49,6 +68,45 @@ export default function HeadingBlockEditor({ content, onChange }: HeadingBlockEd
                     <SelectItem key={level} value={level.toString()}>H{level}</SelectItem>
                 ))}
             </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label htmlFor={`heading-text-align-${idPrefix}`}>Text Alignment</Label>
+        <Select
+          value={content.textAlign || 'left'}
+          onValueChange={handleTextAlignChange}
+        >
+          <SelectTrigger id={`heading-text-align-${idPrefix}`} className="mt-1">
+            <SelectValue placeholder="Select alignment" />
+          </SelectTrigger>
+          <SelectContent>
+            {textAlignOptions.map(align => (
+              <SelectItem key={align} value={align}>
+                {align.charAt(0).toUpperCase() + align.slice(1)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label htmlFor={`heading-text-color-${idPrefix}`}>Text Color</Label>
+        <Select
+          value={content.textColor || ""} // Use empty string if no color is selected initially
+          onValueChange={handleTextColorChange}
+        >
+          <SelectTrigger id={`heading-text-color-${idPrefix}`} className="mt-1">
+            <SelectValue placeholder="Select color (optional)" />
+          </SelectTrigger>
+          <SelectContent>
+            {textColorOptions.map(color => (
+              <SelectItem key={color.value} value={color.value}>
+                <div className="flex items-center">
+                  <div className={`w-4 h-4 rounded-sm mr-2 border ${color.swatchClass}`}></div>
+                  {color.label}
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
         </Select>
       </div>
     </div>
