@@ -96,7 +96,7 @@ export default function PageClientContent({ initialPageData, currentSlug, childr
 
 
   return (
-    <article className="container mx-auto px-4 py-8">
+    <article className="w-full mx-auto px-4 py-8">
       {isLoadingTargetLang && <div className="text-center py-2 text-sm text-muted-foreground">Switching language...</div>}
       
       {/* Render blocks passed as children */}

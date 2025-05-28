@@ -1,5 +1,5 @@
 // utils/supabase/types.ts
-import { availableBlockTypes, type BlockType } from '@/lib/blocks/blockRegistry';
+import { availableBlockTypes, type BlockType, type SectionBlockContent } from '@/lib/blocks/blockRegistry';
 
 export type UserRole = 'ADMIN' | 'WRITER' | 'USER';
 
@@ -69,7 +69,8 @@ export type SpecificBlockContent =
   | ({ type: "heading" } & HeadingBlockContent)
   | ({ type: "image" } & ImageBlockContent)
   | ({ type: "button" } & ButtonBlockContent)
-  | ({ type: "posts_grid" } & PostsGridBlockContent);
+  | ({ type: "posts_grid" } & PostsGridBlockContent)
+  | ({ type: "section" } & SectionBlockContent);
 
 export interface Block {
   id: number;

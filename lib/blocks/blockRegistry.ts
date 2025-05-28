@@ -94,9 +94,58 @@ export interface VideoEmbedBlockContent {
 }
 
 /**
+ * Content interface for section blocks
+ * Provides flexible column layouts with responsive breakpoints and background options
+ */
+export interface SectionBlockContent {
+  /** Container width type */
+  container_type: 'full-width' | 'container' | 'container-sm' | 'container-lg' | 'container-xl';
+  /** Background configuration */
+  background: {
+    type: 'none' | 'theme' | 'solid' | 'gradient' | 'image';
+    theme?: 'primary' | 'secondary' | 'muted' | 'accent' | 'destructive';
+    solid_color?: string;
+    gradient?: {
+      type: 'linear' | 'radial';
+      direction?: string; // e.g., "to right", "45deg"
+      stops: Array<{ color: string; position: number }>;
+    };
+    image?: {
+      media_id: string;
+      object_key: string;
+      position: 'center' | 'top' | 'bottom' | 'left' | 'right' | 'cover' | 'contain';
+      overlay?: {
+        type: 'none' | 'solid' | 'gradient';
+        color?: string;
+        opacity?: number;
+      };
+    };
+  };
+  /** Responsive column configuration */
+  responsive_columns: {
+    mobile: 1 | 2;
+    tablet: 1 | 2 | 3;
+    desktop: 1 | 2 | 3 | 4;
+  };
+  /** Gap between columns */
+  column_gap: 'none' | 'sm' | 'md' | 'lg' | 'xl';
+  /** Section padding */
+  padding: {
+    top: 'none' | 'sm' | 'md' | 'lg' | 'xl';
+    bottom: 'none' | 'sm' | 'md' | 'lg' | 'xl';
+  };
+  /** Array of blocks within columns - 2D array where each index represents a column */
+  column_blocks: Array<Array<{
+    block_type: BlockType;
+    content: Record<string, any>;
+    temp_id?: string; // For client-side management before save
+  }>>;
+}
+
+/**
  * Available block types - defined here as the source of truth
  */
-export const availableBlockTypes = ["text", "heading", "image", "button", "posts_grid", "video_embed"] as const;
+export const availableBlockTypes = ["text", "heading", "image", "button", "posts_grid", "video_embed", "section"] as const;
 export type BlockType = (typeof availableBlockTypes)[number];
 
 /**
@@ -482,6 +531,92 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
       ],
     },
   },
+  
+  section: {
+    type: "section",
+    label: "Section Layout",
+    initialContent: {
+      container_type: "container",
+      background: { type: "none" },
+      responsive_columns: { mobile: 1, tablet: 2, desktop: 3 },
+      column_gap: "md",
+      padding: { top: "md", bottom: "md" },
+      column_blocks: [
+        [{ block_type: "text", content: { html_content: "<p>Column 1</p>" } }],
+        [{ block_type: "text", content: { html_content: "<p>Column 2</p>" } }],
+        [{ block_type: "text", content: { html_content: "<p>Column 3</p>" } }]
+      ]
+    } as SectionBlockContent,
+    editorComponentFilename: "SectionBlockEditor.tsx",
+    rendererComponentFilename: "SectionBlockRenderer.tsx",
+    contentSchema: {
+      container_type: {
+        type: 'union',
+        required: true,
+        description: 'Container width type',
+        default: 'container',
+        unionValues: ['full-width', 'container', 'container-sm', 'container-lg', 'container-xl'] as const,
+        constraints: {
+          enum: ['full-width', 'container', 'container-sm', 'container-lg', 'container-xl'] as const,
+        },
+      },
+      background: {
+        type: 'object',
+        required: true,
+        description: 'Background configuration',
+        default: { type: 'none' },
+      },
+      responsive_columns: {
+        type: 'object',
+        required: true,
+        description: 'Responsive column configuration',
+        default: { mobile: 1, tablet: 2, desktop: 3 },
+      },
+      column_gap: {
+        type: 'union',
+        required: true,
+        description: 'Gap between columns',
+        default: 'md',
+        unionValues: ['none', 'sm', 'md', 'lg', 'xl'] as const,
+        constraints: {
+          enum: ['none', 'sm', 'md', 'lg', 'xl'] as const,
+        },
+      },
+      padding: {
+        type: 'object',
+        required: true,
+        description: 'Section padding configuration',
+        default: { top: 'md', bottom: 'md' },
+      },
+      column_blocks: {
+        type: 'array',
+        required: true,
+        description: 'Array of blocks within columns',
+        default: [],
+        arrayElementType: 'object',
+      },
+    },
+    documentation: {
+      description: 'A flexible section layout with responsive columns and background options',
+      examples: [
+        '{ container_type: "container", responsive_columns: { mobile: 1, tablet: 2, desktop: 3 } }',
+        '{ background: { type: "gradient" }, column_blocks: [...] }',
+        '{ container_type: "full-width", background: { type: "image" } }',
+      ],
+      useCases: [
+        'Feature sections with multiple content blocks',
+        'Comparison layouts and product showcases',
+        'Hero sections with structured content',
+        'Multi-column article layouts',
+      ],
+      notes: [
+        'Blocks within sections can be edited inline',
+        'Supports full drag-and-drop between columns and sections',
+        'Background images are managed through existing media system',
+        'Responsive breakpoints follow Tailwind CSS conventions',
+      ],
+    },
+  },
 };
 
 /**
@@ -550,12 +685,14 @@ export function getBlockDocumentation(blockType: BlockType): BlockDefinition['do
  * 
  * @returns A TypeScript union type for all block content
  */
-export type AllBlockContent = 
+export type AllBlockContent =
   | ({ type: "text" } & TextBlockContent)
   | ({ type: "heading" } & HeadingBlockContent)
   | ({ type: "image" } & ImageBlockContent)
   | ({ type: "button" } & ButtonBlockContent)
-  | ({ type: "posts_grid" } & PostsGridBlockContent);
+  | ({ type: "posts_grid" } & PostsGridBlockContent)
+  | ({ type: "section" } & SectionBlockContent)
+  | ({ type: "video_embed" } & VideoEmbedBlockContent);
 
 /**
  * Validate block content against its schema

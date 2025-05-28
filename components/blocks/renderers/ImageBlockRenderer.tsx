@@ -39,10 +39,9 @@ const ImageBlockRenderer: React.FC<ImageBlockRendererProps> = ({
   return (
     <div className="w-full">
       <figure
-        className="my-6 text-center mx-auto"
+        className="my-6 text-center mx-auto max-w-full"
         style={{
           width: content.width,
-          height: content.height,
         }}
       >
         <Image
