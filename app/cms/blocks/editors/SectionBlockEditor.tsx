@@ -337,13 +337,22 @@ function ColumnEditor({ columnIndex, blocks, onBlocksChange, isExpanded, onToggl
                            {block.block_type === 'posts_grid' ? (
                              <EditorComponent
                                block={{
+                                 // Start with the existing temporary block structure
                                  ...block,
-                                 content: tempBlockContent,
-                                 id: 0,
-                                 language_id: 0,
-                                 order: 0,
-                                 created_at: '',
-                                 updated_at: ''
+                                 // Ensure content is always an object
+                                 content: tempBlockContent || getInitialContent('posts_grid') || {},
+                                 
+                                 // Add missing properties from the full Block type with defaults
+                                 // These are not present on the 'block' object from column_blocks
+                                 id: (block as any).id || 0, // Cast to any to access potential id, or default
+                                 language_id: (block as any).language_id || 0, // Default if not present
+                                 order: (block as any).order || 0, // Default if not present
+                                 created_at: (block as any).created_at || new Date().toISOString(),
+                                 updated_at: (block as any).updated_at || new Date().toISOString(),
+                                 page_id: (block as any).page_id || null,
+                                 post_id: (block as any).post_id || null,
+                                 // block_type is already present in 'block'
+                                 // temp_id is specific to the temporary structure and not part of Block
                                }}
                              />
                            ) : (

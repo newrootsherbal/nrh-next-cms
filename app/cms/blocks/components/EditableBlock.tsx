@@ -1,9 +1,11 @@
 // app/cms/blocks/components/EditableBlock.tsx
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import type { Block, ImageBlockContent } from "@/utils/supabase/types";
+// Directly import PostsGridBlockEditor for the targeted fix
+import PostsGridBlockEditor from '../editors/PostsGridBlockEditor';
 import { Button } from "@/components/ui/button";
 import { GripVertical, Trash2, Edit2, Check, X } from "lucide-react";
 import { getBlockDefinition } from "@/lib/blocks/blockRegistry";
@@ -36,6 +38,11 @@ export default function EditableBlock({
   dragHandleProps,
   onEditNestedBlock,
 }: EditableBlockProps) {
+  // Add a guard for undefined block prop
+  if (!block) {
+    // Or some other placeholder/error display
+    return <div className="p-4 border rounded-lg bg-card shadow text-red-500">Error: Block data is missing in EditableBlock.</div>;
+  }
 
   const [EditorComponent, setEditorComponent] = useState<React.ComponentType<any> | null>(null);
   const [isLoadingEditor, setIsLoadingEditor] = useState(false);
@@ -54,9 +61,15 @@ export default function EditableBlock({
       setEditorError(null);
 
       try {
-        const blockDefinition = getBlockDefinition(block.block_type as any);
+        // Ensure block.block_type is accessed safely
+        const currentBlockType = block && block.block_type;
+        if (!currentBlockType) {
+          throw new Error(`Block type is missing or block is invalid.`);
+        }
+
+        const blockDefinition = getBlockDefinition(currentBlockType as any);
         if (!blockDefinition) {
-          throw new Error(`No block definition found for type: ${block.block_type}`);
+          throw new Error(`No block definition found for type: ${currentBlockType}`);
         }
 
         const componentPath = `../editors/${blockDefinition.editorComponentFilename.replace('.tsx', '')}`;
@@ -64,16 +77,25 @@ export default function EditableBlock({
         setEditorComponent(() => module.default);
       } catch (error) {
         console.error('Failed to load editor component:', error);
-        setEditorError(`Failed to load editor for ${block.block_type}`);
+        setEditorError(`Failed to load editor for ${block?.block_type || 'unknown type'}`);
       } finally {
         setIsLoadingEditor(false);
       }
     };
 
     loadEditorComponent();
-  }, [isEditing, block.block_type]);
+  }, [isEditing, block]); // Depend on 'block' object itself
 
   const renderEditor = () => {
+    // Targeted fix: If it's a posts_grid, render it directly.
+    if (block && block.block_type === "posts_grid") {
+      console.log("EditableBlock: Directly rendering PostsGridBlockEditor with block:", JSON.stringify(block));
+      // Ensure block is not null/undefined before passing, though the outer guard should handle this.
+      if (!block) return <div className="text-red-500">Error: Block became null before direct render.</div>;
+      return <PostsGridBlockEditor block={block} />;
+    }
+
+    // Original dynamic loading logic for other block types
     if (isLoadingEditor) {
       return (
         <div className="flex items-center justify-center py-8">
@@ -91,30 +113,32 @@ export default function EditableBlock({
     }
 
     if (!EditorComponent) {
+      // This case should ideally not be hit if isEditing is true and not posts_grid,
+      // as useEffect should have loaded it or set an error.
       return (
         <div className="flex items-center justify-center py-8">
-          <div className="text-sm text-muted-foreground">No editor available</div>
+          <div className="text-sm text-muted-foreground">Editor not available or still loading.</div>
         </div>
       );
     }
 
     const currentContent = tempContent || block.content || {};
-
-    // Handle special case for PostsGridBlockEditor which expects a block prop
-    if (block.block_type === "posts_grid") {
-      return <EditorComponent block={block} />;
-    }
-
-    // Standard editor interface: content and onChange props
+    // Standard editor interface for other dynamically loaded blocks
     return <EditorComponent content={currentContent} onChange={onTempContentChange} />;
   };
 
   const renderPreview = () => {
-    const blockDefinition = getBlockDefinition(block.block_type as any);
-    const blockLabel = blockDefinition?.label || block.block_type;
+    // Safe access to block_type for preview
+    const currentBlockType = block && block.block_type;
+    if (!currentBlockType) {
+      return <div className="text-red-500">Error: Block type missing for preview.</div>;
+    }
+
+    const blockDefinition = getBlockDefinition(currentBlockType as any);
+    const blockLabel = blockDefinition?.label || currentBlockType;
 
     // Special preview for section blocks
-    if (block.block_type === 'section' && block.content) {
+    if (currentBlockType === 'section' && block.content) {
       const sectionContent = block.content as any; // SectionBlockContent type
       const columnBlocks = sectionContent.column_blocks || [];
       const desktopColumns = sectionContent.responsive_columns?.desktop || columnBlocks.length;
@@ -242,7 +266,7 @@ export default function EditableBlock({
               <GripVertical className="h-5 w-5 text-muted-foreground hover:text-foreground" />
             </button>
           )}
-          <span className="font-medium capitalize">{block.block_type}</span>
+          <span className="font-medium capitalize">{block?.block_type || 'Unknown Block'}</span>
         </div>
         <div className="flex items-center gap-1">
             {isEditing ? (

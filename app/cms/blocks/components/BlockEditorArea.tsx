@@ -475,17 +475,43 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
               </DialogDescription>
             </DialogHeader>
             <div className="py-4 min-h-[300px]">
-              {NestedBlockEditorComponent && tempNestedBlockContent !== null ? (
-                <NestedBlockEditorComponent
-                  content={tempNestedBlockContent}
-                  onChange={setTempNestedBlockContent}
-                  // Some editors might need the full block or more context.
-                  // For now, this is the common pattern.
-                  // blockData={editingNestedBlockInfo.blockData} // Example if full data needed
-                  // languageId={languageId} // Example if languageId needed
-                />
+              {NestedBlockEditorComponent && tempNestedBlockContent !== null && editingNestedBlockInfo ? (
+                (() => {
+                  const blockType = editingNestedBlockInfo.blockData.block_type;
+                  if (blockType === "posts_grid") {
+                    // Construct the full 'block' prop for PostsGridBlockEditor
+                    const fullBlockForEditor: Block = {
+                      // These are from the temporary nested block structure
+                      block_type: editingNestedBlockInfo.blockData.block_type,
+                      content: tempNestedBlockContent, // This is the content being edited
+                      // Add defaults for other Block properties that PostsGridBlockEditor might expect
+                      // Ideally, the original parent section block's context or dummy values
+                      id: (editingNestedBlockInfo.blockData as any).id || 0, // temp_id is not the db id
+                      language_id: languageId, // Use languageId from BlockEditorArea props
+                      order: (editingNestedBlockInfo.blockData as any).order || 0,
+                      created_at: (editingNestedBlockInfo.blockData as any).created_at || new Date().toISOString(),
+                      updated_at: (editingNestedBlockInfo.blockData as any).updated_at || new Date().toISOString(),
+                      page_id: parentType === 'page' ? parentId : null,
+                      post_id: parentType === 'post' ? parentId : null,
+                    };
+                    // Pass isNestedEditing and onChange for PostsGridBlockEditor
+                    return <NestedBlockEditorComponent
+                              block={fullBlockForEditor}
+                              isNestedEditing={true}
+                              onChange={setTempNestedBlockContent}
+                           />;
+                  } else {
+                    // Standard rendering for other block types
+                    return (
+                      <NestedBlockEditorComponent
+                        content={tempNestedBlockContent}
+                        onChange={setTempNestedBlockContent}
+                      />
+                    );
+                  }
+                })()
               ) : (
-                <p>Loading editor...</p>
+                <p>Loading editor or missing data...</p>
               )}
               {/* Debugging info:
               <pre className="mt-4 p-2 bg-slate-100 dark:bg-slate-800 rounded text-xs overflow-auto max-h-[200px]">
