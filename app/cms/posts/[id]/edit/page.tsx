@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Eye, ArrowLeft } from "lucide-react"; // Removed SeparatorVertical, use <Separator />
 import ContentLanguageSwitcher from "@/app/cms/components/ContentLanguageSwitcher";
 import { getActiveLanguagesServerSide } from "@/utils/supabase/server"; // Correct server-side fetch
+import CopyContentFromLanguage from "@/app/cms/components/CopyContentFromLanguage";
 
 interface PostWithBlocks extends PostType {
   blocks: BlockType[];
@@ -132,13 +133,22 @@ export default async function EditPostPage(props: { params: Promise<{ id: string
                 <p className="text-sm text-muted-foreground truncate max-w-md" title={postWithBlocks.title}>{postWithBlocks.title}</p>
             </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap"> {/* Added flex-wrap for responsiveness */}
             {allSiteLanguages.length > 0 && (
                  <ContentLanguageSwitcher
                     currentItem={postWithBlocks}
                     itemType="post"
                     allSiteLanguages={allSiteLanguages}
                   />
+            )}
+            {postWithBlocks.translation_group_id && allSiteLanguages.length > 1 && (
+              <CopyContentFromLanguage
+                parentId={postId}
+                parentType="post"
+                currentLanguageId={postWithBlocks.language_id}
+                translationGroupId={postWithBlocks.translation_group_id}
+                allSiteLanguages={allSiteLanguages}
+              />
             )}
             <Link href={publicPostUrl} target="_blank" rel="noopener noreferrer">
               <Button variant="outline">

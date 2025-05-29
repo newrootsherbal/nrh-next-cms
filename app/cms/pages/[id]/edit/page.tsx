@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Eye, ArrowLeft } from "lucide-react";
 import ContentLanguageSwitcher from "@/app/cms/components/ContentLanguageSwitcher";
 import { getActiveLanguagesServerSide } from "@/utils/supabase/server";
+import CopyContentFromLanguage from "@/app/cms/components/CopyContentFromLanguage";
 
 // ... (Interface PageWithBlocks and getPageDataWithBlocks remain the same) ...
 interface PageWithBlocks extends Page {
@@ -83,7 +84,7 @@ export default async function EditPage(props: { params: Promise<{ id: string }> 
                 <p className="text-sm text-muted-foreground truncate max-w-md" title={pageWithBlocks.title}>{pageWithBlocks.title}</p>
             </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap"> {/* Added flex-wrap for responsiveness */}
             {allSiteLanguages.length > 0 && (
                  <ContentLanguageSwitcher
                     currentItem={{
@@ -94,6 +95,15 @@ export default async function EditPage(props: { params: Promise<{ id: string }> 
                     allSiteLanguages={allSiteLanguages}
                   />
             )}
+           {pageWithBlocks.translation_group_id && allSiteLanguages.length > 1 && (
+             <CopyContentFromLanguage
+               parentId={pageId}
+               parentType="page"
+               currentLanguageId={pageWithBlocks.language_id}
+               translationGroupId={pageWithBlocks.translation_group_id}
+               allSiteLanguages={allSiteLanguages}
+             />
+           )}
             <Link href={publicPageUrl} target="_blank" rel="noopener noreferrer">
               <Button variant="outline">
                 <Eye className="mr-2 h-4 w-4" /> View Live
