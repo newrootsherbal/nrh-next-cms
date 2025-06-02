@@ -2,7 +2,7 @@
 import React from 'react';
 import type { Block, PostWithMediaDimensions } from '../../utils/supabase/types';
 import { createClient } from '../../utils/supabase/server'; // Added import
-import Link from 'next/link';
+// import Link from 'next/link'; // Unused, PostsGridClient handles links
 import PostsGridClient from './PostsGridClient';
 import { fetchPaginatedPublishedPosts } from '../../app/actions/postActions'; // fetchInitialPublishedPosts removed
 

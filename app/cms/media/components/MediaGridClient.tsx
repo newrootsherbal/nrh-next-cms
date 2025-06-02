@@ -5,7 +5,7 @@ import type { Media } from "@/utils/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Trash2, Edit3, MoreHorizontal, FileText, Image as ImageIconLucideHost, AlertCircle } from "lucide-react";
-import Link from "next/link";
+import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -160,9 +160,9 @@ export default function MediaGridClient({ initialMediaItems, r2BaseUrl }: MediaG
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                            <Link href={`/cms/media/${item.id}/edit`} className="flex items-center cursor-pointer">
+                            <AnimatedLink href={`/cms/media/${item.id}/edit`} className="flex items-center cursor-pointer">
                                 <Edit3 className="mr-2 h-4 w-4" /> Edit Details
-                            </Link>
+                            </AnimatedLink>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DeleteMediaButtonClient mediaItem={item} />

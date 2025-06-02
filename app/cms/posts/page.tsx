@@ -1,7 +1,7 @@
 // app/cms/posts/page.tsx
 import React from "react";
 import { createClient } from "@/utils/supabase/server";
-import Link from "next/link";
+import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -84,11 +84,11 @@ export default async function CmsPostsListPage(props: CmsPostsListPageProps) {
             currentFilterLangId={filterLangId}
             basePath="/cms/posts"
           />
-          <Link href="/cms/posts/new">
-            <Button variant="default">
+          <Button variant="default" asChild>
+            <AnimatedLink href="/cms/posts/new">
               <PlusCircle className="mr-2 h-4 w-4" /> Create New Post
-            </Button>
-          </Link>
+            </AnimatedLink>
+          </Button>
         </div>
       </div>
 
@@ -108,11 +108,11 @@ export default async function CmsPostsListPage(props: CmsPostsListPageProps) {
             Get started by creating a new post.
           </p>
           <div className="mt-6">
-            <Link href="/cms/posts/new">
-              <Button>
+            <Button asChild>
+              <AnimatedLink href="/cms/posts/new">
                 <PlusCircle className="mr-2 h-4 w-4" /> Create Post
-              </Button>
-            </Link>
+              </AnimatedLink>
+            </Button>
           </div>
         </div>
       ) : (
@@ -162,9 +162,9 @@ export default async function CmsPostsListPage(props: CmsPostsListPageProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <Link href={`/cms/posts/${post.id}/edit`} className="flex items-center cursor-pointer">
+                          <AnimatedLink href={`/cms/posts/${post.id}/edit`} className="flex items-center cursor-pointer">
                             <Edit3 className="mr-2 h-4 w-4" /> Edit
-                          </Link>
+                          </AnimatedLink>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DeletePostButtonClient postId={post.id} postTitle={post.title} />

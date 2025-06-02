@@ -7,7 +7,7 @@ import { updatePage } from "../../actions";
 import type { Page, Block, Language } from "@/utils/supabase/types";
 import { notFound, redirect } from "next/navigation";
 import BlockEditorArea from "@/app/cms/blocks/components/BlockEditorArea";
-import Link from "next/link";
+import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
 import { Button } from "@/components/ui/button";
 import { Eye, ArrowLeft } from "lucide-react";
 import ContentLanguageSwitcher from "@/app/cms/components/ContentLanguageSwitcher";
@@ -74,11 +74,11 @@ export default async function EditPage(props: { params: Promise<{ id: string }> 
     <div className="space-y-8">
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div className="flex items-center gap-3">
-            <Link href="/cms/pages">
-                <Button variant="outline" size="icon" aria-label="Back to pages">
+            <Button variant="outline" size="icon" aria-label="Back to pages" asChild>
+                <AnimatedLink href="/cms/pages">
                     <ArrowLeft className="h-4 w-4" />
-                </Button>
-            </Link>
+                </AnimatedLink>
+            </Button>
             <div>
                 <h1 className="text-2xl font-bold">Edit Page</h1>
                 <p className="text-sm text-muted-foreground truncate max-w-md" title={pageWithBlocks.title}>{pageWithBlocks.title}</p>
@@ -104,11 +104,11 @@ export default async function EditPage(props: { params: Promise<{ id: string }> 
                allSiteLanguages={allSiteLanguages}
              />
            )}
-            <Link href={publicPageUrl} target="_blank" rel="noopener noreferrer">
-              <Button variant="outline">
+            <Button variant="outline" asChild>
+              <AnimatedLink href={publicPageUrl} target="_blank" rel="noopener noreferrer">
                 <Eye className="mr-2 h-4 w-4" /> View Live
-              </Button>
-            </Link>
+              </AnimatedLink>
+            </Button>
         </div>
       </div>
 

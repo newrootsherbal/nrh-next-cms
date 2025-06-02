@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import type { PostWithMediaDimensions } from '../../utils/supabase/types';
-import Link from 'next/link';
+import { AnimatedLink } from '@/components/transitions'; // Changed to AnimatedLink
 import Image from 'next/image';
 import { Button } from '../ui/button'; // Adjusted path
 
@@ -78,7 +78,7 @@ const PostsGridClient: React.FC<PostsGridClientProps> = ({
     <div>
       <div className={`grid ${gridColsClass} gap-6`}>
         {posts.map((post) => (
-          <Link href={`/blog/${post.slug}`} key={post.id} className="block group">
+          <AnimatedLink href={`/blog/${post.slug}`} key={post.id} className="block group">
             <div className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-card text-card-foreground">
               {/* Basic Post Card Structure - Enhanced with Feature Image */}
               {post.feature_image_url && typeof post.feature_image_width === 'number' && typeof post.feature_image_height === 'number' && post.feature_image_width > 0 && post.feature_image_height > 0 ? (
@@ -103,7 +103,7 @@ const PostsGridClient: React.FC<PostsGridClientProps> = ({
                 <span className="text-xs text-primary group-hover:underline">Read more</span>
               </div>
             </div>
-          </Link>
+          </AnimatedLink>
         ))}
       </div>
 

@@ -7,7 +7,8 @@ import { createClient } from "@/utils/supabase/client";
 import type { Page as PageType, Block as BlockType, Language, ImageBlockContent, Media } from "@/utils/supabase/types";
 import { useLanguage } from '@/context/LanguageContext';
 import { useCurrentContent } from '@/context/CurrentContentContext';
-import Link from 'next/link';
+import { AnimatedLink } from '@/components/transitions'; // Changed to AnimatedLink
+import { usePageTransition } from '@/components/transitions'; // Added for programmatic nav
 
 interface PageClientContentProps {
   initialPageData: (PageType & { blocks: BlockType[]; language_code: string; language_id: number; translation_group_id: string; }) | null;
@@ -44,6 +45,7 @@ export default function PageClientContent({ initialPageData, currentSlug, childr
   const { currentLocale, isLoadingLanguages } = useLanguage();
   const { currentContent, setCurrentContent } = useCurrentContent();
   const router = useRouter();
+  const { setTransitioning } = usePageTransition(); // Added
   // currentPageData is the data for the slug currently in the URL.
   // It's initially set by the server for the slug it resolved.
   const [currentPageData, setCurrentPageData] = useState(initialPageData);
@@ -60,7 +62,11 @@ export default function PageClientContent({ initialPageData, currentSlug, childr
       const targetSlug = translatedSlugs[currentLocale];
       
       if (targetSlug && targetSlug !== currentSlug) {
-        router.push(`/${targetSlug}`); // Navigate to the translated slug's URL
+        setTransitioning(true); // Added: Start transition
+        // Small delay to allow exit animation to start
+        setTimeout(() => {
+          router.push(`/${targetSlug}`); // Navigate to the translated slug's URL
+        }, 50); // Adjust delay as needed
       } else if (targetSlug && targetSlug === currentSlug) {
         // Already on the correct page for the selected language, do nothing or refresh data if needed
       } else {
@@ -120,7 +126,7 @@ export default function PageClientContent({ initialPageData, currentSlug, childr
       <div className="container mx-auto px-4 py-8 text-center">
         <h1 className="text-2xl font-bold mb-4">Page Not Found</h1>
         <p className="text-muted-foreground">The page for slug "{currentSlug}" could not be loaded or is not available in any language.</p>
-        <p className="mt-4"><Link href="/" className="text-primary hover:underline">Go to Homepage</Link></p>
+        <p className="mt-4"><AnimatedLink href="/" className="text-primary hover:underline">Go to Homepage</AnimatedLink></p>
       </div>
     );
   }

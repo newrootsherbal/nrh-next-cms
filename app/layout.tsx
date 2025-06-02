@@ -6,6 +6,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/context/AuthContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { CurrentContentProvider } from "@/context/CurrentContentContext"; // Import CurrentContentProvider
+import { PageTransitionProvider, TransitionWrapper } from "@/components/transitions"; // Added
 import { getActiveLanguagesServerSide } from "@/utils/supabase/server"; // Import server-side language fetcher
 import type { Language } from "@/utils/supabase/types"; // Import Language type
 import "./globals.css";
@@ -87,27 +88,31 @@ export default async function RootLayout({
                 enableSystem
                 disableTransitionOnChange
               >
-                <main className="min-h-screen flex flex-col items-center w-full">
-                  <div className="flex-1 w-full flex flex-col items-center">
-                    <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
-                      <div className="w-full max-w-7xl flex justify-between items-center p-3 px-5 text-sm">
-                        {!hasEnvVars ? <EnvVarWarning /> : <Header currentLocale={serverDeterminedLocale} />}
-                      </div>
-                    </nav>
-                    <div className="flex flex-col w-full flex-grow">{children}</div>
-
-                    <footer className="w-full border-t py-8">
-                      <div className="max-w-7xl mx-auto flex flex-col items-center justify-center gap-6 text-center text-xs px-4">
-                        <FooterNavigation />
-                        
-                        <div className="flex flex-row items-center gap-2">
-                          <p className="text-muted-foreground">© {new Date().getFullYear()} My Ultra-Fast CMS. All rights reserved.</p>
-                          <ThemeSwitcher />
+                <PageTransitionProvider>
+                  <main className="min-h-screen flex flex-col items-center w-full">
+                    <div className="flex-1 w-full flex flex-col items-center">
+                      <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
+                        <div className="w-full max-w-7xl flex justify-between items-center p-3 px-5 text-sm">
+                          {!hasEnvVars ? <EnvVarWarning /> : <Header currentLocale={serverDeterminedLocale} />}
                         </div>
+                      </nav>
+                      <div className="flex flex-col w-full flex-grow">
+                        <TransitionWrapper>{children}</TransitionWrapper>
                       </div>
-                    </footer>
-                  </div>
-                </main>
+
+                      <footer className="w-full border-t py-8">
+                        <div className="max-w-7xl mx-auto flex flex-col items-center justify-center gap-6 text-center text-xs px-4">
+                          <FooterNavigation />
+                          
+                          <div className="flex flex-row items-center gap-2">
+                            <p className="text-muted-foreground">© {new Date().getFullYear()} My Ultra-Fast CMS. All rights reserved.</p>
+                            <ThemeSwitcher />
+                          </div>
+                        </div>
+                      </footer>
+                    </div>
+                  </main>
+                </PageTransitionProvider>
               </ThemeProvider>
             </CurrentContentProvider>
           </LanguageProvider>

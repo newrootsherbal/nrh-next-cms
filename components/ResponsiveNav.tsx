@@ -1,6 +1,6 @@
 "use client";
 
-import Link from 'next/link';
+import { AnimatedLink } from '@/components/transitions'; // Changed to AnimatedLink
 import React, { useState, useEffect, useMemo } from 'react'; // Added React for JSX namespace
 import { usePathname } from 'next/navigation';
 import type { NavigationItem } from '../utils/supabase/types'; // Relative path from components/
@@ -113,7 +113,7 @@ export default function ResponsiveNav({
           className={`flex items-center justify-between w-full text-base font-medium text-foreground rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 ${level > 0 ? 'px-3 py-2' : 'px-3 py-2'}`}
         >
           {/* Only the label is a clickable link */}
-          <Link
+          <AnimatedLink
             href={item.url}
             className="py-0 px-0 mr-2 focus:underline focus:outline-none"
             onClick={() => {
@@ -121,7 +121,7 @@ export default function ResponsiveNav({
             }}
           >
             {item.label}
-          </Link>
+          </AnimatedLink>
           {/* If item has children, the rest of the row (whitespace + chevron) is a single button to toggle submenu */}
           {item.children && item.children.length > 0 && (
             <button
@@ -152,7 +152,7 @@ export default function ResponsiveNav({
   const renderDesktopNavItems = (items: HierarchicalNavigationItem[], isSubmenu = false): React.JSX.Element[] => {
     return items.map(item => (
       <div key={item.id} className={`relative group ${isSubmenu ? 'w-full' : ''}`}>
-        <Link
+        <AnimatedLink
           href={item.url}
           className={`flex items-center justify-between hover:underline px-3 py-2 text-sm text-foreground ${isSubmenu ? 'w-full hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md' : ''}`}
         >
@@ -160,7 +160,7 @@ export default function ResponsiveNav({
           {item.children && item.children.length > 0 && (
             <ChevronDownIcon className={`ml-1 h-4 w-4 transition-transform duration-200 group-hover:rotate-180 ${isSubmenu ? '' : ''}`} />
           )}
-        </Link>
+        </AnimatedLink>
         {item.children && item.children.length > 0 && (
           <div
             className={`
@@ -191,14 +191,14 @@ export default function ResponsiveNav({
         {/* Right side: Auth, LangSwitcher (desktop), Hamburger (mobile) */}
         <div className="hidden md:flex items-center space-x-4">
           {canAccessCms && editPathDetails && (
-            <Link href={editPathDetails.href} className="hover:underline font-semibold text-sm text-foreground mr-3">
+            <AnimatedLink href={editPathDetails.href} className="hover:underline font-semibold text-sm text-foreground mr-3">
               {editPathDetails.label}
-            </Link>
+            </AnimatedLink>
           )}
           {canAccessCms && (
-            <Link href={cmsDashboardLinkHref} className="hover:underline font-semibold text-sm text-foreground">
+            <AnimatedLink href={cmsDashboardLinkHref} className="hover:underline font-semibold text-sm text-foreground">
               {cmsDashboardLinkLabel}
-            </Link>
+            </AnimatedLink>
           )}
           {headerAuthComponent}
           {languageSwitcherComponent}
@@ -247,7 +247,7 @@ export default function ResponsiveNav({
           <nav className="flex-grow flex flex-col space-y-1 overflow-y-auto pt-6"> 
             {renderMobileNavItems(hierarchicalNavItems)}
             {canAccessCms && editPathDetails && (
-              <Link
+              <AnimatedLink
                 href={editPathDetails.href}
                 className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:bg-gray-100 dark:hover:bg-gray-700"
                 onClick={() => {
@@ -255,16 +255,16 @@ export default function ResponsiveNav({
                 }}
               >
                 {editPathDetails.label}
-              </Link>
+              </AnimatedLink>
             )}
             {canAccessCms && (
-              <Link
+              <AnimatedLink
                 href={cmsDashboardLinkHref}
                 className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:bg-gray-100 dark:hover:bg-gray-700"
                 onClick={toggleMobileMenu}
               >
                 {cmsDashboardLinkLabel}
-              </Link>
+              </AnimatedLink>
             )}
           </nav>
 

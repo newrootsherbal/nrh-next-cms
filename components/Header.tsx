@@ -1,6 +1,6 @@
 // components/Header.tsx
 import { createClient as createSupabaseServerClient } from '../utils/supabase/server'; // Adjusted path
-import Link from 'next/link';
+// import Link from 'next/link'; // Appears unused, ResponsiveNav handles links
 import { getProfileWithRoleServerSide } from '../utils/supabase/server'; // Adjusted path
 import type { UserRole, NavigationItem } from '../utils/supabase/types'; // Adjusted path
 import HeaderAuth from './header-auth'; // Adjusted path if needed, assuming it's in components/

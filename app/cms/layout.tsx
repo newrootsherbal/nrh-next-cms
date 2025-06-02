@@ -4,7 +4,7 @@
 import React, { type ReactNode, useEffect } from "react"
 import { useAuth } from "@/context/AuthContext"
 import { useRouter, usePathname } from "next/navigation" // Import usePathname
-import Link from "next/link"
+import { AnimatedLink } from "@/components/transitions" // Changed to AnimatedLink
 import {
   LayoutDashboard, FileText, PenTool, Users, Settings, ChevronRight, LogOut, Menu, ListTree, Image as ImageIconLucide, X, Languages as LanguagesIconLucide
 } from "lucide-react"
@@ -42,7 +42,7 @@ const NavItem = ({ href, icon: Icon, children, isActive, adminOnly, writerOnly, 
 
   return (
     <li>
-      <Link
+      <AnimatedLink
         href={href}
         className={cn(
           "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all",
@@ -54,7 +54,7 @@ const NavItem = ({ href, icon: Icon, children, isActive, adminOnly, writerOnly, 
         <Icon className="h-5 w-5" />
         <span>{children}</span>
         {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
-      </Link>
+      </AnimatedLink>
     </li>
   )
 };
@@ -161,14 +161,14 @@ export default function CmsLayout({ children }: { children: ReactNode }) {
       >
         <div className="flex flex-col h-full">
           <div className="p-4 border-b dark:border-slate-700/60 h-16 flex items-center shrink-0">
-            <Link href="/cms/dashboard" className="flex items-center gap-2 px-2">
+            <AnimatedLink href="/cms/dashboard" className="flex items-center gap-2 px-2">
               <div className="h-8 w-8 rounded-md bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white font-bold">
                 NRH
               </div>
               <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70 dark:from-primary dark:to-primary/80">
                 CMS
               </h2>
-            </Link>
+            </AnimatedLink>
           </div>
 
           <nav className="px-3 py-4 flex-1 overflow-y-auto">

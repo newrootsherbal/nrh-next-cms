@@ -1,7 +1,7 @@
 // app/cms/settings/languages/page.tsx
 import React from 'react';
 import { createClient } from "@/utils/supabase/server";
-import Link from "next/link";
+import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -56,11 +56,11 @@ export default async function CmsLanguagesListPage() {
     <div className="w-full">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold">Manage Languages</h1>
-        <Link href="/cms/settings/languages/new">
-          <Button variant="default">
+        <Button variant="default" asChild>
+          <AnimatedLink href="/cms/settings/languages/new">
             <PlusCircle className="mr-2 h-4 w-4" /> Add New Language
-          </Button>
-        </Link>
+          </AnimatedLink>
+        </Button>
       </div>
 
        {successMessage && (
@@ -77,11 +77,11 @@ export default async function CmsLanguagesListPage() {
             Add languages to support multilingual content.
           </p>
           <div className="mt-6">
-            <Link href="/cms/settings/languages/new">
-              <Button>
+            <Button asChild>
+              <AnimatedLink href="/cms/settings/languages/new">
                 <PlusCircle className="mr-2 h-4 w-4" /> Add Language
-              </Button>
-            </Link>
+              </AnimatedLink>
+            </Button>
           </div>
         </div>
       ) : (
@@ -123,9 +123,9 @@ export default async function CmsLanguagesListPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <Link href={`/cms/settings/languages/${lang.id}/edit`} className="flex items-center cursor-pointer">
+                          <AnimatedLink href={`/cms/settings/languages/${lang.id}/edit`} className="flex items-center cursor-pointer">
                             <Edit3 className="mr-2 h-4 w-4" /> Edit
-                          </Link>
+                          </AnimatedLink>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DeleteLanguageClientButton language={lang} />

@@ -1,6 +1,6 @@
 import { signOutAction } from "@/app/actions";
 import { hasEnvVars } from "@/utils/supabase/check-env-vars";
-import Link from "next/link";
+import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { createClient } from "@/utils/supabase/server";
@@ -42,7 +42,7 @@ export default async function AuthButton() {
               disabled
               className="opacity-75 cursor-none pointer-events-none"
             >
-              <Link href="/sign-in">Sign in</Link>
+              <AnimatedLink href="/sign-in">Sign in</AnimatedLink>
             </Button>
             <Button
               asChild
@@ -51,7 +51,7 @@ export default async function AuthButton() {
               disabled
               className="opacity-75 cursor-none pointer-events-none"
             >
-              <Link href="/sign-up">Sign up</Link>
+              <AnimatedLink href="/sign-up">Sign up</AnimatedLink>
             </Button>
           </div>
         </div>
@@ -70,10 +70,10 @@ export default async function AuthButton() {
   ) : (
     <div className="flex gap-2">
       <Button asChild size="sm" variant={"outline"}>
-        <Link href="/sign-in">Sign in</Link>
+        <AnimatedLink href="/sign-in">Sign in</AnimatedLink>
       </Button>
       <Button asChild size="sm" variant={"default"}>
-        <Link href="/sign-up">Sign up</Link>
+        <AnimatedLink href="/sign-up">Sign up</AnimatedLink>
       </Button>
     </div>
   );

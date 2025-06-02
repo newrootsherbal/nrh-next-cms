@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import Link from 'next/link';
+import { AnimatedLink } from '@/components/transitions'; // Changed to AnimatedLink
 import { Button } from '@/components/ui/button';
 import { Languages, CheckCircle } from 'lucide-react';
 import type { Language, Page, Post } from '@/utils/supabase/types';
@@ -110,7 +110,7 @@ export default function ContentLanguageSwitcher({
           if (version) {
             return (
               <DropdownMenuItem key={lang.id} asChild disabled={isCurrent} className={cn(isCurrent && "bg-accent font-semibold")}>
-                <Link href={editUrl} className="w-full">
+                <AnimatedLink href={editUrl} className="w-full">
                   <div className="flex justify-between items-center w-full">
                     <span>{lang.name} ({lang.code.toUpperCase()})</span>
                     {isCurrent && <CheckCircle className="h-4 w-4 text-primary" />}
@@ -118,20 +118,20 @@ export default function ContentLanguageSwitcher({
                   <div className="text-xs text-muted-foreground truncate" title={version.title}>
                     Slug: /{version.slug} - <span className="capitalize">{version.status}</span>
                   </div>
-                </Link>
+                </AnimatedLink>
               </DropdownMenuItem>
             );
           } else {
             // Offer to create a new translation (simplified link, full flow is more complex)
             return (
               <DropdownMenuItem key={lang.id} asChild className="opacity-75 hover:opacity-100">
-                 <Link href={editUrl} className="w-full"> {/* Adjust URL for creating new */}
+                 <AnimatedLink href={editUrl} className="w-full"> {/* Adjust URL for creating new */}
                     <div className="flex justify-between items-center w-full">
                         <span>{lang.name} ({lang.code.toUpperCase()})</span>
                         <span className="text-xs text-blue-500">(Create)</span>
                     </div>
                     <div className="text-xs text-muted-foreground">Not yet created</div>
-                </Link>
+                </AnimatedLink>
               </DropdownMenuItem>
             );
           }

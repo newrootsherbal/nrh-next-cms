@@ -1,7 +1,7 @@
 // app/cms/media/page.tsx
 import React from 'react';
 import { createClient } from "@/utils/supabase/server";
-import Link from "next/link";
+// import Link from "next/link"; // Unused, MediaGridClient handles item links
 import { Button } from "@/components/ui/button";
 import { Image as ImageIconLucideHost } from "lucide-react"; // Removed unused icons, kept ImageIconLucideHost for empty state
 import type { Media } from "@/utils/supabase/types";

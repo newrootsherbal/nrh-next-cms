@@ -6,7 +6,7 @@ import { updateMediaItem } from "../../actions"; // Server action for updating
 import type { Media } from "@/utils/supabase/types";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
 import { Button } from "@/components/ui/button";
 
 async function getMediaData(id: string): Promise<Media | null> {
@@ -61,11 +61,11 @@ export default async function EditMediaPage(props: { params: Promise<{ id: strin
   return (
     <div className="w-full">
         <div className="mb-6 flex items-center gap-3">
-            <Link href="/cms/media">
-                <Button variant="outline" size="icon">
+            <Button variant="outline" size="icon" asChild>
+                <AnimatedLink href="/cms/media">
                     <ArrowLeft className="h-4 w-4" />
-                </Button>
-            </Link>
+                </AnimatedLink>
+            </Button>
             <h1 className="text-2xl font-semibold">Edit Media: {mediaItem.file_name}</h1>
         </div>
       <MediaEditForm

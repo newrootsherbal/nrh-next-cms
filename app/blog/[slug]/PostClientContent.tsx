@@ -7,7 +7,8 @@ import { createClient } from "@/utils/supabase/client";
 import type { Post as PostType, Block as BlockType, Language, ImageBlockContent, Media } from "@/utils/supabase/types";
 import { useLanguage } from '@/context/LanguageContext';
 import { useCurrentContent } from '@/context/CurrentContentContext';
-import Link from 'next/link';
+import { AnimatedLink } from '@/components/transitions'; // Changed to AnimatedLink
+import { usePageTransition } from '@/components/transitions'; // Added for programmatic nav
 
 interface PostClientContentProps {
   initialPostData: (PostType & { blocks: BlockType[]; language_code: string; language_id: number; translation_group_id: string; }) | null;
@@ -51,6 +52,7 @@ export default function PostClientContent({ initialPostData, currentSlug, childr
   const { currentLocale, isLoadingLanguages } = useLanguage();
   const { currentContent, setCurrentContent } = useCurrentContent();
   const router = useRouter();
+  const { setTransitioning } = usePageTransition(); // Added
   
   // currentPostData is always for the slug in the URL.
   // It's initially set by the server. It only changes if the URL itself changes (which happens on language switch).
@@ -71,7 +73,11 @@ export default function PostClientContent({ initialPostData, currentSlug, childr
       const targetSlug = translatedSlugs[currentLocale];
 
       if (targetSlug && targetSlug !== currentSlug) {
-        router.push(`/blog/${targetSlug}`); // Navigate to the translated slug's URL
+        setTransitioning(true); // Added: Start transition
+        // Small delay to allow exit animation to start
+        setTimeout(() => {
+          router.push(`/blog/${targetSlug}`); // Navigate to the translated slug's URL
+        }, 50); // Adjust delay as needed
       } else if (!targetSlug) {
         console.warn(`No published translation found for post group ${initialPostData.translation_group_id} in language ${currentLocale} using pre-fetched slugs.`);
         // Optionally, provide user feedback here (e.g., a toast message)
@@ -140,9 +146,9 @@ export default function PostClientContent({ initialPostData, currentSlug, childr
         <h1 className="text-2xl font-bold mb-4">Post Not Found</h1>
         <p className="text-muted-foreground">The post for slug "{currentSlug}" could not be loaded.</p>
         <p className="mt-4">
-          <Link href="/blog" className="text-primary hover:underline">Back to Blog</Link>
+          <AnimatedLink href="/blog" className="text-primary hover:underline">Back to Blog</AnimatedLink>
           <span className="mx-2">|</span>
-          <Link href="/" className="text-primary hover:underline">Go to Homepage</Link>
+          <AnimatedLink href="/" className="text-primary hover:underline">Go to Homepage</AnimatedLink>
         </p>
       </div>
     );

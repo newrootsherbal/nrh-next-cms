@@ -8,7 +8,7 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
 import { Badge } from "@/components/ui/badge";
 import { GripVertical, MoreHorizontal, Edit3 } from 'lucide-react';
-import Link from 'next/link';
+import { AnimatedLink } from '@/components/transitions'; // Changed to AnimatedLink
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -83,9 +83,9 @@ export function SortableNavItem({ item }: SortableNavItemProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem asChild>
-              <Link href={`/cms/navigation/${item.id}/edit`} className="flex items-center">
+              <AnimatedLink href={`/cms/navigation/${item.id}/edit`} className="flex items-center">
                 <Edit3 className="mr-2 h-4 w-4" /> Edit
-              </Link>
+              </AnimatedLink>
             </DropdownMenuItem>
             <DeleteNavItemButton itemId={item.id} />
           </DropdownMenuContent>

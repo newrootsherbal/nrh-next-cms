@@ -1,6 +1,6 @@
 // app/cms/navigation/page.tsx
 import { createClient } from "@/utils/supabase/server";
-import Link from "next/link";
+import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
 import { Button } from "@/components/ui/button";
 import { PlusCircle, ListTree } from "lucide-react";
 import type { NavigationItem, MenuLocation } from "@/utils/supabase/types";
@@ -52,11 +52,11 @@ export default async function CmsNavigationListPage() {
     <div className="w-full">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold">Manage Navigation</h1>
-        <Link href="/cms/navigation/new">
-          <Button variant="default">
+        <Button variant="default" asChild>
+          <AnimatedLink href="/cms/navigation/new">
             <PlusCircle className="mr-2 h-4 w-4" /> Create New Item
-          </Button>
-        </Link>
+          </AnimatedLink>
+        </Button>
       </div>
 
       {allNavItemsFlat.length === 0 ? (
@@ -67,11 +67,11 @@ export default async function CmsNavigationListPage() {
             Get started by creating a new navigation item.
           </p>
           <div className="mt-6">
-            <Link href="/cms/navigation/new">
-              <Button>
+            <Button asChild>
+              <AnimatedLink href="/cms/navigation/new">
                 <PlusCircle className="mr-2 h-4 w-4" /> Create Item
-              </Button>
-            </Link>
+              </AnimatedLink>
+            </Button>
           </div>
         </div>
       ) : (

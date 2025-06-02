@@ -5,7 +5,7 @@ import LanguageForm from "../../components/LanguageForm";
 import { updateLanguage } from "../../actions";
 import type { Language } from "@/utils/supabase/types";
 import { notFound } from "next/navigation";
-import Link from "next/link";
+import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
@@ -56,11 +56,11 @@ export default async function EditLanguagePage(props: { params: Promise<{ id: st
   return (
     <div className="max-w-xl mx-auto">
       <div className="mb-6 flex items-center gap-3">
-            <Link href="/cms/settings/languages">
-                <Button variant="outline" size="icon">
+            <Button variant="outline" size="icon" asChild>
+                <AnimatedLink href="/cms/settings/languages">
                     <ArrowLeft className="h-4 w-4" />
-                </Button>
-            </Link>
+                </AnimatedLink>
+            </Button>
             <h1 className="text-2xl font-semibold">Edit Language: {language.name}</h1>
       </div>
       <LanguageForm

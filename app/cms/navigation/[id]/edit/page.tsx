@@ -5,7 +5,7 @@ import NavigationItemForm from "../../components/NavigationItemForm";
 import { updateNavigationItem } from "../../actions";
 import type { NavigationItem, Language } from "@/utils/supabase/types"; // Ensure Language is imported
 import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
+import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Languages as LanguagesIcon } from "lucide-react"; // Changed icon
 import NavigationLanguageSwitcher from "../../components/NavigationLanguageSwitcher"; // Import the new switcher
@@ -66,11 +66,11 @@ export default async function EditNavigationItemPage(props: { params: Promise<{ 
     <div className="max-w-2xl mx-auto">
       <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-3">
-            <Link href="/cms/navigation">
-                <Button variant="outline" size="icon" aria-label="Back to navigation items">
+            <Button variant="outline" size="icon" aria-label="Back to navigation items" asChild>
+                <AnimatedLink href="/cms/navigation">
                     <ArrowLeft className="h-4 w-4" />
-                </Button>
-            </Link>
+                </AnimatedLink>
+            </Button>
             <div>
                 <h1 className="text-2xl font-semibold">Edit Navigation Item</h1>
                 <p className="text-sm text-muted-foreground truncate max-w-xs" title={item.label}>{item.label}</p>

@@ -1,16 +1,16 @@
 import React from "react";
-import Link from "next/link";
+import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
 import { Button } from "@/components/ui/button";
 import type { ButtonBlockContent } from "@/utils/supabase/types";
 
 interface ButtonBlockRendererProps {
   content: ButtonBlockContent;
-  languageId: number;
+  languageId: number; // This prop seems unused
 }
 
 const ButtonBlockRenderer: React.FC<ButtonBlockRendererProps> = ({
   content,
-  languageId,
+  // languageId, // Unused
 }) => {
   const isExternal =
     content.url?.startsWith("http") ||
@@ -18,32 +18,47 @@ const ButtonBlockRenderer: React.FC<ButtonBlockRendererProps> = ({
     content.url?.startsWith("tel:");
   const isAnchor = content.url?.startsWith("#");
 
+  const buttonText = content.text || "Button";
+  const buttonVariant = content.variant || "default";
+  const buttonSize = content.size || "default";
+
   return (
     <div className="my-6 text-center">
+      {/* Case 1: Internal link (not external, not anchor, has URL) */}
       {!isExternal && !isAnchor && !!content.url ? (
-        <Link href={content.url || "#"}>
-          <Button
-            asChild={!isExternal && !isAnchor && !!content.url}
-            variant={content.variant || "default"}
-            size={content.size || "default"}
-          >
-            {content.text || "Button"}
-          </Button>
-        </Link>
-      ) : (
-        <a
-          href={content.url || "#"}
-          target={isExternal ? "_blank" : undefined}
-          rel={isExternal ? "noopener noreferrer" : undefined}
+        <Button
+          asChild
+          variant={buttonVariant}
+          size={buttonSize}
         >
-          <Button
-            asChild={!isExternal && !isAnchor && !!content.url}
-            variant={content.variant || "default"}
-            size={content.size || "default"}
+          <AnimatedLink href={content.url}>
+            {buttonText}
+          </AnimatedLink>
+        </Button>
+      ) : /* Case 2: External or Anchor link (has URL) */
+      (isExternal || isAnchor) && !!content.url ? (
+        <Button
+          asChild
+          variant={buttonVariant}
+          size={buttonSize}
+        >
+          <a
+            href={content.url} // content.url is guaranteed by the condition
+            target={isExternal ? "_blank" : undefined}
+            rel={isExternal ? "noopener noreferrer" : undefined}
           >
-            {content.text || "Button"}
-          </Button>
-        </a>
+            {buttonText}
+          </a>
+        </Button>
+      ) : (
+        /* Case 3: No URL or other edge cases - render a plain or disabled button */
+        <Button
+          variant={buttonVariant}
+          size={buttonSize}
+          disabled={!content.url} // Disable if no URL
+        >
+          {buttonText}
+        </Button>
       )}
     </div>
   );
