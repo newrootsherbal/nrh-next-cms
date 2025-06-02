@@ -147,6 +147,18 @@ export async function middleware(request: NextRequest) {
       finalResponse.headers.set('X-Prefetch-Priority', 'medium');
     }
   }
+// Set bfcache-friendly Cache-Control header for HTML document requests
+  // to allow back/forward cache restoration.
+  const acceptHeader = request.headers.get('accept');
+  if (
+    acceptHeader &&
+    acceptHeader.includes('text/html') &&
+    !pathname.startsWith('/api/') // Exclude API routes explicitly, though matcher should also handle this
+  ) {
+    // For HTML documents, set a header that allows bfcache.
+    // This overrides any default 'no-store' that might be set by Next.js or other libs.
+    finalResponse.headers.set('Cache-Control', 'public, max-age=0, must-revalidate');
+  }
   return finalResponse;
 }
 
