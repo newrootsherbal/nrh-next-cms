@@ -35,6 +35,7 @@ export default function MediaUploadForm({ onUploadSuccess, returnJustData }: Med
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false); // For drag-and-drop visual feedback
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [processingStatus, setProcessingStatus] = useState<"idle" | "processing" | "processed_error">("idle");
 
   const processFile = (selectedFile: File | undefined | null) => {
     if (previewUrl) {
@@ -158,13 +159,14 @@ export default function MediaUploadForm({ onUploadSuccess, returnJustData }: Med
       setErrorMessage("Please select a file to upload.");
       return;
     }
-    if (isPending || uploadStatus === "uploading") { // Prevent concurrent uploads
+    if (isPending || uploadStatus === "uploading" || processingStatus === "processing") { // Prevent concurrent uploads or processing
         return;
     }
 
     setUploadStatus("uploading");
     setUploadProgress(0);
     setErrorMessage(null);
+    setProcessingStatus("idle"); // Reset processing status
 
     const currentFileForUpload = file;
 
@@ -211,14 +213,53 @@ export default function MediaUploadForm({ onUploadSuccess, returnJustData }: Med
           mediaDataPayload.height = imageDimensions.height;
         }
 
+        // 4. Call the new API route to process the image (AVIF, resizing)
+        setProcessingStatus("processing");
+        const processResponse = await fetch('/api/process-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            objectKey: objectKey,
+            contentType: currentFileForUpload.type,
+          }),
+        });
+
+        const processData = await processResponse.json(); // Read the response body once
+
+        if (!processResponse.ok) {
+          // Log the error, but proceed to record the original media at least
+          console.error("Error processing image:", processData.error || "Failed to process image variants.");
+          setProcessingStatus("processed_error");
+          // Optionally, update errorMessage state here to inform the user about partial success
+          setErrorMessage(`Original uploaded, but variants failed: ${processData.error || "Unknown error"}`);
+          // Do not throw here, let the original media be recorded.
+        } else {
+           setProcessingStatus("idle"); // Or "processed_success" if you add that state
+        }
+        
+        // 5. Record media in Supabase (now potentially with variant info)
+        // The recordMediaUpload action will need to be updated to handle this new structure.
+        const finalMediaPayload = {
+          ...mediaDataPayload,
+          r2OriginalKey: objectKey,
+          r2Variants: processData.processedVariants || [],
+          originalImageDetails: processData.originalImage, // Add this line
+          // blurDataUrl can be added here if generated client-side or passed from API
+        };
+        
+        // If processing failed, processData.processedVariants might be empty or undefined.
+        // recordMediaUpload should be robust to this.
+
         const recordResult = await recordMediaUpload(
-          mediaDataPayload,
+          finalMediaPayload, // Send the enhanced payload
           returnJustData
         );
 
         if (returnJustData) {
           if (recordResult && 'success' in recordResult && recordResult.success && recordResult.data) {
             setUploadStatus("success");
+            // If processing had an error, onUploadSuccess might still be called,
+            // but the UI could show the errorMessage about variant failure.
             onUploadSuccess?.(recordResult.data);
           } else if (recordResult && 'error' in recordResult) {
             throw new Error(recordResult.error || "Media record action did not return expected data.");
@@ -226,8 +267,8 @@ export default function MediaUploadForm({ onUploadSuccess, returnJustData }: Med
             throw new Error("Media record action did not return expected data.");
           }
         } else {
-          console.warn("recordMediaUpload was expected to redirect but completed without error.");
-          setUploadStatus("success");
+          // For redirects, the success state is handled in the catch block for NEXT_REDIRECT
+           setUploadStatus("success"); // Set success if no redirect and no error from recordResult
         }
 
         setFile(null);
@@ -235,6 +276,13 @@ export default function MediaUploadForm({ onUploadSuccess, returnJustData }: Med
         setPreviewUrl(null);
         setImageDimensions(null); // Clear dimensions
         if (fileInputRef.current) fileInputRef.current.value = "";
+        // Reset processing status on full success or if error handled and original recorded
+        if (processingStatus === "processed_error" && uploadStatus !== "error") {
+            // Keep the error message, but allow new uploads
+        } else {
+            setProcessingStatus("idle");
+        }
+
 
       } catch (err: any) {
         const isRedirect = err.message === 'NEXT_REDIRECT' || (typeof err.digest === 'string' && err.digest.startsWith('NEXT_REDIRECT'));
@@ -311,9 +359,21 @@ export default function MediaUploadForm({ onUploadSuccess, returnJustData }: Med
             <p>Error: {errorMessage}</p>
           </div>
         )}
+        {processingStatus === "processing" && (
+          <p className="text-sm text-blue-600 animate-pulse">Processing image variants...</p>
+        )}
+        {/* Message for when original uploads but variants fail, errorMessage will be set */}
 
-        <Button type="button" onClick={performUpload} disabled={isPending || uploadStatus === "uploading" || !file} className="w-full sm:w-auto">
-          {isPending || uploadStatus === "uploading" ? `Uploading ${uploadProgress}%...` : "Upload File"}
+
+        <Button
+          type="button"
+          onClick={performUpload}
+          disabled={isPending || uploadStatus === "uploading" || processingStatus === "processing" || !file}
+          className="w-full sm:w-auto"
+        >
+          {uploadStatus === "uploading" ? `Uploading ${uploadProgress}%...`
+           : processingStatus === "processing" ? "Processing..."
+           : "Upload File"}
         </Button>
       </form>
     </div>

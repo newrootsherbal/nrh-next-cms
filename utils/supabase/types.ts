@@ -145,6 +145,8 @@ export interface Media {
   height?: number | null;     // Added height
   created_at: string;
   updated_at: string;
+  variants?: any[] | null; // JSONB, for storing different image versions
+  blur_data_url?: string | null; // For image placeholders
 }
 
 export type MenuLocation = 'HEADER' | 'FOOTER' | 'SIDEBAR';

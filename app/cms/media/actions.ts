@@ -8,14 +8,29 @@ import { encodedRedirect } from "@/utils/utils"; // Ensure this is correctly imp
 
 // --- recordMediaUpload and updateMediaItem functions to be updated similarly ---
 
-export async function recordMediaUpload(payload: {
-  fileName: string;
+// Define the structure for a single variant, mirroring what /api/process-image returns
+interface ImageVariant {
   objectKey: string;
+  url: string;
+  width: number;
+  height: number;
   fileType: string;
   sizeBytes: number;
+  variantLabel: string;
+}
+
+export async function recordMediaUpload(payload: {
+  fileName: string; // Original filename, can still be useful
+  // objectKey: string; // This might now be derived from the primary variant
+  // fileType: string; // This will come from the primary variant
+  // sizeBytes: number; // This will come from the primary variant
   description?: string;
-  width?: number; // Added width
-  height?: number; // Added height
+  // width?: number; // This will come from the primary variant
+  // height?: number; // This will come from the primary variant
+  r2OriginalKey: string; // Key of the initially uploaded file in R2
+  r2Variants: ImageVariant[]; // Array of processed variants
+  originalImageDetails: ImageVariant; // Details of the original uploaded image from process-image
+  blurDataUrl?: string; // Optional, if generated and passed from client
 }, returnJustData?: boolean): Promise<{ success: true; data: Media } | { error: string } | void>  {
   const supabase = createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -35,15 +50,49 @@ export async function recordMediaUpload(payload: {
     return encodedRedirect("error", "/cms/media", "Forbidden: Insufficient permissions to record media.");
   }
 
-  const mediaData: InsertMediaPayload = {
+  // Determine the primary variant to use for the main table columns
+  // This logic can be adjusted. Prioritize 'original_avif', then 'xlarge_avif', then the first variant.
+  let primaryVariant =
+    payload.r2Variants.find(v => v.variantLabel === 'original_avif') ||
+    payload.r2Variants.find(v => v.variantLabel === 'xlarge_avif') ||
+    payload.r2Variants[0] || // Fallback to the first variant if specific ones aren't found
+    payload.originalImageDetails; // Fallback to original uploaded details if no variants
+
+  if (!primaryVariant) {
+    // This case should ideally not happen if originalImageDetails is always present
+    // but as a safeguard:
+    primaryVariant = payload.originalImageDetails || {
+        objectKey: payload.r2OriginalKey,
+        url: `YOUR_R2_PUBLIC_BASE_URL/${payload.r2OriginalKey}`, // Construct URL if needed
+        width: 0, // Or fetch if necessary, though client sends initial dimensions
+        height: 0,
+        fileType: 'application/octet-stream', // A generic fallback
+        sizeBytes: 0,
+        variantLabel: 'fallback_original'
+    };
+  }
+  
+  // Construct the full list of variants to store, including the original uploaded file details
+  const allVariantsToStore = [
+    ...(payload.originalImageDetails && payload.originalImageDetails.objectKey !== primaryVariant.objectKey ? [payload.originalImageDetails] : []),
+    ...payload.r2Variants,
+  ].filter((variant, index, self) =>
+    index === self.findIndex((v) => v.objectKey === variant.objectKey)
+  ); // Ensure unique variants by objectKey
+
+  const mediaData: Omit<Media, 'id' | 'created_at' | 'updated_at'> & { uploader_id: string } = {
     uploader_id: user.id,
-    file_name: payload.fileName,
-    object_key: payload.objectKey,
-    file_type: payload.fileType,
-    size_bytes: payload.sizeBytes,
+    file_name: payload.fileName, // Keep original file name for reference
+    object_key: primaryVariant.objectKey, // Key of the primary display version
+    // file_url is removed as it's not in the Media type; URLs are in variants
+    file_type: primaryVariant.fileType,
+    size_bytes: primaryVariant.sizeBytes,
     description: payload.description || null,
-    width: payload.width || null, // Added width
-    height: payload.height || null, // Added height
+    width: primaryVariant.width,
+    height: primaryVariant.height,
+    variants: allVariantsToStore, // Store all variants including the original
+    blur_data_url: payload.blurDataUrl || null, // Store if provided
+    // Ensure all other required fields for 'Media' type are present or nullable
   };
 
   const { data: newMedia, error } = await supabase
@@ -227,10 +276,11 @@ export async function deleteMultipleMediaItems(items: Array<{ id: string; object
 
 
 // Type for inserting media
-type InsertMediaPayload = Omit<Media, 'id' | 'created_at' | 'updated_at' | 'uploader_id' | 'width' | 'height'> & {
+type InsertMediaPayload = Omit<Media, 'id' | 'created_at' | 'updated_at' | 'uploader_id'> & {
     uploader_id: string;
-    width?: number | null; // Added width
-    height?: number | null; // Added height
+    // width, height, variants, blur_data_url are optional in Media type,
+    // so they are implicitly handled by Omit and the base Media type.
+    // We only need to ensure uploader_id is present.
 };
 
 export async function getMediaItems(
