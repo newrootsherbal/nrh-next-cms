@@ -40,15 +40,14 @@ const ImageBlockRenderer: React.FC<ImageBlockRendererProps> = ({
     <div className="w-full">
       <figure
         className="my-6 text-center mx-auto max-w-full"
-        style={{
-          width: content.width,
-        }}
+        // Removed inline style: style={{ width: content.width }}
       >
         <Image
           src={displayImageUrl}
           alt={content.alt_text || "Uploaded image"}
           width={content.width}
           height={content.height}
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 60vw"
           className="rounded-md border"
         />
         {content.caption && (

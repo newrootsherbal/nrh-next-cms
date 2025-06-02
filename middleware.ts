@@ -158,13 +158,14 @@ export async function middleware(request: NextRequest) {
     // For HTML documents, set a header that allows bfcache.
     // This overrides any default 'no-store' that might be set by Next.js or other libs.
     finalResponse.headers.set('Cache-Control', 'public, max-age=0, must-revalidate');
+    finalResponse.headers.set('X-BFCache-Applied', 'true');
   }
   return finalResponse;
 }
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|auth/.*|sign-in|sign-up|forgot-password|unauthorized|api/auth/.*|api/revalidate).*),',
+    '/((?!_next/static|_next/image|favicon.ico|auth/.*|sign-in|sign-up|forgot-password|unauthorized|api/auth/.*|api/revalidate).*)',
     '/cms/:path*',
   ],
 };
