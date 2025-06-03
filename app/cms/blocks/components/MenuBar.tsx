@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import dynamic from 'next/dynamic'; // Import dynamic
 import { Editor } from '@tiptap/react';
 import {
   Bold, Italic, Strikethrough, Code, List, ListOrdered, Quote, Undo, Redo, Pilcrow, Palette, Baseline, FileCode, X as XIcon
@@ -12,7 +13,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../../../../components/ui/dropdown-menu';
-import { MediaLibraryModal } from './MediaLibraryModal'; // Assuming MediaLibraryModal is in the same directory
+// import { MediaLibraryModal } from './MediaLibraryModal'; // Will be dynamically imported
+
+// Dynamically import MediaLibraryModal
+const MediaLibraryModal = dynamic(() =>
+  import('./MediaLibraryModal').then((mod) => mod.MediaLibraryModal),
+  {
+    ssr: false, // Usually good for modals that are client-side interactive
+    // You can add a loading component if needed:
+    // loading: () => <p>Loading media library...</p>,
+  }
+);
 
 // This was previously in RichTextEditor.tsx, moved here as MenuBar uses it.
 const fontSizes = [

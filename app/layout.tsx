@@ -6,9 +6,20 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/context/AuthContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { CurrentContentProvider } from "@/context/CurrentContentContext"; // Import CurrentContentProvider
-import { PageTransitionProvider, TransitionWrapper } from "@/components/transitions"; // Added
+import { PageTransitionProvider } from '@/components/transitions/PageTransitionProvider'; // Import PageTransitionProvider
+import { ClientOnlyTransitionOrchestrator } from '@/components/transitions/ClientOnlyTransitionOrchestrator'; // Import the new orchestrator
 import { getActiveLanguagesServerSide } from "@/utils/supabase/server"; // Import server-side language fetcher
+// const DynamicTransitionWrapper = dynamic(() =>
+//   import('@/components/transitions').then((mod) => mod.TransitionWrapper),
+//   { ssr: false }
+// ); // Moved into DynamicPageTransitionWrapper
 import type { Language } from "@/utils/supabase/types"; // Import Language type
+
+// const DynamicPageTransitionWrapperClient = dynamic(() =>
+//   import('@/components/transitions/DynamicPageTransitionWrapper').then((mod) => mod.DynamicPageTransitionWrapper),
+//   { ssr: false }
+// ); // This dynamic import is now handled within ClientOnlyTransitionOrchestrator
+
 import "./globals.css";
 import Header from "@/components/Header";
 import FooterNavigation from "@/components/FooterNavigation";
@@ -88,7 +99,7 @@ export default async function RootLayout({
                 enableSystem
                 disableTransitionOnChange
               >
-                <PageTransitionProvider>
+                <PageTransitionProvider> {/* Added PageTransitionProvider here */}
                   <main className="min-h-screen flex flex-col items-center w-full">
                     <div className="flex-1 w-full flex flex-col items-center">
                       <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
@@ -96,9 +107,11 @@ export default async function RootLayout({
                           {!hasEnvVars ? <EnvVarWarning /> : <Header currentLocale={serverDeterminedLocale} />}
                         </div>
                       </nav>
-                      <div className="flex flex-col w-full flex-grow">
-                        <TransitionWrapper>{children}</TransitionWrapper>
-                      </div>
+                      <ClientOnlyTransitionOrchestrator>
+                        <div className="flex flex-col w-full flex-grow">
+                          {children}
+                        </div>
+                      </ClientOnlyTransitionOrchestrator>
 
                       <footer className="w-full border-t py-8">
                         <div className="max-w-7xl mx-auto flex flex-col items-center justify-center gap-6 text-center text-xs px-4">
@@ -112,7 +125,7 @@ export default async function RootLayout({
                       </footer>
                     </div>
                   </main>
-                </PageTransitionProvider>
+                </PageTransitionProvider> {/* Added PageTransitionProvider here */}
               </ThemeProvider>
             </CurrentContentProvider>
           </LanguageProvider>

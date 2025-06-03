@@ -44,7 +44,18 @@ export default function EditableBlock({
     return <div className="p-4 border rounded-lg bg-card shadow text-red-500">Error: Block data is missing in EditableBlock.</div>;
   }
 
+  // Define dynamic imports for each editor type
+  // Note: PostsGridBlockEditor is imported statically above due to a "targeted fix"
+  const DynamicTextBlockEditor = dynamic(() => import(/* webpackChunkName: "text-block-editor" */ '../editors/TextBlockEditor'), { loading: () => <p>Loading editor...</p> });
+  const DynamicHeadingBlockEditor = dynamic(() => import(/* webpackChunkName: "heading-block-editor" */ '../editors/HeadingBlockEditor'), { loading: () => <p>Loading editor...</p> });
+  const DynamicImageBlockEditor = dynamic(() => import(/* webpackChunkName: "image-block-editor" */ '../editors/ImageBlockEditor'), { loading: () => <p>Loading editor...</p> });
+  const DynamicButtonBlockEditor = dynamic(() => import(/* webpackChunkName: "button-block-editor" */ '../editors/ButtonBlockEditor'), { loading: () => <p>Loading editor...</p> });
+  const DynamicVideoEmbedBlockEditor = dynamic(() => import(/* webpackChunkName: "video-embed-block-editor" */ '../editors/VideoEmbedBlockEditor'), { loading: () => <p>Loading editor...</p> });
+  const DynamicSectionBlockEditor = dynamic(() => import(/* webpackChunkName: "section-block-editor" */ '../editors/SectionBlockEditor'), { loading: () => <p>Loading editor...</p> });
+
+
   const [EditorComponent, setEditorComponent] = useState<React.ComponentType<any> | null>(null);
+  // isLoadingEditor state might become redundant if next/dynamic's loading state is sufficient
   const [isLoadingEditor, setIsLoadingEditor] = useState(false);
   const [editorError, setEditorError] = useState<string | null>(null);
 
@@ -55,36 +66,55 @@ export default function EditableBlock({
       setEditorError(null);
       return;
     }
+    
+    // Posts_grid is handled by a static import and direct rendering path below.
+    if (block && block.block_type === "posts_grid") {
+        setEditorComponent(null); // Ensure no other dynamic editor is set
+        return;
+    }
 
-    const loadEditorComponent = async () => {
-      setIsLoadingEditor(true);
-      setEditorError(null);
+    setIsLoadingEditor(true); // Still useful for initial "Loading editor..." message if not using dynamic's loading prop
+    setEditorError(null);
 
-      try {
-        // Ensure block.block_type is accessed safely
-        const currentBlockType = block && block.block_type;
-        if (!currentBlockType) {
-          throw new Error(`Block type is missing or block is invalid.`);
-        }
-
-        const blockDefinition = getBlockDefinition(currentBlockType as any);
-        if (!blockDefinition) {
-          throw new Error(`No block definition found for type: ${currentBlockType}`);
-        }
-
-        const componentPath = `../editors/${blockDefinition.editorComponentFilename.replace('.tsx', '')}`;
-        const module = await import(componentPath);
-        setEditorComponent(() => module.default);
-      } catch (error) {
-        console.error('Failed to load editor component:', error);
-        setEditorError(`Failed to load editor for ${block?.block_type || 'unknown type'}`);
-      } finally {
-        setIsLoadingEditor(false);
+    try {
+      const currentBlockType = block?.block_type;
+      if (!currentBlockType) {
+        throw new Error(`Block type is missing or block is invalid.`);
       }
-    };
 
-    loadEditorComponent();
-  }, [isEditing, block]); // Depend on 'block' object itself
+      let SelectedEditor = null;
+      switch (currentBlockType) {
+        case 'text':
+          SelectedEditor = DynamicTextBlockEditor;
+          break;
+        case 'heading':
+          SelectedEditor = DynamicHeadingBlockEditor;
+          break;
+        case 'image':
+          SelectedEditor = DynamicImageBlockEditor;
+          break;
+        case 'button':
+          SelectedEditor = DynamicButtonBlockEditor;
+          break;
+        case 'video_embed':
+          SelectedEditor = DynamicVideoEmbedBlockEditor;
+          break;
+        case 'section':
+          SelectedEditor = DynamicSectionBlockEditor;
+          break;
+        // posts_grid is handled statically
+        default:
+          // This case should ideally not be hit if block_type is valid and not posts_grid
+          throw new Error(`No dynamic editor configured for type: ${currentBlockType}`);
+      }
+      setEditorComponent(() => SelectedEditor); // next/dynamic returns a component directly
+      setIsLoadingEditor(false); // Set to false once the dynamic component is assigned
+    } catch (error: any) {
+      console.error('Failed to select or load editor component:', error);
+      setEditorError(`Failed to load editor for ${block?.block_type || 'unknown type'}: ${error.message}`);
+      setIsLoadingEditor(false);
+    }
+  }, [isEditing, block]);
 
   const renderEditor = () => {
     // Targeted fix: If it's a posts_grid, render it directly.

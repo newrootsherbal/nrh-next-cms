@@ -1,8 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { AnimatePresence } from 'framer-motion';
-import { usePathname } from 'next/navigation';
+// import { TransitionGroup } from 'react-transition-group'; // No longer renders TransitionGroup
+// import { usePathname } from 'next/navigation'; // No longer directly uses pathname for its own logic
 
 interface PageTransitionContextProps {
   isTransitioning: boolean;
@@ -24,23 +24,27 @@ interface PageTransitionProviderProps {
 }
 
 export const PageTransitionProvider: React.FC<PageTransitionProviderProps> = ({ children }) => {
-  const pathname = usePathname();
+  // const pathname = usePathname(); // Pathname is now used by TransitionWrapper/CSSTransition key
   const [isTransitioning, setTransitioning] = useState(false);
 
-  // Basic example: end transition after a short delay or on new pathname
-  // More sophisticated logic might be needed depending on animation complexity
+  // This useEffect for automatically ending the transition might still be useful,
+  // or it could be moved/managed closer to where CSSTransition's onEntered/onExited are.
+  // For now, let's keep it here. If CSSTransition's onEntered/onExited reliably
+  // setTransitioning(false), this might become redundant or a fallback.
   useEffect(() => {
     if (isTransitioning) {
-      const timer = setTimeout(() => setTransitioning(false), 500); // Adjust timeout based on animation duration
+      // This timeout should ideally be longer than or equal to the longest exit animation.
+      const timer = setTimeout(() => {
+        // console.log("PageTransitionProvider: Fallback timer setting transitioning to false");
+        setTransitioning(false);
+      }, 700); // Increased timeout, adjust based on actual animation durations
       return () => clearTimeout(timer);
     }
-  }, [isTransitioning, pathname]);
+  }, [isTransitioning]);
 
   return (
     <PageTransitionContext.Provider value={{ isTransitioning, setTransitioning }}>
-      <AnimatePresence mode="wait" onExitComplete={() => setTransitioning(false)}>
-        {children}
-      </AnimatePresence>
+      {children}
     </PageTransitionContext.Provider>
   );
 };

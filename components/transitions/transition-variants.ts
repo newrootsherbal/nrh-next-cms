@@ -1,65 +1,59 @@
-// Animation variant definitions
-// These can be expanded and customized for different routes or animation styles.
+// Transition properties for react-transition-group
+// These define classNames prefixes and timeouts for CSSTransition
 
-export const defaultPageVariants = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeInOut" } },
-  exit: { opacity: 0, y: -20, transition: { duration: 0.3, ease: "easeInOut" } },
+export interface TransitionEffect {
+  classNames: string; // Prefix for CSS classes (e.g., "fade", "slide-right")
+  timeout: number | { enter: number; exit: number; appear?: number }; // Duration of the transition
+}
+
+export const defaultPageTransitionProps: TransitionEffect = {
+  classNames: 'fade-up-down', // Default transition: fade with slight vertical movement
+  timeout: 300, // Corresponds to framer-motion's 0.3s duration
 };
 
-// Example: Slide from right for public pages
-export const slideFromRightVariants = {
-  initial: { x: '100%', opacity: 0 },
-  animate: { x: 0, opacity: 1, transition: { duration: 0.4, ease: [0.25, 1, 0.5, 1] } }, // Smoother easing
-  exit: { x: '-100%', opacity: 0, transition: { duration: 0.3, ease: [0.25, 1, 0.5, 1] } },
+export const slideFromRightTransitionProps: TransitionEffect = {
+  classNames: 'slide-horizontal',
+  timeout: { enter: 400, exit: 300 },
 };
 
-// Example: Scale + fade for CMS pages
-export const scaleFadeVariants = {
-  initial: { scale: 0.95, opacity: 0 },
-  animate: { scale: 1, opacity: 1, transition: { duration: 0.3, ease: "easeOut" } },
-  exit: { scale: 1.05, opacity: 0, transition: { duration: 0.25, ease: "easeIn" } },
+export const scaleFadeTransitionProps: TransitionEffect = {
+  classNames: 'scale-fade',
+  timeout: { enter: 300, exit: 250 },
 };
 
-// Example: Gentle fade for auth pages
-export const fadeVariants = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1, transition: { duration: 0.4 } },
-  exit: { opacity: 0, transition: { duration: 0.3 } },
+export const fadeTransitionProps: TransitionEffect = {
+  classNames: 'fade',
+  timeout: { enter: 400, exit: 300 },
 };
 
-// Example: Scale up for modal-like pages
-export const scaleUpVariants = {
-  initial: { scale: 0.8, opacity: 0 },
-  animate: { scale: 1, opacity: 1, transition: { duration: 0.3, type: "spring", stiffness: 150, damping: 20 } },
-  exit: { scale: 0.8, opacity: 0, transition: { duration: 0.25, ease: "easeIn" } },
+// For scaleUp, we'll use a CSS scale and fade. Spring physics are harder to replicate directly.
+// We can approximate with ease-out for enter and ease-in for exit.
+export const scaleUpTransitionProps: TransitionEffect = {
+  classNames: 'scale-up-fade',
+  timeout: { enter: 300, exit: 250 },
 };
 
-// You can add more variants here as needed, e.g., slide from left, slide up/down, etc.
-
-export const slideFromLeftVariants = {
-  initial: { x: '-100%', opacity: 0 },
-  animate: { x: 0, opacity: 1, transition: { duration: 0.4, ease: [0.25, 1, 0.5, 1] } },
-  exit: { x: '100%', opacity: 0, transition: { duration: 0.3, ease: [0.25, 1, 0.5, 1] } },
+export const slideFromLeftTransitionProps: TransitionEffect = {
+  classNames: 'slide-horizontal-reverse', // Assuming CSS will handle direction
+  timeout: { enter: 400, exit: 300 },
 };
 
-// Add a simple "none" variant for cases where no transition is desired
-export const noTransitionVariants = {
-  initial: { opacity: 1 },
-  animate: { opacity: 1 },
-  exit: { opacity: 1 },
+export const noTransitionProps: TransitionEffect = {
+  classNames: 'no-transition', // Will have CSS that applies no actual transition
+  timeout: 0, // No duration
 };
 
-// Function to select variants based on route or other conditions
-// This is a placeholder and will need to be implemented based on routing logic
-export const getVariantsForPath = (pathname: string) => {
+// Function to select transition properties based on route
+export const getTransitionPropsForPath = (pathname: string): TransitionEffect => {
   if (pathname.startsWith('/cms')) {
-    return scaleFadeVariants;
+    return scaleFadeTransitionProps;
   }
   if (pathname.startsWith('/auth')) {
-    return fadeVariants;
+    return fadeTransitionProps;
+  }
+  if (pathname.startsWith('/blog')) { // Example for blog
+    return slideFromLeftTransitionProps;
   }
   // Add more conditions for other paths
-  // e.g. if (pathname.startsWith('/blog')) return slideFromLeftVariants;
-  return defaultPageVariants; // Fallback to default
+  return defaultPageTransitionProps; // Fallback to default
 };

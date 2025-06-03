@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState, useTransition, useEffect, ComponentType } from "react"; // Ensure React is imported
+import dynamic from 'next/dynamic'; // Import dynamic
 import type { Block, BlockType } from "@/utils/supabase/types"; // Added SectionBlockContent
 import { availableBlockTypes } from "@/utils/supabase/types";
 import { getBlockDefinition, type SectionBlockContent } from "@/lib/blocks/blockRegistry"; // Added for dynamic editor loading
@@ -90,32 +91,60 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
     setBlocks(initialBlocks.sort((a, b) => a.order - b.order));
   }, [initialBlocks]);
 
+  // Define dynamic imports for each editor type for nested blocks
+  const DynamicTextBlockEditor = dynamic(() => import(/* webpackChunkName: "nested-text-block-editor" */ '@/app/cms/blocks/editors/TextBlockEditor'), { loading: () => <p>Loading editor...</p> });
+  const DynamicHeadingBlockEditor = dynamic(() => import(/* webpackChunkName: "nested-heading-block-editor" */ '@/app/cms/blocks/editors/HeadingBlockEditor'), { loading: () => <p>Loading editor...</p> });
+  const DynamicImageBlockEditor = dynamic(() => import(/* webpackChunkName: "nested-image-block-editor" */ '@/app/cms/blocks/editors/ImageBlockEditor'), { loading: () => <p>Loading editor...</p> });
+  const DynamicButtonBlockEditor = dynamic(() => import(/* webpackChunkName: "nested-button-block-editor" */ '@/app/cms/blocks/editors/ButtonBlockEditor'), { loading: () => <p>Loading editor...</p> });
+  const DynamicPostsGridBlockEditor = dynamic(() => import(/* webpackChunkName: "nested-posts-grid-block-editor" */ '@/app/cms/blocks/editors/PostsGridBlockEditor'), { loading: () => <p>Loading editor...</p> });
+  const DynamicVideoEmbedBlockEditor = dynamic(() => import(/* webpackChunkName: "nested-video-embed-block-editor" */ '@/app/cms/blocks/editors/VideoEmbedBlockEditor'), { loading: () => <p>Loading editor...</p> });
+  const DynamicSectionBlockEditor = dynamic(() => import(/* webpackChunkName: "nested-section-block-editor" */ '@/app/cms/blocks/editors/SectionBlockEditor'), { loading: () => <p>Loading editor...</p> });
+
   useEffect(() => {
     if (editingNestedBlockInfo) {
       const blockType = editingNestedBlockInfo.blockData.block_type;
-      const blockDef = getBlockDefinition(blockType);
+      let SelectedEditor: React.ComponentType<any> | null = null;
 
-      if (blockDef && blockDef.editorComponentFilename) {
-        import(`@/app/cms/blocks/editors/${blockDef.editorComponentFilename}`)
-          .then(module => {
-            setNestedBlockEditorComponent(() => module.default);
-            // Initialize tempNestedBlockContent with a deep copy
-            setTempNestedBlockContent(JSON.parse(JSON.stringify(editingNestedBlockInfo.blockData.content)));
-          })
-          .catch(err => {
-            console.error(`Failed to load editor component for ${blockType}:`, err);
-            setNestedBlockEditorComponent(null);
-            setTempNestedBlockContent(null);
-            // Optionally, close the modal or show an error
-            setEditingNestedBlockInfo(null);
-            alert(`Error: Could not load editor for ${blockDef.label || blockType}.`);
-          });
-      } else {
-        console.warn(`No editor component filename defined for block type: ${blockType}`);
+      try {
+        switch (blockType) {
+          case 'text':
+            SelectedEditor = DynamicTextBlockEditor;
+            break;
+          case 'heading':
+            SelectedEditor = DynamicHeadingBlockEditor;
+            break;
+          case 'image':
+            SelectedEditor = DynamicImageBlockEditor;
+            break;
+          case 'button':
+            SelectedEditor = DynamicButtonBlockEditor;
+            break;
+          case 'posts_grid':
+            SelectedEditor = DynamicPostsGridBlockEditor;
+            break;
+          case 'video_embed':
+            SelectedEditor = DynamicVideoEmbedBlockEditor;
+            break;
+          case 'section':
+            // Note: Nesting sections within sections might need careful UI/UX consideration
+            // and potentially a different editor or approach.
+            // For now, we allow it if a SectionBlockEditor can handle being nested.
+            SelectedEditor = DynamicSectionBlockEditor;
+            break;
+          default:
+            console.warn(`No dynamic editor configured for nested block type: ${blockType}`);
+            alert(`Error: Editor not configured for ${blockType}.`);
+            setEditingNestedBlockInfo(null); // Close modal on error
+            return;
+        }
+        setNestedBlockEditorComponent(() => SelectedEditor);
+        setTempNestedBlockContent(JSON.parse(JSON.stringify(editingNestedBlockInfo.blockData.content)));
+      } catch (error) {
+        console.error(`Failed to load editor component for ${blockType}:`, error);
+        alert(`Error: Could not load editor for ${blockType}.`);
         setNestedBlockEditorComponent(null);
         setTempNestedBlockContent(null);
-        setEditingNestedBlockInfo(null);
-        alert(`Error: Editor not configured for ${blockType}.`);
+        setEditingNestedBlockInfo(null); // Close modal on error
       }
     } else {
       setNestedBlockEditorComponent(null);

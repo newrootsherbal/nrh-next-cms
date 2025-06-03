@@ -3,6 +3,7 @@
   "scripts": {
     "dev": "next dev --turbo",
     "build": "next build",
+    "analyze": "cross-env ANALYZE=true next build",
     "start": "next start"
   },
   "dependencies": {
@@ -29,11 +30,11 @@
     "@tiptap/pm": "^2.12.0",
     "@tiptap/react": "^2.12.0",
     "@tiptap/starter-kit": "^2.12.0",
+    "@types/react-transition-group": "^4.4.12",
     "autoprefixer": "10.4.20",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "critters": "^0.0.23",
-    "framer-motion": "^12.15.0",
     "js-cookie": "^3.0.5",
     "lucide-react": "^0.468.0",
     "next": "latest",
@@ -41,15 +42,18 @@
     "prettier": "^3.3.3",
     "react": "19.0.0",
     "react-dom": "19.0.0",
+    "react-transition-group": "^4.4.5",
     "sharp": "^0.34.2"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^15.3.3",
     "@types/deno": "^2.3.0",
     "@types/js-cookie": "^3.0.6",
     "@types/node": "22.10.2",
     "@types/react": "^19.1.4",
     "@types/react-dom": "19.0.2",
     "@types/uuid": "^10.0.0",
+    "cross-env": "^7.0.3",
     "postcss": "8.4.49",
     "supabase": "^2.22.12",
     "tailwind-merge": "^2.5.2",

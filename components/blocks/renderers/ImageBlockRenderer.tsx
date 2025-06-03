@@ -47,6 +47,7 @@ const ImageBlockRenderer: React.FC<ImageBlockRendererProps> = ({
           alt={content.alt_text || "Uploaded image"}
           width={content.width}
           height={content.height}
+          priority
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 60vw"
           className="rounded-md border"
         />
