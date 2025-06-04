@@ -139,6 +139,9 @@ export default function MediaGridClient({ initialMediaItems, r2BaseUrl }: MediaG
                 <MediaImage
                   src={`${r2BaseUrl}/${item.object_key}`}
                   alt={item.description || item.file_name}
+                  width={item.width || 500} // Default width if null
+                  height={item.height || 500} // Default height if null
+                  blurDataURL={item.blur_data_url || undefined}
                   className="h-full w-full object-contain transition-transform group-hover:scale-105"
                 />
               ) : (
