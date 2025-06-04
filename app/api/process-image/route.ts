@@ -4,6 +4,7 @@ import { s3Client } from '@/lib/cloudflare/r2-client';
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import sharp from 'sharp';
 import { Readable } from 'stream';
+import { getPlaiceholder } from 'plaiceholder';
 
 // Helper to convert stream to buffer
 async function streamToBuffer(stream: Readable): Promise<Buffer> {
@@ -61,10 +62,11 @@ export async function POST(request: NextRequest) {
 
     if (!originalContentType.startsWith('image/')) {
       // For now, we only process images. Could be extended for other file types if needed.
-      return NextResponse.json({ 
+      return NextResponse.json({
         message: 'File is not an image. Skipping processing.',
         originalImage: { objectKey: originalObjectKey, fileType: originalContentType, url: `${R2_PUBLIC_URL_BASE}/${originalObjectKey}` },
-        processedVariants: [] 
+        processedVariants: [],
+        blurDataURL: null // Or an empty string, depending on how you want to handle non-images
       }, { status: 200 });
     }
 
@@ -165,10 +167,14 @@ export async function POST(request: NextRequest) {
         variantLabel: 'original_uploaded',
     };
 
-    return NextResponse.json({ 
+    // Generate blurDataURL
+    const { base64: blurDataURL } = await getPlaiceholder(imageBuffer, { size: 10 });
+ 
+    return NextResponse.json({
         message: 'Image processed successfully.',
         originalImage: originalImageDetails,
-        processedVariants 
+        processedVariants,
+        blurDataURL
     }, { status: 200 });
 
   } catch (error: any) {

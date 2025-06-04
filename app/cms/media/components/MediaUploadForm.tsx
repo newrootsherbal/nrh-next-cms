@@ -243,8 +243,8 @@ export default function MediaUploadForm({ onUploadSuccess, returnJustData }: Med
           ...mediaDataPayload,
           r2OriginalKey: objectKey,
           r2Variants: processData.processedVariants || [],
-          originalImageDetails: processData.originalImage, // Add this line
-          // blurDataUrl can be added here if generated client-side or passed from API
+          originalImageDetails: processData.originalImage,
+          blurDataURL: processData.blurDataURL || null
         };
         
         // If processing failed, processData.processedVariants might be empty or undefined.

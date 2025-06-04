@@ -50,6 +50,8 @@ const ImageBlockRenderer: React.FC<ImageBlockRendererProps> = ({
           priority
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 60vw"
           className="rounded-md border"
+          placeholder={content.blur_data_url ? "blur" : "empty"}
+          blurDataURL={content.blur_data_url || undefined}
         />
         {content.caption && (
           <figcaption className="text-sm text-muted-foreground mt-2">

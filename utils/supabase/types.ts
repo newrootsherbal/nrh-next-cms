@@ -48,6 +48,7 @@ export interface ImageBlockContent {
   caption?: string;
   width?: number | null;      // Added width
   height?: number | null;     // Added height
+  blur_data_url?: string | null; // For image placeholder
 }
 
 export interface ButtonBlockContent {

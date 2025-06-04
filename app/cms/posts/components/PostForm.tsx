@@ -371,6 +371,9 @@ export default function PostForm({
                           <MediaImage
                             src={imageUrl}
                             alt={item.description || item.file_name}
+                            width={item.width || 300} // Provide a fallback or ensure width is always present
+                            height={item.height || 300} // Provide a fallback or ensure height is always present
+                            blurDataURL={item.blur_data_url}
                             className="h-full w-full object-cover transition-transform group-hover:scale-105"
                           />
                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
