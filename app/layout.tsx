@@ -118,7 +118,7 @@ export default async function RootLayout({
                       </ClientOnlyTransitionOrchestrator>
 
                       <footer className="w-full border-t py-8">
-                        <div className="max-w-7xl mx-auto flex flex-col items-center justify-center gap-6 text-center text-xs px-4">
+                        <div className="mx-auto flex flex-col items-center justify-center gap-6 text-center text-xs">
                           <FooterNavigation />
                           
                           <div className="flex flex-row items-center gap-2">
@@ -129,7 +129,7 @@ export default async function RootLayout({
                       </footer>
                     </div>
                   </main>
-                </PageTransitionProvider> {/* Added PageTransitionProvider here */}
+                </PageTransitionProvider>
               </ThemeProvider>
             </CurrentContentProvider>
           </LanguageProvider>

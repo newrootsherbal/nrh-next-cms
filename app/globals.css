@@ -4,75 +4,75 @@
 
 @layer base {
   :root {
-    --background: 40 33% 98%; /* Creamy off-white, like #FBFBF8 */
-    --foreground: 210 10% 15%; /* Dark, slightly desaturated blue-black for text, like #212529 */
-    --card: 0 0% 100%; /* White for cards, gives a clean look */
-    --card-foreground: 210 10% 15%; /* Same as main foreground */
+    --background: 220 20% 98%; /* Lighter, slightly cool off-white */
+    --foreground: 215 30% 15%; /* Dark, slightly desaturated blue-black for text */
+    --card: 0 0% 100%; /* White for cards */
+    --card-foreground: 215 30% 15%; /* Same as main foreground */
     --popover: 0 0% 100%; /* White for popovers */
-    --popover-foreground: 210 10% 15%; /* Same as main foreground */
+    --popover-foreground: 215 30% 15%; /* Same as main foreground */
 
-    --primary: 120 17% 34%; /* Main brand green, like #486748 */
+    --primary: 217 80% 55%; /* A strong, modern blue from your logo/cover accents */
     --primary-foreground: 0 0% 100%; /* White text on primary */
 
-    --secondary: 119 19% 42%; /* A supporting, slightly lighter natural green, like #588157 */
+    --secondary: 215 45% 30%; /* A darker, more desaturated blue for secondary elements */
     --secondary-foreground: 0 0% 100%; /* White text on secondary */
 
-    --muted: 120 25% 95%; /* Very light green-tinted background, like #F0F5F0 */
-    --muted-foreground: 120 15% 30%; /* Darker, desaturated green for text on muted backgrounds */
+    --muted: 220 30% 94%; /* Very light cool grey/blue for muted backgrounds */
+    --muted-foreground: 215 25% 45%; /* Desaturated blue-grey for text on muted */
 
-    --accent: 28 79% 90%; /* Warm orange accent, like #E67E22 */
-    --accent-foreground: 0 0% 10%; /* Dark text for good contrast on orange */
+    --accent: 190 70% 50%; /* Bright cyan/teal from cover image glows */
+    --accent-foreground: 210 40% 98%; /* Almost white, for high contrast on cyan */
 
-    --destructive: 0 70% 55%; /* A clear, but not overly harsh red */
-    --destructive-foreground: 0 0% 98%; /* Light text on destructive */
+    --destructive: 0 70% 55%; /* A clear, but not overly harsh red (current is fine) */
+    --destructive-foreground: 0 0% 98%; /* Light text on destructive (current is fine) */
 
-    --border: 210 17% 91%; /* Light, neutral grey border, like #DEE2E6 */
-    --input: 210 17% 91%; /* Input field border */
-    --ring: 120 25% 50%; /* A slightly brighter primary green for focus rings */
+    --border: 220 20% 88%; /* Light cool grey border */
+    --input: 220 20% 88%; /* Input field border */
+    --ring: 200 80% 60%; /* Brighter cyan/blue for focus rings, tying to accent */
 
     --radius: 0.5rem;
 
-    /* Earthy and natural chart colors */
-    --chart-1: 120 20% 40%; /* Deeper primary green */
-    --chart-2: 30 40% 55%;  /* Muted orange/terracotta */
-    --chart-3: 120 15% 55%; /* Lighter, desaturated green */
-    --chart-4: 45 50% 60%;  /* Earthy yellow/gold */
-    --chart-5: 150 10% 50%; /* Muted teal/blue-green */
+    /* Tech-inspired chart colors */
+    --chart-1: 217 70% 50%; /* Primary blue variant */
+    --chart-2: 190 60% 45%;  /* Accent cyan variant */
+    --chart-3: 215 35% 40%; /* Secondary blue variant */
+    --chart-4: 220 15% 70%;  /* Muted grey-blue */
+    --chart-5: 200 50% 65%; /* Lighter cyan/blue */
   }
 
   .dark {
-    --background: 120 8% 10%; /* Very dark, desaturated green-grey */
-    --foreground: 40 20% 92%; /* Light cream/off-white text */
-    --card: 120 7% 14%; /* Slightly lighter dark green-grey for cards */
-    --card-foreground: 40 20% 92%;
-    --popover: 120 7% 14%;
-    --popover-foreground: 40 20% 92%;
+    --background: 220 25% 10%; /* Very dark, slightly desaturated blue */
+    --foreground: 220 15% 90%; /* Light cool grey/off-white text */
+    --card: 220 20% 14%; /* Slightly lighter dark blue for cards */
+    --card-foreground: 220 15% 90%;
+    --popover: 220 20% 14%;
+    --popover-foreground: 220 15% 90%;
 
-    --primary: 120 28% 55%; /* Brighter green for dark mode */
-    --primary-foreground: 120 15% 10%; /* Dark text on dark mode primary */
+    --primary: 210 90% 65%; /* Brighter, vibrant blue for dark mode */
+    --primary-foreground: 220 20% 10%; /* Dark text on dark mode primary */
 
-    --secondary: 119 25% 60%; /* Brighter secondary green for dark mode */
-    --secondary-foreground: 120 15% 10%; /* Dark text on dark mode secondary */
+    --secondary: 215 50% 45%; /* A noticeable but not overly bright secondary blue */
+    --secondary-foreground: 220 15% 90%; /* Light text on dark mode secondary */
 
-    --muted: 120 6% 18%; /* Darker muted background */
-    --muted-foreground: 120 10% 65%; /* Lighter, desaturated green text for dark muted */
+    --muted: 220 15% 18%; /* Darker muted background */
+    --muted-foreground: 220 10% 65%; /* Lighter grey-blue text for dark muted */
 
-    --accent: 28 80% 60%; /* Orange accent, slightly brighter for dark mode */
-    --accent-foreground: 28 30% 10%; /* Very dark text on dark mode accent */
+    --accent: 195 80% 55%; /* Cyan/teal accent, kept vibrant for dark mode */
+    --accent-foreground: 220 25% 10%; /* Very dark text on dark mode accent */
 
-    --destructive: 0 70% 60%; /* Red for destructive actions */
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 70% 60%; /* Red for destructive actions (current is fine) */
+    --destructive-foreground: 0 0% 98%; /* Current is fine */
 
-    --border: 120 5% 22%; /* Darker border */
-    --input: 120 5% 22%;
-    --ring: 120 35% 70%; /* Brighter green focus ring for dark mode */
+    --border: 220 15% 25%; /* Darker border, slightly blue-tinted */
+    --input: 220 15% 25%;
+    --ring: 195 90% 60%; /* Brighter cyan focus ring for dark mode */
 
     /* Chart colors adapted for dark mode */
-    --chart-1: 120 30% 65%;
-    --chart-2: 30 50% 70%;
-    --chart-3: 120 25% 75%;
-    --chart-4: 45 60% 75%;
-    --chart-5: 150 20% 68%;
+    --chart-1: 210 80% 60%;
+    --chart-2: 195 70% 50%;
+    --chart-3: 215 40% 50%;
+    --chart-4: 220 10% 55%;
+    --chart-5: 200 60% 70%;
   }
 }
 
