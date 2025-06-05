@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react'; // Removed useTransition as it's not used here
+import Image from 'next/image';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -187,17 +188,35 @@ export default function ImageBlockEditor({ content, onChange }: ImageBlockEditor
               {isLoadingLibrary ? <div className="flex-grow flex items-center justify-center"><p>Loading media...</p></div>
               : mediaLibrary.length === 0 ? <div className="flex-grow flex items-center justify-center"><p>No media found in library.</p></div>
               : (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 overflow-y-auto flex-grow pr-2 pb-2">
-                  {mediaLibrary.filter(m => m.file_type?.startsWith("image/")).map((media) => (
-                    <button key={media.id} type="button"
-                      className="relative aspect-square border rounded-md overflow-hidden group focus:outline-none focus:ring-2 focus:ring-primary"
-                      onClick={() => handleSelectMediaFromLibrary(media)} >
-                      <img src={`${R2_BASE_URL}/${media.object_key}`} alt={media.description || media.file_name} className="h-full w-full object-cover"/>
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity flex items-center justify-center">
-                        <CheckCircle className="h-8 w-8 text-white" /></div>
-                      <p className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 truncate text-center">{media.file_name}</p>
-                    </button>
-                  ))}
+                <div className="flex flex-wrap gap-3 overflow-y-auto min-h-0 pr-2 pb-2">
+                  {mediaLibrary.filter(m => m.file_type?.startsWith("image/")).map((media) => {
+                    if (typeof media.width !== 'number' || typeof media.height !== 'number' || media.width <= 0 || media.height <= 0) {
+                      return (
+                        <div key={media.id} className="relative aspect-square border rounded-md bg-muted flex items-center justify-center text-xs text-muted-foreground p-1 text-center">
+                          Image has invalid dimensions
+                        </div>
+                      );
+                    }
+                    return (
+                      <button key={media.id} type="button"
+                        className="relative aspect-square border rounded-md overflow-hidden group focus:outline-none focus:ring-2 focus:ring-primary min-w-0 w-1/3 sm:w-1/4 md:w-1/5 lg:w-1/6"
+                        onClick={() => handleSelectMediaFromLibrary(media)} >
+                        <Image
+                          src={`${R2_BASE_URL}/${media.object_key}`}
+                          alt={media.description || media.file_name || "Media library image"}
+                          width={media.width}
+                          height={media.height}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          placeholder={media.blur_data_url ? "blur" : "empty"}
+                          blurDataURL={media.blur_data_url || undefined}
+                          sizes="(max-width: 639px) 33vw, (max-width: 767px) 25vw, (max-width: 1023px) 20vw, 17vw"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity flex items-center justify-center">
+                          <CheckCircle className="h-8 w-8 text-white" /></div>
+                        <p className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 truncate text-center">{media.file_name}</p>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
