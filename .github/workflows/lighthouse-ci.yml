@@ -1,0 +1,39 @@
+# Lighthouse CI Workflow
+# This workflow runs Lighthouse CI checks on every push to master and on PRs targeting master.
+name: Lighthouse CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  lighthouse_ci_check:
+    name: Lighthouse CI Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm' # Caches npm dependencies
+
+      - name: Install Project Dependencies
+        run: npm ci
+
+      - name: Install Lighthouse CI CLI
+        run: npm install -g @lhci/cli # Explicit global install for CI reliability
+
+      - name: Build Next.js Application
+        # Add any necessary environment variables for the build command here
+        run: npm run build
+
+      - name: Run Lighthouse CI
+        run: lhci autorun
+        env:
+          # LHCI_GITHUB_APP_TOKEN is a repository secret used to post results to GitHub Checks
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
