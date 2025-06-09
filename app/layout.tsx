@@ -1,6 +1,6 @@
 // app/layout.tsx
 import { EnvVarWarning } from "@/components/env-var-warning";
-import { ThemeSwitcher } from "@/components/theme-switcher";
+// import { ThemeSwitcher } from "@/components/theme-switcher"; // Will be dynamically imported
 import { hasEnvVars } from "@/utils/supabase/check-env-vars";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/context/AuthContext";
@@ -26,8 +26,7 @@ import Header from "@/components/Header";
 import FooterNavigation from "@/components/FooterNavigation";
 import { headers, cookies } from 'next/headers';
 import { unstable_noStore } from 'next/cache'; // For testing
-import dynamic from 'next/dynamic';
-import ClientSideTransitionWrapper from '@/components/transitions/ClientSideTransitionWrapper'; // Import the new wrapper
+import { DynamicClientSideTransitionWrapper, DynamicThemeSwitcher } from '@/components/DynamicImportsClient';
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -117,7 +116,7 @@ export default async function RootLayout({
                 enableSystem
                 disableTransitionOnChange
               >
-                <ClientSideTransitionWrapper>
+                <DynamicClientSideTransitionWrapper>
                   <main className="min-h-screen flex flex-col items-center w-full">
                     <div className="flex-1 w-full flex flex-col items-center">
                       <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
@@ -125,7 +124,7 @@ export default async function RootLayout({
                           {!hasEnvVars ? <EnvVarWarning /> : <Header currentLocale={serverDeterminedLocale} />}
                         </div>
                       </nav>
-                      {/* The ClientSideTransitionWrapper now handles the orchestrator and provider */}
+                      {/* The DynamicClientSideTransitionWrapper now handles the orchestrator and provider */}
                       <div className="flex flex-col w-full flex-grow">
                         {children}
                       </div>
@@ -136,13 +135,13 @@ export default async function RootLayout({
                           
                           <div className="flex flex-row items-center gap-2">
                             <p className="text-muted-foreground">© {new Date().getFullYear()} My Ultra-Fast CMS. All rights reserved.</p>
-                            <ThemeSwitcher />
+                            <DynamicThemeSwitcher />
                           </div>
                         </div>
                       </footer>
                     </div>
                   </main>
-                </ClientSideTransitionWrapper>
+                </DynamicClientSideTransitionWrapper>
               </ThemeProvider>
             </CurrentContentProvider>
           </LanguageProvider>
