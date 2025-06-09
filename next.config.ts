@@ -34,9 +34,17 @@ experimental: {
     optimizeCss: true,
     cssChunking: 'strict',
   },
+  turbopack: {
+    // Turbopack-specific options can be placed here if needed in the future
+  },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   }
 };
 
-export default withBundleAnalyzer(nextConfig);
+let configToExport = nextConfig;
+if (process.env.ANALYZE === 'true') {
+  configToExport = withBundleAnalyzer(nextConfig);
+}
+
+export default configToExport;
