@@ -1,11 +1,13 @@
 // app/[slug]/page.tsx
 import React from 'react';
+import Head from 'next/head';
 import { getSsgSupabaseClient } from "@/utils/supabase/ssg-client"; // Correct import
 import { notFound } from "next/navigation";
 import type { Metadata, ResolvingMetadata } from 'next';
 import PageClientContent from "./PageClientContent";
 import { getPageDataBySlug } from "./page.utils";
 import BlockRenderer from "../../components/BlockRenderer";
+import type { SectionBlockContent } from '@/lib/blocks/blockRegistry';
 
 export const dynamicParams = true;
 export const revalidate = 3600;
@@ -100,11 +102,38 @@ export default async function DynamicPage({ params: paramsPromise }: PageProps) 
     }
   }
 
+  let lcpImageUrl: string | null = null;
+  const r2BaseUrl = process.env.NEXT_PUBLIC_R2_BASE_URL || "";
+
+  if (pageData && pageData.blocks && r2BaseUrl) {
+    for (const block of pageData.blocks) {
+      if (block.block_type === "section" && block.content) {
+        const sectionContent = block.content as SectionBlockContent;
+        if (
+          sectionContent.background &&
+          sectionContent.background.type === "image" &&
+          sectionContent.background.image &&
+          sectionContent.background.image.object_key
+        ) {
+          lcpImageUrl = `${r2BaseUrl}/${sectionContent.background.image.object_key}`;
+          break;
+        }
+      }
+    }
+  }
+
   const pageBlocks = pageData ? <BlockRenderer blocks={pageData.blocks} languageId={pageData.language_id} /> : null;
 
   return (
-    <PageClientContent initialPageData={pageData} currentSlug={params.slug} translatedSlugs={translatedSlugs}>
-      {pageBlocks}
-    </PageClientContent>
+    <>
+      {lcpImageUrl && (
+        <Head>
+          <link rel="preload" as="image" href={lcpImageUrl} />
+        </Head>
+      )}
+      <PageClientContent initialPageData={pageData} currentSlug={params.slug} translatedSlugs={translatedSlugs}>
+        {pageBlocks}
+      </PageClientContent>
+    </>
   );
 }

@@ -7,9 +7,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Trash2, Edit2, Check, X, GripVertical, ChevronDown, ChevronUp, Plus, Minus } from "lucide-react";
-import type { SectionBlockContent, BlockType } from "@/lib/blocks/blockRegistry";
-import { availableBlockTypes, getBlockDefinition, getInitialContent } from "@/lib/blocks/blockRegistry";
+import type { SectionBlockContent } from "@/lib/blocks/blockRegistry";
+import { availableBlockTypes, getBlockDefinition, getInitialContent, BlockType } from "@/lib/blocks/blockRegistry";
 import dynamic from 'next/dynamic';
+
+// Dynamically imported editor components
+const TextBlockEditorComponent = dynamic(() => import('./TextBlockEditor'));
+const HeadingBlockEditorComponent = dynamic(() => import('./HeadingBlockEditor'));
+const ImageBlockEditorComponent = dynamic(() => import('./ImageBlockEditor'));
+const ButtonBlockEditorComponent = dynamic(() => import('./ButtonBlockEditor'));
+const PostsGridBlockEditorComponent = dynamic(() => import('./PostsGridBlockEditor'));
+const VideoEmbedBlockEditorComponent = dynamic(() => import('./VideoEmbedBlockEditor'));
+
+const editorComponentMap: Partial<Record<BlockType, React.ComponentType<any>>> = {
+  text: TextBlockEditorComponent,
+  heading: HeadingBlockEditorComponent,
+  image: ImageBlockEditorComponent,
+  button: ButtonBlockEditorComponent,
+  posts_grid: PostsGridBlockEditorComponent,
+  video_embed: VideoEmbedBlockEditorComponent,
+};
 
 // DND Kit imports for column block reordering
 import {
@@ -167,21 +184,19 @@ function ColumnEditor({ columnIndex, blocks, onBlocksChange, isExpanded, onToggl
       return;
     }
 
-    const loadEditorComponent = async () => {
-      try {
-        const block = blocks[editingBlockIndex];
-        const blockDefinition = getBlockDefinition(block.block_type);
-        if (!blockDefinition) return;
+    const block = blocks[editingBlockIndex];
+    const Editor = editorComponentMap[block.block_type];
 
-        const componentPath = `./${blockDefinition.editorComponentFilename.replace('.tsx', '')}`;
-        const module = await import(componentPath);
-        setEditorComponent(() => module.default);
-      } catch (error) {
-        console.error('Failed to load editor component:', error);
+    if (Editor) {
+      setEditorComponent(() => Editor);
+    } else {
+      // 'section' block type is not expected to be loaded via this mechanism here,
+      // as it's the parent editor. Other unknown types would be an error.
+      if (block.block_type !== 'section') {
+        console.error(`No editor component found for block type: ${block.block_type}`);
       }
-    };
-
-    loadEditorComponent();
+      setEditorComponent(null);
+    }
   }, [editingBlockIndex, blocks]);
 
   const handleAddBlock = () => {

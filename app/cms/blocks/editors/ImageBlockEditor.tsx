@@ -134,12 +134,17 @@ export default function ImageBlockEditor({ content, onChange }: ImageBlockEditor
       <Label>Image</Label>
       <div className="mt-1 p-3 border rounded-md bg-muted/30 min-h-[120px] flex flex-col items-center justify-center">
         {isLoadingMediaDetails && <p>Loading image details...</p>}
-        {!isLoadingMediaDetails && displayObjectKey ? (
-          <div className="relative group inline-block">
-            <img
+        {!isLoadingMediaDetails && displayObjectKey && typeof content.width === 'number' && typeof content.height === 'number' && content.width > 0 && content.height > 0 ? (
+          <div className="relative group inline-block" style={{ maxWidth: content.width, maxHeight: 200 }}> {/* Max height for editor preview consistency */}
+            <Image
               src={`${R2_BASE_URL}/${displayObjectKey}`}
               alt={content.alt_text || "Selected image"}
-              className="rounded-md object-contain max-h-40 block"
+              width={content.width}
+              height={content.height}
+              className="rounded-md object-contain" // Removed max-h-40, relying on width/height and parent max-height
+              style={{ maxHeight: '200px' }} // Ensure image does not exceed this height in preview
+              placeholder={content.blur_data_url ? "blur" : "empty"}
+              blurDataURL={content.blur_data_url || undefined}
             />
             <Button
               type="button" variant="destructive" size="icon"
@@ -147,8 +152,23 @@ export default function ImageBlockEditor({ content, onChange }: ImageBlockEditor
               onClick={handleRemoveImage} title="Remove Image"
             > <XIcon className="h-3 w-3" /> </Button>
           </div>
+        ) : !isLoadingMediaDetails && displayObjectKey ? ( // Fallback if width/height are missing but key exists
+          <div className="relative group inline-block">
+            <img
+              src={`${R2_BASE_URL}/${displayObjectKey}`}
+              alt={content.alt_text || "Selected image"}
+              className="rounded-md object-contain max-h-40 block"
+              style={{ maxHeight: '200px' }}
+            />
+             <Button
+              type="button" variant="destructive" size="icon"
+              className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6"
+              onClick={handleRemoveImage} title="Remove Image"
+            > <XIcon className="h-3 w-3" /> </Button>
+            <p className="text-xs text-orange-500 mt-1">Preview: Dimensions missing, using fallback.</p>
+          </div>
         ) : !isLoadingMediaDetails && content.media_id ? (
-            <p className="text-sm text-red-500">Image details (object_key) missing for Media ID: {content.media_id}. Try re-selecting.</p>
+            <p className="text-sm text-red-500">Image details (object_key or dimensions) missing for Media ID: {content.media_id}. Try re-selecting.</p>
         ) : (
           <ImageIcon className="h-16 w-16 text-muted-foreground" />
         )}

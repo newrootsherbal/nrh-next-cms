@@ -70,12 +70,12 @@ const config = {
       },
       keyframes: {
         "accordion-down": {
-          from: { height: "0" },
-          to: { height: "var(--radix-accordion-content-height)" },
+          from: { opacity: "0", "max-height": "0" },
+          to: { opacity: "1", "max-height": "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
-          from: { height: "var(--radix-accordion-content-height)" },
-          to: { height: "0" },
+          from: { opacity: "1", "max-height": "var(--radix-accordion-content-height)" },
+          to: { opacity: "0", "max-height": "0" },
         },
       },
       animation: {

@@ -6,6 +6,7 @@ import type { PostWithMediaDimensions } from '../../utils/supabase/types';
 import { AnimatedLink } from '@/components/transitions'; // Changed to AnimatedLink
 import Image from 'next/image';
 import { Button } from '../ui/button'; // Adjusted path
+import PostCardSkeleton from './PostCardSkeleton'; // Added import
 
 interface PostsGridClientProps {
   initialPosts: PostWithMediaDimensions[];
@@ -32,31 +33,40 @@ const PostsGridClient: React.FC<PostsGridClientProps> = ({
   const [posts, setPosts] = useState<PostWithMediaDimensions[]>(initialPosts);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Initialize skeletonCount to postsPerPage, or a sensible minimum if initialPosts is empty.
+  const [skeletonCount, setSkeletonCount] = useState(initialPosts.length > 0 ? initialPosts.length : postsPerPage);
 
   const totalPages = Math.ceil(totalCount / postsPerPage);
 
   useEffect(() => {
     setPosts(initialPosts); // Sync if initialPosts change due to parent re-render
     setCurrentPage(initialPage);
-  }, [initialPosts, initialPage]);
+    // When initialPosts change, update skeletonCount to reflect the number of items actually rendered initially,
+    // or fall back to postsPerPage if initialPosts is empty (e.g., for a client-side initial fetch)
+    setSkeletonCount(initialPosts.length > 0 ? initialPosts.length : postsPerPage);
+  }, [initialPosts, initialPage, postsPerPage]);
 
   const handlePageChange = async (newPage: number) => {
     if (newPage < 1 || newPage > totalPages || isLoading) return;
+    
+    // For subsequent page loads, always show `postsPerPage` skeletons
+    setSkeletonCount(postsPerPage);
     setIsLoading(true);
     setError(null);
+    // Don't clear posts here immediately, skeletons will cover the loading state
     try {
       const result = await fetchAction(languageId, newPage, postsPerPage);
 
       if (result.error) {
         setError(result.error);
-        setPosts([]);
+        setPosts([]); // Clear posts on error
       } else {
         setPosts(result.posts);
         setCurrentPage(newPage);
       }
     } catch (e: any) {
       setError(e.message || "Failed to fetch posts.");
-      setPosts([]);
+      setPosts([]); // Clear posts on error
     }
     setIsLoading(false);
   };
@@ -70,41 +80,49 @@ const PostsGridClient: React.FC<PostsGridClientProps> = ({
   const gridColsClass = columnClasses[columns] || columnClasses[3];
 
 
-  if (error) {
-    return <div className="text-red-500">Error: {error}</div>;
+  if (error && !isLoading) { // Only show full error if not also loading (e.g. initial load error after skeletons)
+    return <div className="text-red-500 py-10 text-center">Error: {error}</div>;
   }
 
   return (
     <div>
       <div className={`grid ${gridColsClass} gap-6`}>
-        {posts.map((post) => (
-          <AnimatedLink href={`/blog/${post.slug}`} key={post.id} className="block group" prefetchOnHover={true}>
-            <div className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-card text-card-foreground">
-              {/* Basic Post Card Structure - Enhanced with Feature Image */}
-              {post.feature_image_url && typeof post.feature_image_width === 'number' && typeof post.feature_image_height === 'number' && post.feature_image_width > 0 && post.feature_image_height > 0 ? (
-                <div className="aspect-video overflow-hidden"> {/* Or other aspect ratio as desired, e.g., aspect-[16/9] or aspect-square */}
-                  <Image
-                    src={post.feature_image_url}
-                    alt={`Feature image for ${post.title}`}
-                    width={post.feature_image_width}
-                    height={post.feature_image_height}
-                    priority
-                    className="h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
+        {isLoading ? (
+          Array.from({ length: skeletonCount }).map((_, index) => (
+            <PostCardSkeleton key={`skeleton-${index}`} />
+          ))
+        ) : posts.length > 0 ? (
+          posts.map((post) => (
+            <AnimatedLink href={`/blog/${post.slug}`} key={post.id} className="block group" prefetchOnHover={true}>
+              <div className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-card text-card-foreground">
+                {/* Basic Post Card Structure - Enhanced with Feature Image */}
+                {post.feature_image_url && typeof post.feature_image_width === 'number' && typeof post.feature_image_height === 'number' && post.feature_image_width > 0 && post.feature_image_height > 0 ? (
+                  <div className="aspect-video overflow-hidden"> {/* Or other aspect ratio as desired, e.g., aspect-[16/9] or aspect-square */}
+                    <Image
+                      src={post.feature_image_url}
+                      alt={`Feature image for ${post.title}`}
+                      width={post.feature_image_width}
+                      height={post.feature_image_height}
+                      priority // Consider if all grid images are priority
+                      className="h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  </div>
+                ) : post.feature_image_url ? (
+                  <div className="aspect-video overflow-hidden bg-gray-200 flex items-center justify-center">
+                    <span className="text-gray-500">Image not available</span>
+                  </div>
+                ) : null}
+                <div className="p-4">
+                  <h3 className="text-lg font-semibold mb-2 group-hover:text-primary">{post.title}</h3>
+                  {post.excerpt && <p className="text-sm text-muted-foreground mb-3 line-clamp-3">{post.excerpt}</p>}
+                  <span className="text-xs text-primary group-hover:underline">Read more</span>
                 </div>
-              ) : post.feature_image_url ? (
-                <div className="aspect-video overflow-hidden bg-gray-200 flex items-center justify-center">
-                  <span className="text-gray-500">Image not available</span>
-                </div>
-              ) : null}
-              <div className="p-4">
-                <h3 className="text-lg font-semibold mb-2 group-hover:text-primary">{post.title}</h3>
-                {post.excerpt && <p className="text-sm text-muted-foreground mb-3 line-clamp-3">{post.excerpt}</p>}
-                <span className="text-xs text-primary group-hover:underline">Read more</span>
               </div>
-            </div>
-          </AnimatedLink>
-        ))}
+            </AnimatedLink>
+          ))
+        ) : (
+          !error && <div className="col-span-full text-center py-10">No posts found.</div> // Show if no posts and no error, and not loading
+        )}
       </div>
 
       {showPagination && totalPages > 1 && (
@@ -128,7 +146,7 @@ const PostsGridClient: React.FC<PostsGridClientProps> = ({
           </Button>
         </div>
       )}
-      {isLoading && <p className="text-center mt-4">Loading...</p>}
+      {/* {isLoading && <p className="text-center mt-4 text-sm text-muted-foreground">Fetching posts...</p>} */}
     </div>
   );
 };
