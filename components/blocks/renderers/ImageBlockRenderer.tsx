@@ -48,6 +48,7 @@ const ImageBlockRenderer: React.FC<ImageBlockRendererProps> = ({
           width={content.width}
           height={content.height}
           priority
+          fetchPriority="high"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1024px"
           className="rounded-md border"
           placeholder={content.blur_data_url ? "blur" : "empty"}
