@@ -13,6 +13,12 @@ const config = {
     'animate-enter',
     'animate-leave',
     'dark',
+    'text-primary',
+    'text-secondary',
+    'text-accent',
+    'text-muted',
+    'text-destructive',
+    'text-background',
     // Add any specific classes that are dynamically generated and might be missed by PurgeCSS.
     // For example:
     // 'bg-primary-hover',

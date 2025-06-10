@@ -11,7 +11,6 @@ interface AnimatedLinkProps extends Omit<LinkProps, 'onClick' | 'prefetch'> { //
   onClick?: (event: React.MouseEvent<HTMLAnchorElement>) => void; // Define our own onClick
   target?: React.HTMLAttributeAnchorTarget; // Explicitly add target
   rel?: string; // Explicitly add rel
-  priority?: boolean; // New prop for high-priority prefetching
   prefetchOnHover?: boolean; // New prop for hover-based prefetching, defaults to false
   prefetchOnIntersect?: boolean; // New prop for intersection-based prefetching, defaults to false
 }
@@ -26,7 +25,6 @@ export const AnimatedLink = forwardRef<HTMLAnchorElement, AnimatedLinkProps>(
       onClick,
       target,
       rel,
-      priority,
       prefetchOnHover = false,
       prefetchOnIntersect = false,
       ...otherProps // These are other LinkProps like scroll, replace, locale etc.
@@ -139,8 +137,6 @@ export const AnimatedLink = forwardRef<HTMLAnchorElement, AnimatedLinkProps>(
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         prefetch={nextLinkActualPrefetch} // Controlled prefetch prop
-        // @ts-expect-error TS(2322) - The 'priority' prop is valid for next/link but may not be in the current LinkProps type definition.
-        priority={priority} // Forward priority prop
         {...otherProps} // Spread other LinkProps
       >
         {children}
