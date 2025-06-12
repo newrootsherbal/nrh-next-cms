@@ -1,0 +1,121 @@
+@layer base {
+  :root {
+    --background: 220 20% 98%; /* Lighter, slightly cool off-white */
+    --foreground: 215 30% 15%; /* Dark, slightly desaturated blue-black for text */
+    --card: 0 0% 100%; /* White for cards */
+    --card-foreground: 215 30% 15%; /* Same as main foreground */
+    --popover: 0 0% 100%; /* White for popovers */
+    --popover-foreground: 215 30% 15%; /* Same as main foreground */
+
+    --primary: 215 45% 30%; /* A strong, modern blue from your logo/cover accents */
+    --primary-foreground: 0 0% 100%; /* White text on primary */
+
+    --secondary: 215 45% 75%; /* A darker, more desaturated blue for secondary elements */
+    --secondary-foreground: 0 0% 100%; /* White text on secondary */
+
+    --muted: 220 30% 94%; /* Very light cool grey/blue for muted backgrounds */
+    --muted-foreground: 215 25% 45%; /* Desaturated blue-grey for text on muted */
+
+    --accent: 190 70% 50%; /* Bright cyan/teal from cover image glows */
+    --accent-foreground: 210 40% 98%; /* Almost white, for high contrast on cyan */
+
+    --destructive: 0 70% 55%; /* A clear, but not overly harsh red (current is fine) */
+    --destructive-foreground: 0 0% 98%; /* Light text on destructive (current is fine) */
+
+    --border: 220 20% 88%; /* Light cool grey border */
+    --input: 220 20% 88%; /* Input field border */
+    --ring: 200 80% 60%; /* Brighter cyan/blue for focus rings, tying to accent */
+
+    --radius: 0.5rem;
+
+    /* Tech-inspired chart colors */
+    --chart-1: 217 70% 50%; /* Primary blue variant */
+    --chart-2: 190 60% 45%; /* Accent cyan variant */
+    --chart-3: 215 35% 40%; /* Secondary blue variant */
+    --chart-4: 220 15% 70%; /* Muted grey-blue */
+    --chart-5: 200 50% 65%; /* Lighter cyan/blue */
+  }
+
+  .dark {
+    --background: 220 25% 10%; /* Very dark, slightly desaturated blue */
+    --foreground: 220 15% 90%; /* Light cool grey/off-white text */
+    --card: 220 20% 14%; /* Slightly lighter dark blue for cards */
+    --card-foreground: 220 15% 90%;
+    --popover: 220 20% 14%;
+    --popover-foreground: 220 15% 90%;
+
+    --primary: 210 90% 65%; /* Brighter, vibrant blue for dark mode */
+    --primary-foreground: 220 20% 10%; /* Dark text on dark mode primary */
+
+    --secondary: 215 50% 45%; /* A noticeable but not overly bright secondary blue */
+    --secondary-foreground: 220 15% 90%; /* Light text on dark mode secondary */
+
+    --muted: 220 15% 18%; /* Darker muted background */
+    --muted-foreground: 220 10% 65%; /* Lighter grey-blue text for dark muted */
+
+    --accent: 195 80% 55%; /* Cyan/teal accent, kept vibrant for dark mode */
+    --accent-foreground: 220 25% 10%; /* Very dark text on dark mode accent */
+
+    --destructive: 0 70% 60%; /* Red for destructive actions (current is fine) */
+    --destructive-foreground: 0 0% 98%; /* Current is fine */
+
+    --border: 220 15% 25%; /* Darker border, slightly blue-tinted */
+    --input: 220 15% 25%;
+    --ring: 195 90% 60%; /* Brighter cyan focus ring for dark mode */
+
+    /* Chart colors adapted for dark mode */
+    --chart-1: 210 80% 60%;
+    --chart-2: 195 70% 50%;
+    --chart-3: 215 40% 50%;
+    --chart-4: 220 10% 55%;
+    --chart-5: 200 60% 70%;
+  }
+}
+
+h1 {
+  font-size: 3.5rem;
+  line-height: 1;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  margin-top: 1.5rem;
+}
+
+h2 {
+  font-size: 2.5rem;
+  line-height: 1;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+h3 {
+  font-size: 2.25rem;
+  line-height: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  margin-top: 1rem;
+}
+
+h4 {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+h5 {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+h6 {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  margin-top: 0.5rem;
+}
