@@ -154,8 +154,14 @@ export default function EditableBlock({
     }
 
     const currentContent = tempContent || block.content || {};
-    // Standard editor interface for other dynamically loaded blocks
-    return <EditorComponent content={currentContent} onChange={onTempContentChange} />;
+    
+    const editorProps: any = {
+      content: currentContent,
+      onChange: onTempContentChange,
+      blockType: block.block_type,
+    };
+
+    return <EditorComponent {...editorProps} />;
   };
 
   const renderPreview = () => {
@@ -292,7 +298,7 @@ export default function EditableBlock({
     <div className="p-4 border rounded-lg bg-card shadow">
       <div className="flex justify-between items-center mb-2 pb-2 border-b">
         <div className="flex items-center gap-2">
-          {dragHandleProps && (
+          {!isEditing && dragHandleProps && (
             <button {...dragHandleProps} className="cursor-grab p-1 -ml-1" aria-label="Drag to reorder">
               <GripVertical className="h-5 w-5 text-muted-foreground hover:text-foreground" />
             </button>

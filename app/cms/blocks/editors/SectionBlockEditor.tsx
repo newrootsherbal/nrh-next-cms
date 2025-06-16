@@ -1,33 +1,52 @@
 // app/cms/blocks/editors/SectionBlockEditor.tsx
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Trash2, Edit2, Check, X, GripVertical, ChevronDown, ChevronUp, Plus, Minus } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { GripVertical } from "lucide-react";
+import ColumnEditor from "../components/ColumnEditor";
 import type { SectionBlockContent } from "@/lib/blocks/blockRegistry";
-import { availableBlockTypes, getBlockDefinition, getInitialContent, BlockType } from "@/lib/blocks/blockRegistry";
-import dynamic from 'next/dynamic';
-import BackgroundSelector from '../components/BackgroundSelector';
+import {
+  availableBlockTypes,
+  getBlockDefinition,
+  getInitialContent,
+  BlockType,
+} from "@/lib/blocks/blockRegistry";
+import dynamic from "next/dynamic";
+import SectionConfigPanel from "../components/SectionConfigPanel";
 
 // Dynamically imported editor components
-const TextBlockEditorComponent = dynamic(() => import('./TextBlockEditor'));
-const HeadingBlockEditorComponent = dynamic(() => import('./HeadingBlockEditor'));
-const ImageBlockEditorComponent = dynamic(() => import('./ImageBlockEditor'));
-const ButtonBlockEditorComponent = dynamic(() => import('./ButtonBlockEditor'));
-const PostsGridBlockEditorComponent = dynamic(() => import('./PostsGridBlockEditor'));
-const VideoEmbedBlockEditorComponent = dynamic(() => import('./VideoEmbedBlockEditor'));
+const TextBlockEditorComponent = dynamic(() => import("./TextBlockEditor"));
+const HeadingBlockEditorComponent = dynamic(
+  () => import("./HeadingBlockEditor")
+);
+const ImageBlockEditorComponent = dynamic(() => import("./ImageBlockEditor"));
+const ButtonBlockEditorComponent = dynamic(() => import("./ButtonBlockEditor"));
+const PostsGridBlockEditorComponent = dynamic(
+  () => import("./PostsGridBlockEditor")
+);
+const VideoEmbedBlockEditorComponent = dynamic(
+  () => import("./VideoEmbedBlockEditor")
+);
 
-const editorComponentMap: Partial<Record<BlockType, React.ComponentType<any>>> = {
-  text: TextBlockEditorComponent,
-  heading: HeadingBlockEditorComponent,
-  image: ImageBlockEditorComponent,
-  button: ButtonBlockEditorComponent,
-  posts_grid: PostsGridBlockEditorComponent,
-  video_embed: VideoEmbedBlockEditorComponent,
-};
+const editorComponentMap: Partial<Record<BlockType, React.ComponentType<any>>> =
+  {
+    text: TextBlockEditorComponent,
+    heading: HeadingBlockEditorComponent,
+    image: ImageBlockEditorComponent,
+    button: ButtonBlockEditorComponent,
+    posts_grid: PostsGridBlockEditorComponent,
+    video_embed: VideoEmbedBlockEditorComponent,
+  };
 
 // DND Kit imports for column block reordering
 import {
@@ -50,378 +69,49 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
-  useSortable,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 
 interface SectionBlockEditorProps {
   content: Partial<SectionBlockContent>;
   onChange: (newContent: SectionBlockContent) => void;
+  blockType?: "section" | "hero";
 }
 
-// Sortable block item component for column blocks
-interface SortableColumnBlockProps {
-  block: SectionBlockContent['column_blocks'][0][0];
-  index: number;
-  columnIndex: number;
-  onEdit: () => void;
-  onDelete: () => void;
-  isEditing: boolean;
-}
-
-function SortableColumnBlock({ block, index, columnIndex, onEdit, onDelete, isEditing }: SortableColumnBlockProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
-    id: `column-${columnIndex}-block-${index}`,
-    data: {
-      type: 'block',
-      columnIndex,
-      blockIndex: index,
-      block
-    }
-  });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  const blockDefinition = getBlockDefinition(block.block_type);
-  const blockLabel = blockDefinition?.label || block.block_type;
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="group relative p-2 border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-900 shadow-sm"
-    >
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-2">
-          <button
-            {...attributes}
-            {...listeners}
-            className="cursor-grab p-1 opacity-0 group-hover:opacity-100 transition-opacity touch-none"
-            aria-label="Drag to reorder"
-          >
-            <GripVertical className="h-3 w-3 text-gray-400" />
-          </button>
-          <span className="text-xs font-medium text-gray-600 dark:text-gray-300 capitalize">
-            {blockLabel}
-          </span>
-        </div>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onEdit}
-            className="h-6 w-6 p-0"
-            title="Edit block"
-          >
-            <Edit2 className="h-3 w-3" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onDelete}
-            className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
-            title="Delete block"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        </div>
-      </div>
-      
-      {/* Block content preview */}
-      <div className="text-xs text-gray-500 dark:text-gray-400">
-        {block.block_type === 'text' && (
-          <div dangerouslySetInnerHTML={{ __html: (block.content.html_content || 'Empty text').substring(0, 50) + (block.content.html_content && block.content.html_content.length > 50 ? '...' : '') }} />
-        )}
-        {block.block_type === 'heading' && (
-          <div>H{block.content.level || 1}: {(block.content.text_content || 'Empty heading').substring(0, 30) + (block.content.text_content && block.content.text_content.length > 30 ? '...' : '')}</div>
-        )}
-        {block.block_type === 'image' && (
-          <div>Image: {block.content.alt_text || block.content.media_id ? 'Image selected' : 'No image selected'}</div>
-        )}
-        {block.block_type === 'button' && (
-          <div>Button: {block.content.text || 'No text'} → {block.content.url || '#'}</div>
-        )}
-        {block.block_type === 'video_embed' && (
-          <div>Video: {block.content.title || block.content.url || 'No URL set'}</div>
-        )}
-        {block.block_type === 'posts_grid' && (
-          <div>Posts Grid: {block.content.columns || 3} cols, {block.content.postsPerPage || 12} posts</div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// Column editor component
-interface ColumnEditorProps {
-  columnIndex: number;
-  blocks: SectionBlockContent['column_blocks'][0];
-  onBlocksChange: (newBlocks: SectionBlockContent['column_blocks'][0]) => void;
-  isExpanded: boolean;
-  onToggleExpanded: () => void;
-}
-
-function ColumnEditor({ columnIndex, blocks, onBlocksChange, isExpanded, onToggleExpanded }: ColumnEditorProps) {
-  const [editingBlockIndex, setEditingBlockIndex] = useState<number | null>(null);
-  const [tempBlockContent, setTempBlockContent] = useState<any>(null);
-  const [EditorComponent, setEditorComponent] = useState<React.ComponentType<any> | null>(null);
-  const [selectedBlockType, setSelectedBlockType] = useState<BlockType | "">("");
-
-  // Load editor component dynamically when editing starts
-  useEffect(() => {
-    if (editingBlockIndex === null) {
-      setEditorComponent(null);
-      return;
-    }
-
-    const block = blocks[editingBlockIndex];
-    const Editor = editorComponentMap[block.block_type];
-
-    if (Editor) {
-      setEditorComponent(() => Editor);
-    } else {
-      // 'section' block type is not expected to be loaded via this mechanism here,
-      // as it's the parent editor. Other unknown types would be an error.
-      if (block.block_type !== 'section') {
-        console.error(`No editor component found for block type: ${block.block_type}`);
-      }
-      setEditorComponent(null);
-    }
-  }, [editingBlockIndex, blocks]);
-
-  const handleAddBlock = () => {
-    if (!selectedBlockType) return;
-    
-    const initialContent = getInitialContent(selectedBlockType);
-    const newBlock = {
-      block_type: selectedBlockType,
-      content: initialContent || {},
-      temp_id: `temp-${Date.now()}-${Math.random()}`
-    };
-
-    onBlocksChange([...blocks, newBlock]);
-    setSelectedBlockType("");
-  };
-
-  const handleDeleteBlock = (index: number) => {
-    const newBlocks = blocks.filter((_, i) => i !== index);
-    onBlocksChange(newBlocks);
-    if (editingBlockIndex === index) {
-      setEditingBlockIndex(null);
-      setTempBlockContent(null);
-    }
-  };
-
-  const handleStartEdit = (index: number) => {
-    setEditingBlockIndex(index);
-    setTempBlockContent(JSON.parse(JSON.stringify(blocks[index].content)));
-  };
-
-  const handleSaveEdit = () => {
-    if (editingBlockIndex === null) return;
-
-    const newBlocks = [...blocks];
-    
-    // For posts_grid, the content might not have changed via tempBlockContent
-    // since PostsGridBlockEditor manages its own state
-    if (blocks[editingBlockIndex].block_type === 'posts_grid') {
-      // For posts_grid, we keep the existing content since it manages itself
-      // This is a limitation we'll need to address in a future update
-      console.warn('PostsGridBlockEditor content changes are not yet supported in section columns');
-    } else if (tempBlockContent !== null) {
-      newBlocks[editingBlockIndex] = {
-        ...newBlocks[editingBlockIndex],
-        content: tempBlockContent
-      };
-    }
-    
-    onBlocksChange(newBlocks);
-    setEditingBlockIndex(null);
-    setTempBlockContent(null);
-  };
-
-  const handleCancelEdit = () => {
-    setEditingBlockIndex(null);
-    setTempBlockContent(null);
-  };
-
-
-  return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-      <div className="p-3 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Column {columnIndex + 1}
-            </h4>
-            <span className="text-xs text-gray-500 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">
-              {blocks.length} block{blocks.length !== 1 ? 's' : ''}
-            </span>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onToggleExpanded}
-            className="h-6 w-6 p-0"
-          >
-            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </Button>
-        </div>
-
-        {/* Add block controls */}
-        <div className="flex gap-2 mt-2">
-          <Select value={selectedBlockType} onValueChange={(value) => setSelectedBlockType(value as BlockType)}>
-            <SelectTrigger className="flex-1 h-8 text-xs">
-              <SelectValue placeholder="Add block..." />
-            </SelectTrigger>
-            <SelectContent>
-              {availableBlockTypes.filter(type => type !== 'section').map((type) => (
-                <SelectItem key={type} value={type} className="text-xs capitalize">
-                  {getBlockDefinition(type)?.label || type.replace("_", " ")}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            onClick={handleAddBlock}
-            disabled={!selectedBlockType}
-            size="sm"
-            className="h-8 px-2"
-          >
-            <PlusCircle className="h-3 w-3" />
-          </Button>
-        </div>
-      </div>
-
-      {isExpanded && (
-        <div className="p-3">
-          {blocks.length === 0 ? (
-            <p className="text-xs text-gray-500 text-center py-4">
-              No blocks in this column. Add one above.
-            </p>
-          ) : (
-               <div className="space-y-2">
-                 {blocks.map((block, index) => (
-                   <div key={`column-${columnIndex}-block-${index}`}>
-                     <SortableColumnBlock
-                       block={block}
-                       index={index}
-                       columnIndex={columnIndex}
-                       onEdit={() => handleStartEdit(index)}
-                       onDelete={() => handleDeleteBlock(index)}
-                       isEditing={editingBlockIndex === index}
-                     />
-                     
-                     {/* Inline editor */}
-                     {editingBlockIndex === index && EditorComponent && (
-                       <div className="mt-2 p-3 border border-blue-200 dark:border-blue-800 rounded bg-blue-50 dark:bg-blue-900/20">
-                         <div className="flex items-center justify-between mb-2">
-                           <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
-                             Editing {getBlockDefinition(block.block_type)?.label}
-                           </span>
-                           <div className="flex gap-1">
-                             <Button
-                               variant="ghost"
-                               size="sm"
-                               onClick={handleSaveEdit}
-                               className="h-6 w-6 p-0 text-green-600"
-                             >
-                               <Check className="h-3 w-3" />
-                             </Button>
-                             <Button
-                               variant="ghost"
-                               size="sm"
-                               onClick={handleCancelEdit}
-                               className="h-6 w-6 p-0 text-red-600"
-                             >
-                               <X className="h-3 w-3" />
-                             </Button>
-                           </div>
-                         </div>
-                         <div className="text-sm">
-                           {block.block_type === 'posts_grid' ? (
-                             <EditorComponent
-                               block={{
-                                 // Start with the existing temporary block structure
-                                 ...block,
-                                 // Ensure content is always an object
-                                 content: tempBlockContent || getInitialContent('posts_grid') || {},
-                                 
-                                 // Add missing properties from the full Block type with defaults
-                                 // These are not present on the 'block' object from column_blocks
-                                 id: (block as any).id || 0, // Cast to any to access potential id, or default
-                                 language_id: (block as any).language_id || 0, // Default if not present
-                                 order: (block as any).order || 0, // Default if not present
-                                 created_at: (block as any).created_at || new Date().toISOString(),
-                                 updated_at: (block as any).updated_at || new Date().toISOString(),
-                                 page_id: (block as any).page_id || null,
-                                 post_id: (block as any).post_id || null,
-                                 // block_type is already present in 'block'
-                                 // temp_id is specific to the temporary structure and not part of Block
-                               }}
-                             />
-                           ) : (
-                             <EditorComponent
-                               content={tempBlockContent}
-                               onChange={setTempBlockContent}
-                             />
-                           )}
-                         </div>
-                       </div>
-                     )}
-                   </div>
-                 ))}
-               </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-export default function SectionBlockEditor({ content, onChange }: SectionBlockEditorProps) {
+export default function SectionBlockEditor({
+  content,
+  onChange,
+  blockType = "section",
+}: SectionBlockEditorProps) {
   // Ensure we have default values first
   const sectionContent: SectionBlockContent = {
     container_type: content.container_type || "container",
     background: content.background || { type: "none" },
-    responsive_columns: content.responsive_columns || { mobile: 1, tablet: 2, desktop: 3 },
+    responsive_columns: content.responsive_columns || {
+      mobile: 1,
+      tablet: 2,
+      desktop: 3,
+    },
     column_gap: content.column_gap || "md",
     padding: content.padding || { top: "md", bottom: "md" },
-    column_blocks: content.column_blocks || [
-      [{ block_type: "text", content: { html_content: "<p>Column 1</p>" } }],
-      [{ block_type: "text", content: { html_content: "<p>Column 2</p>" } }],
-      [{ block_type: "text", content: { html_content: "<p>Column 3</p>" } }]
-    ]
+    column_blocks: content.column_blocks || [],
   };
 
-  // Auto-expand columns that have content (UX improvement)
-  const getInitialExpandedColumns = () => {
-    const expanded = new Set<number>();
-    sectionContent.column_blocks.forEach((columnBlocks, index) => {
-      if (columnBlocks.length > 0) {
-        expanded.add(index);
-      }
-    });
-    // Always expand at least the first column
-    expanded.add(0);
-    return expanded;
-  };
+  const [columns, setColumns] = useState<SectionBlockContent["column_blocks"]>(
+    []
+  );
 
-  const [expandedColumns, setExpandedColumns] = useState<Set<number>>(getInitialExpandedColumns());
+  useEffect(() => {
+    const numCols = content.responsive_columns?.desktop || 1;
+    const existingCols = content.column_blocks || [];
+    const newCols = Array.from(
+      { length: numCols },
+      (_, i) => existingCols[i] || []
+    );
+    setColumns(newCols);
+  }, [content.column_blocks, content.responsive_columns?.desktop]);
+
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draggedBlock, setDraggedBlock] = useState<any>(null);
-  const [isConfigPanelOpen, setIsConfigPanelOpen] = useState<boolean>(true);
 
   // DND sensors for cross-column dragging
   const sensors = useSensors(
@@ -435,102 +125,39 @@ export default function SectionBlockEditor({ content, onChange }: SectionBlockEd
     })
   );
 
-
-  const handleContainerTypeChange = (value: SectionBlockContent['container_type']) => {
-    onChange({
-      ...sectionContent,
-      container_type: value
-    });
-  };
-
-  const handleColumnGapChange = (value: SectionBlockContent['column_gap']) => {
-    onChange({
-      ...sectionContent,
-      column_gap: value
-    });
-  };
-
-
-  const handleDesktopColumnsChange = (value: string) => {
-    const desktopColumns = parseInt(value) as 1 | 2 | 3 | 4;
-    const currentBlocks = sectionContent.column_blocks || [];
-    let newColumnBlocks = [...currentBlocks];
-
-    if (desktopColumns < currentBlocks.length) {
-      // Truncate columns if new column count is less
-      newColumnBlocks = currentBlocks.slice(0, desktopColumns);
-    } else if (desktopColumns > currentBlocks.length) {
-      // Add new default columns if new column count is more
-      const columnsToAdd = desktopColumns - currentBlocks.length;
-      for (let i = 0; i < columnsToAdd; i++) {
-        newColumnBlocks.push([{
-          block_type: "text",
-          content: { html_content: `<p>New Column ${currentBlocks.length + i + 1}</p>` },
-          temp_id: `new-${Date.now()}-${i}`
-        }]);
-      }
-    }
-
-    // Update expanded columns to include new columns
-    const newExpandedColumns = new Set(expandedColumns);
-    for (let i = 0; i < desktopColumns; i++) {
-      if (i === 0) newExpandedColumns.add(i); // Always expand first column
-    }
-    setExpandedColumns(newExpandedColumns);
-
-    onChange({
-      ...sectionContent,
-      responsive_columns: {
-        ...sectionContent.responsive_columns,
-        desktop: desktopColumns,
-      },
-      column_blocks: newColumnBlocks,
-    });
-  };
-
-  const handleColumnBlocksChange = (columnIndex: number, newBlocks: SectionBlockContent['column_blocks'][0]) => {
-    // With 2D array structure, we directly update the specific column
-    const newColumnBlocks = [...sectionContent.column_blocks];
-    newColumnBlocks[columnIndex] = newBlocks;
-
-    onChange({
-      ...sectionContent,
-      column_blocks: newColumnBlocks
-    });
-  };
-
-  const toggleColumnExpanded = (columnIndex: number) => {
-    console.log(` ${columnIndex}:`, {
-      currentExpanded: Array.from(expandedColumns),
-      isCurrentlyExpanded: expandedColumns.has(columnIndex)
-    });
-    
-    const newExpanded = new Set(expandedColumns);
-    if (newExpanded.has(columnIndex)) {
-      newExpanded.delete(columnIndex);
-      console.log(`🔍 Collapsing column ${columnIndex}`);
-    } else {
-      newExpanded.add(columnIndex);
-      console.log(`🔍 Expanding column ${columnIndex}`);
-    }
-    
-    console.log(`🔍 New expanded columns:`, Array.from(newExpanded));
-    setExpandedColumns(newExpanded);
+  const handleColumnBlocksChange = (
+    columnIndex: number,
+    newBlocks: SectionBlockContent["column_blocks"][0]
+  ) => {
+    const newColumns = [...columns];
+    newColumns[columnIndex] = newBlocks;
+    onChange({ ...sectionContent, ...content, column_blocks: newColumns });
   };
 
   // Get blocks for a specific column from the 2D array
   const getColumnBlocks = (columnIndex: number) => {
     // With 2D array structure, directly return the column's blocks
-    return sectionContent.column_blocks[columnIndex] || [];
+    return columns[columnIndex] || [];
   };
 
   // Parse drag item ID to get column and block indices
   const parseDragId = (id: string) => {
-    const parts = id.split('-');
-    if (parts.length === 4 && parts[0] === 'column' && parts[2] === 'block') {
+    if (!id) return null;
+    const blockMatch = id.match(/^(hero|section)-column-(\d+)-block-(\d+)$/);
+    if (blockMatch) {
       return {
-        columnIndex: parseInt(parts[1]),
-        blockIndex: parseInt(parts[3])
+        type: "block",
+        blockType: blockMatch[1],
+        columnIndex: parseInt(blockMatch[2], 10),
+        blockIndex: parseInt(blockMatch[3], 10),
+      };
+    }
+    const droppableMatch = id.match(/^(hero|section)-column-droppable-(\d+)$/);
+    if (droppableMatch) {
+      return {
+        type: "column",
+        blockType: droppableMatch[1],
+        columnIndex: parseInt(droppableMatch[2], 10),
       };
     }
     return null;
@@ -540,10 +167,15 @@ export default function SectionBlockEditor({ content, onChange }: SectionBlockEd
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     setActiveId(active.id.toString());
-    
+
     const parsed = parseDragId(active.id.toString());
-    if (parsed) {
-      const block = sectionContent.column_blocks[parsed.columnIndex]?.[parsed.blockIndex];
+    if (
+      parsed &&
+      parsed.type === "block" &&
+      parsed.columnIndex !== undefined &&
+      parsed.blockIndex !== undefined
+    ) {
+      const block = columns[parsed.columnIndex]?.[parsed.blockIndex];
       setDraggedBlock(block);
     }
   };
@@ -551,48 +183,67 @@ export default function SectionBlockEditor({ content, onChange }: SectionBlockEd
   // Handle drag end - move blocks between columns
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    
     setActiveId(null);
     setDraggedBlock(null);
-    
-    if (!over || active.id === over.id) return;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
 
     const activeData = parseDragId(active.id.toString());
     const overData = parseDragId(over.id.toString());
-    
-    if (!activeData || !overData) return;
 
-    const { columnIndex: sourceColumn, blockIndex: sourceIndex } = activeData;
-    const { columnIndex: targetColumn, blockIndex: targetIndex } = overData;
-
-    // Create a copy of the current column blocks
-    const newColumnBlocks = [...sectionContent.column_blocks];
-    
-    if (sourceColumn === targetColumn) {
-      // Same column reordering
-      const columnBlocks = [...newColumnBlocks[sourceColumn]];
-      const [movedBlock] = columnBlocks.splice(sourceIndex, 1);
-      columnBlocks.splice(targetIndex, 0, movedBlock);
-      newColumnBlocks[sourceColumn] = columnBlocks;
-    } else {
-      // Cross-column move
-      const sourceColumnBlocks = [...newColumnBlocks[sourceColumn]];
-      const targetColumnBlocks = [...newColumnBlocks[targetColumn]];
-      
-      // Remove from source column
-      const [movedBlock] = sourceColumnBlocks.splice(sourceIndex, 1);
-      
-      // Add to target column
-      targetColumnBlocks.splice(targetIndex, 0, movedBlock);
-      
-      // Update both columns
-      newColumnBlocks[sourceColumn] = sourceColumnBlocks;
-      newColumnBlocks[targetColumn] = targetColumnBlocks;
+    if (!activeData) {
+      return;
     }
 
+    const newColumnBlocks = [...columns];
+    const sourceColumnIndex = activeData.columnIndex;
+    const sourceBlockIndex = activeData.blockIndex;
+
+    // Guard against invalid source data
+    if (sourceColumnIndex === undefined || sourceBlockIndex === undefined)
+      return;
+
+    const sourceColumn = newColumnBlocks[sourceColumnIndex];
+    if (!sourceColumn) return;
+
+    // Remove the block from the source column
+    const [movedBlock] = sourceColumn.splice(sourceBlockIndex, 1);
+    if (!movedBlock) return;
+
+    // Determine the target and insert the block
+    if (overData?.type === "block") {
+      // Scenario 1: Dropped onto another block
+      const targetColumnIndex = overData.columnIndex;
+      const targetBlockIndex = overData.blockIndex;
+      if (
+        newColumnBlocks[targetColumnIndex] &&
+        targetBlockIndex !== undefined
+      ) {
+        newColumnBlocks[targetColumnIndex].splice(
+          targetBlockIndex,
+          0,
+          movedBlock
+        );
+      }
+    } else if (overData?.type === "column") {
+      // Scenario 2: Dropped on an empty column's droppable area
+      const targetColumnIndex = overData.columnIndex;
+      if (newColumnBlocks[targetColumnIndex]) {
+        newColumnBlocks[targetColumnIndex].push(movedBlock);
+      }
+    } else {
+      // Scenario 3: Invalid drop, return block to original position
+      sourceColumn.splice(sourceBlockIndex, 0, movedBlock);
+      return; // Exit without calling onChange
+    }
+
+    // Final state update
     onChange({
       ...sectionContent,
-      column_blocks: newColumnBlocks
+      ...content,
+      column_blocks: newColumnBlocks,
     });
   };
 
@@ -615,171 +266,103 @@ export default function SectionBlockEditor({ content, onChange }: SectionBlockEd
       onDragEnd={handleDragEnd}
     >
       <div className="space-y-6 p-4 border-t mt-2">
-      {/* Section Configuration */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Section Configuration</h3>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsConfigPanelOpen(!isConfigPanelOpen)}
-            className="h-8 w-8 p-0"
-            aria-label={isConfigPanelOpen ? "Collapse Section Configuration" : "Expand Section Configuration"}
-            title={isConfigPanelOpen ? "Collapse" : "Expand"}
+        <SectionConfigPanel
+          content={sectionContent}
+          onChange={(newPartialContent) => {
+            onChange({ ...sectionContent, ...newPartialContent });
+          }}
+        />
+
+        {/* Column Content Management */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+              Column Content
+            </h3>
+          </div>
+
+          <SortableContext
+            items={columns
+              .flatMap((columnBlocks, columnIndex) =>
+                columnBlocks.map(
+                  (_, blockIndex) =>
+                    `${blockType}-column-${columnIndex}-block-${blockIndex}`
+                )
+              )
+              .concat(
+                Array.from(
+                  { length: columns.length },
+                  (_, i) => `${blockType}-column-droppable-${i}`
+                )
+              )}
+            strategy={verticalListSortingStrategy}
           >
-            {isConfigPanelOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </Button>
-        </div>
-        
-        {isConfigPanelOpen && (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Container Type */}
-              <div className="space-y-2">
-                <Label htmlFor="container-type">Container Type</Label>
-                <Select value={sectionContent.container_type} onValueChange={handleContainerTypeChange}>
-                  <SelectTrigger id="container-type">
-                    <SelectValue placeholder="Select container type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="full-width">Full Width</SelectItem>
-                    <SelectItem value="container">Container</SelectItem>
-                    <SelectItem value="container-sm">Container Small</SelectItem>
-                    <SelectItem value="container-lg">Container Large</SelectItem>
-                    <SelectItem value="container-xl">Container XL</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Desktop Columns */}
-              <div className="space-y-2">
-                <Label htmlFor="desktop-columns">Desktop Columns</Label>
-                <Select value={sectionContent.responsive_columns.desktop.toString()} onValueChange={handleDesktopColumnsChange}>
-                  <SelectTrigger id="desktop-columns">
-                    <SelectValue placeholder="Select columns" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">1 Column</SelectItem>
-                    <SelectItem value="2">2 Columns</SelectItem>
-                    <SelectItem value="3">3 Columns</SelectItem>
-                    <SelectItem value="4">4 Columns</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Column Gap */}
-              <div className="space-y-2">
-                <Label htmlFor="column-gap">Column Gap</Label>
-                <Select value={sectionContent.column_gap} onValueChange={handleColumnGapChange}>
-                  <SelectTrigger id="column-gap">
-                    <SelectValue placeholder="Select gap" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    <SelectItem value="sm">Small</SelectItem>
-                    <SelectItem value="md">Medium</SelectItem>
-                    <SelectItem value="lg">Large</SelectItem>
-                    <SelectItem value="xl">Extra Large</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Background Configuration */}
-        <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <h4 className="text-md font-medium text-gray-900 dark:text-gray-100">Background</h4>
-          <BackgroundSelector
-            background={sectionContent.background}
-            onChange={(newBackground) => {
-              onChange({
-                ...sectionContent,
-                background: newBackground,
-              });
-            }}
-          />
-        </div>
-          </>
-        )}
-      </div>
-
-      {/* Column Content Management */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Column Content</h3>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setExpandedColumns(new Set(Array.from({ length: sectionContent.responsive_columns.desktop }, (_, i) => i)))}
+            <div
+              className={`grid gap-4 grid-cols-1 ${columns.length > 1 ? `lg:grid-cols-${Math.min(columns.length, 2)}` : ""}`}
             >
-              Expand All
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setExpandedColumns(new Set())}
-            >
-              Collapse All
-            </Button>
-          </div>
-        </div>
-
-        <SortableContext
-          items={sectionContent.column_blocks.flatMap((columnBlocks, columnIndex) =>
-            columnBlocks.map((_, blockIndex) => `column-${columnIndex}-block-${blockIndex}`)
-          )}
-          strategy={verticalListSortingStrategy}
-        >
-          <div className={`grid gap-4 grid-cols-1 ${sectionContent.responsive_columns.desktop > 1 ? `lg:grid-cols-${Math.min(sectionContent.responsive_columns.desktop, 2)}` : ''}`}>
-            {Array.from({ length: sectionContent.responsive_columns.desktop }, (_, columnIndex) => (
-              <ColumnEditor
-                key={columnIndex}
-                columnIndex={columnIndex}
-                blocks={getColumnBlocks(columnIndex)}
-                onBlocksChange={(newBlocks) => handleColumnBlocksChange(columnIndex, newBlocks)}
-                isExpanded={expandedColumns.has(columnIndex)}
-                onToggleExpanded={() => toggleColumnExpanded(columnIndex)}
-              />
-            ))}
-          </div>
-        </SortableContext>
-
-        {/* Drag overlay for visual feedback during cross-column dragging */}
-        <DragOverlay dropAnimation={dropAnimation}>
-          {activeId && draggedBlock ? (
-            <div className="p-2 border border-blue-300 dark:border-blue-600 rounded bg-blue-50 dark:bg-blue-900/50 shadow-lg opacity-90">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-blue-700 dark:text-blue-300 capitalize">
-                  {getBlockDefinition(draggedBlock.block_type)?.label || draggedBlock.block_type}
-                </span>
-              </div>
-              <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                {draggedBlock.block_type === 'text' && (
-                  <div dangerouslySetInnerHTML={{ __html: (draggedBlock.content.html_content || 'Empty text').substring(0, 30) + '...' }} />
-                )}
-                {draggedBlock.block_type === 'heading' && (
-                  <div>H{draggedBlock.content.level || 1}: {(draggedBlock.content.text_content || 'Empty heading').substring(0, 20) + '...'}</div>
-                )}
-                {draggedBlock.block_type === 'image' && (
-                  <div>Image: {draggedBlock.content.alt_text || 'No alt text'}</div>
-                )}
-                {draggedBlock.block_type === 'button' && (
-                  <div>Button: {draggedBlock.content.text || 'No text'}</div>
-                )}
-                {draggedBlock.block_type === 'video_embed' && (
-                  <div>Video: {draggedBlock.content.title || 'No title'}</div>
-                )}
-                {draggedBlock.block_type === 'posts_grid' && (
-                  <div>Posts Grid: {draggedBlock.content.columns || 3} cols</div>
-                )}
-              </div>
+              {Array.from({ length: columns.length }, (_, columnIndex) => (
+                <ColumnEditor
+                  key={`${blockType}-column-${columnIndex}`}
+                  columnIndex={columnIndex}
+                  blocks={getColumnBlocks(columnIndex)}
+                  onBlocksChange={(newBlocks) =>
+                    handleColumnBlocksChange(columnIndex, newBlocks)
+                  }
+                  blockType={blockType}
+                />
+              ))}
             </div>
-          ) : null}
-        </DragOverlay>
-      </div>
+          </SortableContext>
 
-        <div className="text-sm text-gray-500 mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
-          <p><strong>✨ Enhanced Section Editor:</strong> You can now add, edit, reorder, and delete blocks within each column. Drag blocks between columns for flexible layouts. Each column can contain multiple blocks of different types. Use the expand/collapse controls to manage your workspace efficiently.</p>
+          {/* Drag overlay for visual feedback during cross-column dragging */}
+          <DragOverlay dropAnimation={dropAnimation}>
+            {activeId && draggedBlock ? (
+              <div className="p-2 border border-blue-300 dark:border-blue-600 rounded bg-blue-50 dark:bg-blue-900/50 shadow-lg opacity-90">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-blue-700 dark:text-blue-300 capitalize">
+                    {getBlockDefinition(draggedBlock.block_type)?.label ||
+                      draggedBlock.block_type}
+                  </span>
+                </div>
+                <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                  {draggedBlock.block_type === "text" && (
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html:
+                          (
+                            draggedBlock.content.html_content || "Empty text"
+                          ).substring(0, 30) + "...",
+                      }}
+                    />
+                  )}
+                  {draggedBlock.block_type === "heading" && (
+                    <div>
+                      H{draggedBlock.content.level || 1}:{" "}
+                      {(
+                        draggedBlock.content.text_content || "Empty heading"
+                      ).substring(0, 20) + "..."}
+                    </div>
+                  )}
+                  {draggedBlock.block_type === "image" && (
+                    <div>
+                      Image: {draggedBlock.content.alt_text || "No alt text"}
+                    </div>
+                  )}
+                  {draggedBlock.block_type === "button" && (
+                    <div>Button: {draggedBlock.content.text || "No text"}</div>
+                  )}
+                  {draggedBlock.block_type === "video_embed" && (
+                    <div>Video: {draggedBlock.content.title || "No title"}</div>
+                  )}
+                  {draggedBlock.block_type === "posts_grid" && (
+                    <div>
+                      Posts Grid: {draggedBlock.content.columns || 3} cols
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : null}
+          </DragOverlay>
         </div>
       </div>
     </DndContext>
