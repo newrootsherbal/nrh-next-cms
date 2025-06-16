@@ -82,9 +82,28 @@ export async function POST(request: NextRequest) {
       throw new Error('Failed to retrieve image from R2: Empty body.');
     }
 
-    const imageBuffer = await streamToBuffer(getObjectResponse.Body as Readable);
-    const sharpInstance = sharp(imageBuffer);
-    const originalMetadata = await sharpInstance.metadata();
+    let imageBuffer = await streamToBuffer(getObjectResponse.Body as Readable);
+    let sharpInstance = sharp(imageBuffer);
+    let originalMetadata = await sharpInstance.metadata();
+
+    const MAX_WIDTH = 2560; // Define max width
+
+    // Check if the image width is greater than MAX_WIDTH
+    if (originalMetadata.width && originalMetadata.width > MAX_WIDTH) {
+      // Resize the image
+      const resizedBuffer = await sharpInstance
+        .resize({
+          width: MAX_WIDTH,
+          // height is scaled automatically to maintain aspect ratio
+        })
+        .toBuffer();
+      
+      // Update buffer and sharp instance for all subsequent operations
+      imageBuffer = resizedBuffer;
+      sharpInstance = sharp(imageBuffer);
+      // Update metadata as well
+      originalMetadata = await sharpInstance.metadata();
+    }
 
     const processedVariants: ProcessedImageVariant[] = [];
     const baseName = originalObjectKey.substring(0, originalObjectKey.lastIndexOf('.'));
