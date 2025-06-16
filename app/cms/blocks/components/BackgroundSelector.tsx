@@ -21,6 +21,9 @@ import { createClient as createBrowserClient } from '@/utils/supabase/client';
 import type { SectionBlockContent } from '@/lib/blocks/blockRegistry';
 import type { Media } from '@/utils/supabase/types';
 import MediaUploadForm from '@/app/cms/media/components/MediaUploadForm';
+import { TooltipProvider } from '@radix-ui/react-tooltip';
+import { CustomSelectWithInput } from '@/components/ui/CustomSelectWithInput';
+import { ColorPicker } from '@/components/ui/ColorPicker';
 
 const R2_BASE_URL = process.env.NEXT_PUBLIC_R2_BASE_URL || "";
 
@@ -38,6 +41,17 @@ export default function BackgroundSelector({ background, onChange }: BackgroundS
 
   const backgroundType = background?.type || 'none';
   const selectedImage = background?.type === 'image' ? background.image : undefined;
+
+  const generateGradientCss = (gradient: any) => {
+    if (!gradient || !gradient.stops || gradient.stops.length === 0) {
+      return 'none';
+    }
+    const direction = gradient.direction || 'to bottom';
+    const stops = gradient.stops
+      .map((stop: any) => `${stop.color} ${stop.position}%`)
+      .join(', ');
+    return `linear-gradient(${direction}, ${stops})`;
+  };
 
   const fetchLibrary = useCallback(async () => {
     setIsLoadingLibrary(true);
@@ -255,20 +269,21 @@ export default function BackgroundSelector({ background, onChange }: BackgroundS
   };
 
   return (
-    <div className="space-y-3">
-      <Label>Background Type</Label>
-      <Select value={backgroundType} onValueChange={handleTypeChange}>
-        <SelectTrigger>
-          <SelectValue placeholder="Select a background type" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="none">None</SelectItem>
-          <SelectItem value="theme">Theme Color</SelectItem>
-          <SelectItem value="solid">Solid Color</SelectItem>
-          <SelectItem value="gradient">Gradient</SelectItem>
-          <SelectItem value="image">Image</SelectItem>
-        </SelectContent>
-      </Select>
+    <TooltipProvider>
+      <div className="space-y-3">
+        <Label>Background Type</Label>
+        <Select value={backgroundType} onValueChange={handleTypeChange}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select a background type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">None</SelectItem>
+            <SelectItem value="theme">Theme Color</SelectItem>
+            <SelectItem value="solid">Solid Color</SelectItem>
+            <SelectItem value="gradient">Gradient</SelectItem>
+            <SelectItem value="image">Image</SelectItem>
+          </SelectContent>
+        </Select>
 
       {backgroundType !== 'none' && (
         <div className="mt-3">
@@ -287,15 +302,25 @@ export default function BackgroundSelector({ background, onChange }: BackgroundS
         <>
           <div className="mt-3 p-3 border rounded-md bg-muted/30 min-h-[120px] flex flex-col items-center justify-center">
             {selectedImage?.object_key ? (
-              <div className="relative group w-full">
+              <div
+                className="relative group w-full"
+                style={{ height: background?.min_height || '250px', overflow: 'hidden' }}
+              >
                 <Image
                   src={`${R2_BASE_URL}/${selectedImage.object_key}`}
                   alt="Selected background image"
                   width={selectedImage.width || 500}
                   height={selectedImage.height || 300}
                   sizes="100vw"
-                  className="w-full h-auto object-contain rounded-md"
+                  className="w-full h-full object-cover"
+                  style={{ objectPosition: selectedImage.position }}
                 />
+                {selectedImage.overlay && (
+                  <div
+                    className="absolute inset-0"
+                    style={{ background: generateGradientCss(selectedImage.overlay.gradient) }}
+                  />
+                )}
                 <Button
                   type="button" variant="destructive" size="icon"
                   className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6"
@@ -387,22 +412,23 @@ export default function BackgroundSelector({ background, onChange }: BackgroundS
                 </Select>
               </div>
               <div>
-                <Label>Image Position</Label>
-                <Select
+                <CustomSelectWithInput
+                  label="Image Position"
+                  tooltipContent="Select a preset or enter a custom value like 'center top' or '25% 75%'. See MDN's object-position docs for more options."
                   value={selectedImage?.position || 'center'}
-                  onValueChange={(value) => handleImagePropertyChange('position', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select position" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="center">Center</SelectItem>
-                    <SelectItem value="top">Top</SelectItem>
-                    <SelectItem value="bottom">Bottom</SelectItem>
-                    <SelectItem value="left">Left</SelectItem>
-                    <SelectItem value="right">Right</SelectItem>
-                  </SelectContent>
-                </Select>
+                  onChange={(value: string) => handleImagePropertyChange('position', value)}
+                  options={[
+                    { "value": "center", "label": "Center" },
+                    { "value": "top", "label": "Top" },
+                    { "value": "bottom", "label": "Bottom" },
+                    { "value": "left", "label": "Left" },
+                    { "value": "right", "label": "Right" },
+                    { "value": "left top", "label": "Left Top" },
+                    { "value": "left bottom", "label": "Left Bottom" },
+                    { "value": "right top", "label": "Right Top" },
+                    { "value": "right bottom", "label": "Right Bottom" }
+                  ]}
+                />
               </div>
           </div>
 
@@ -427,38 +453,32 @@ export default function BackgroundSelector({ background, onChange }: BackgroundS
           {selectedImage?.overlay && (
             <div className="mt-3 p-3 border rounded-md bg-muted/30 space-y-4">
               <div>
-                <Label htmlFor="overlayGradientDirection">Direction</Label>
-                <Input
-                  id="overlayGradientDirection"
-                  name="direction"
+                <CustomSelectWithInput
+                  label="Direction"
+                  tooltipContent="Select a preset or enter a custom angle like '45deg' or 'to top left'. See MDN's linear-gradient docs for more options."
                   value={selectedImage.overlay.gradient?.direction || 'to bottom'}
-                  onChange={handleOverlayGradientChange}
-                  placeholder="e.g., to top left, 45deg, at circle"
+                  onChange={(value: string) => handleOverlayGradientChange({ target: { name: 'direction', value } } as React.ChangeEvent<HTMLInputElement>)}
+                  options={[
+                    { "value": "to bottom", "label": "To Bottom" },
+                    { "value": "to top", "label": "To Top" },
+                    { "value": "to left", "label": "To Left" },
+                    { "value": "to right", "label": "To Right" },
+                    { "value": "to bottom right", "label": "To Bottom Right" },
+                    { "value": "to top left", "label": "To Top Left" }
+                  ]}
                 />
               </div>
               <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <Label htmlFor="overlayGradientStartColor">Start Color</Label>
-                  <Input
-                    id="overlayGradientStartColor"
-                    type="text"
-                    name="startColor"
-                    value={selectedImage.overlay.gradient?.stops?.[0]?.color || 'rgba(0,0,0,0.5)'}
-                    onChange={handleOverlayGradientChange}
-                    className="p-1 h-10"
-                  />
-                </div>
-                <div className="flex-1">
-                  <Label htmlFor="overlayGradientEndColor">End Color</Label>
-                  <Input
-                    id="overlayGradientEndColor"
-                    type="text"
-                    name="endColor"
-                    value={selectedImage.overlay.gradient?.stops?.[1]?.color || 'rgba(0,0,0,0)'}
-                    onChange={handleOverlayGradientChange}
-                    className="p-1 h-10"
-                  />
-                </div>
+                <ColorPicker
+                  label="Start Color"
+                  color={selectedImage.overlay.gradient?.stops?.[0]?.color || 'rgba(0,0,0,0.5)'}
+                  onChange={(color) => handleOverlayGradientChange({ target: { name: 'startColor', value: color } } as any)}
+                />
+                <ColorPicker
+                  label="End Color"
+                  color={selectedImage.overlay.gradient?.stops?.[1]?.color || 'rgba(0,0,0,0)'}
+                  onChange={(color) => handleOverlayGradientChange({ target: { name: 'endColor', value: color } } as any)}
+                />
               </div>
             </div>
           )}
@@ -468,45 +488,36 @@ export default function BackgroundSelector({ background, onChange }: BackgroundS
       {backgroundType === 'gradient' && (
         <div className="mt-3 p-3 border rounded-md bg-muted/30 space-y-4">
           <div>
-            <Label htmlFor="gradientDirection">Direction</Label>
-            <Input
-              id="gradientDirection"
-              name="direction"
+            <CustomSelectWithInput
+              label="Direction"
+              tooltipContent="Select a preset or enter a custom angle like '45deg' or 'to top left'. See MDN's linear-gradient docs for more options."
               value={background.gradient?.direction || 'to right'}
-              onChange={handleGradientChange}
-              placeholder="e.g., to top left, 45deg, at circle"
+              onChange={(value: string) => handleGradientChange({ target: { name: 'direction', value } } as React.ChangeEvent<HTMLInputElement>)}
+              options={[
+                { "value": "to right", "label": "To Right" },
+                { "value": "to left", "label": "To Left" },
+                { "value": "to top", "label": "To Top" },
+                { "value": "to bottom", "label": "To Bottom" },
+                { "value": "to bottom right", "label": "To Bottom Right" },
+                { "value": "to top left", "label": "To Top Left" }
+              ]}
             />
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <Label htmlFor="gradientStartColor">Start Color</Label>
-              <div className="relative">
-                <Input
-                  id="gradientStartColor"
-                  type="color"
-                  name="startColor"
-                  value={background.gradient?.stops?.[0]?.color || '#3b82f6'}
-                  onChange={handleGradientChange}
-                  className="p-1 h-10"
-                />
-              </div>
-            </div>
-            <div className="flex-1">
-              <Label htmlFor="gradientEndColor">End Color</Label>
-              <div className="relative">
-                <Input
-                  id="gradientEndColor"
-                  type="color"
-                  name="endColor"
-                  value={background.gradient?.stops?.[1]?.color || '#8b5cf6'}
-                  onChange={handleGradientChange}
-                  className="p-1 h-10"
-                />
-              </div>
-            </div>
+            <ColorPicker
+              label="Start Color"
+              color={background.gradient?.stops?.[0]?.color || '#3b82f6'}
+              onChange={(color) => handleGradientChange({ target: { name: 'startColor', value: color } } as any)}
+            />
+            <ColorPicker
+              label="End Color"
+              color={background.gradient?.stops?.[1]?.color || '#8b5cf6'}
+              onChange={(color) => handleGradientChange({ target: { name: 'endColor', value: color } } as any)}
+            />
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }
