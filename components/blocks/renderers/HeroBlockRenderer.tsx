@@ -203,6 +203,7 @@ const HeroBlockRenderer: React.FC<SectionBlockRendererProps> = ({
           }}
           sizes="100vw"
           priority
+          quality={60}
           placeholder={backgroundImage.blur_data_url ? 'blur' : 'empty'}
           blurDataURL={backgroundImage.blur_data_url}
         />
