@@ -1,11 +1,10 @@
 // app/cms/blocks/components/SectionConfigPanel.tsx
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronDown, ChevronUp } from "lucide-react";
 import type { SectionBlockContent } from "@/lib/blocks/blockRegistry";
 import BackgroundSelector from './BackgroundSelector';
 
@@ -15,8 +14,6 @@ interface SectionConfigPanelProps {
 }
 
 export default function SectionConfigPanel({ content, onChange }: SectionConfigPanelProps) {
-  const [isConfigPanelOpen, setIsConfigPanelOpen] = useState<boolean>(true);
-
   const handleContainerTypeChange = (value: SectionBlockContent['container_type']) => {
     onChange({
       ...content,
@@ -63,87 +60,75 @@ export default function SectionConfigPanel({ content, onChange }: SectionConfigP
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Section Configuration</h3>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsConfigPanelOpen(!isConfigPanelOpen)}
-          className="h-8 w-8 p-0"
-          aria-label={isConfigPanelOpen ? "Collapse Section Configuration" : "Expand Section Configuration"}
-          title={isConfigPanelOpen ? "Collapse" : "Expand"}
-        >
-          {isConfigPanelOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </Button>
       </div>
       
-      {isConfigPanelOpen && (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Container Type */}
-            <div className="space-y-2">
-              <Label htmlFor="container-type">Container Type</Label>
-              <Select value={content.container_type} onValueChange={handleContainerTypeChange}>
-                <SelectTrigger id="container-type">
-                  <SelectValue placeholder="Select container type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="full-width">Full Width</SelectItem>
-                  <SelectItem value="container">Container</SelectItem>
-                  <SelectItem value="container-sm">Container Small</SelectItem>
-                  <SelectItem value="container-lg">Container Large</SelectItem>
-                  <SelectItem value="container-xl">Container XL</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Desktop Columns */}
-            <div className="space-y-2">
-              <Label htmlFor="desktop-columns">Desktop Columns</Label>
-              <Select value={content.responsive_columns?.desktop?.toString()} onValueChange={handleDesktopColumnsChange}>
-                <SelectTrigger id="desktop-columns">
-                  <SelectValue placeholder="Select columns" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">1 Column</SelectItem>
-                  <SelectItem value="2">2 Columns</SelectItem>
-                  <SelectItem value="3">3 Columns</SelectItem>
-                  <SelectItem value="4">4 Columns</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Column Gap */}
-            <div className="space-y-2">
-              <Label htmlFor="column-gap">Column Gap</Label>
-              <Select value={content.column_gap} onValueChange={handleColumnGapChange}>
-                <SelectTrigger id="column-gap">
-                  <SelectValue placeholder="Select gap" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  <SelectItem value="sm">Small</SelectItem>
-                  <SelectItem value="md">Medium</SelectItem>
-                  <SelectItem value="lg">Large</SelectItem>
-                  <SelectItem value="xl">Extra Large</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      <>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Container Type */}
+          <div className="space-y-2">
+            <Label htmlFor="container-type">Container Type</Label>
+            <Select value={content.container_type} onValueChange={handleContainerTypeChange}>
+              <SelectTrigger id="container-type">
+                <SelectValue placeholder="Select container type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="full-width">Full Width</SelectItem>
+                <SelectItem value="container">Container</SelectItem>
+                <SelectItem value="container-sm">Container Small</SelectItem>
+                <SelectItem value="container-lg">Container Large</SelectItem>
+                <SelectItem value="container-xl">Container XL</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Background Configuration */}
-          <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <h4 className="text-md font-medium text-gray-900 dark:text-gray-100">Background</h4>
-            <BackgroundSelector
-              background={content.background || { type: 'none' }}
-              onChange={(newBackground) => {
-                onChange({
-                  ...content,
-                  background: newBackground,
-                });
-              }}
-            />
+          {/* Desktop Columns */}
+          <div className="space-y-2">
+            <Label htmlFor="desktop-columns">Desktop Columns</Label>
+            <Select value={content.responsive_columns?.desktop?.toString()} onValueChange={handleDesktopColumnsChange}>
+              <SelectTrigger id="desktop-columns">
+                <SelectValue placeholder="Select columns" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1 Column</SelectItem>
+                <SelectItem value="2">2 Columns</SelectItem>
+                <SelectItem value="3">3 Columns</SelectItem>
+                <SelectItem value="4">4 Columns</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </>
-      )}
+
+          {/* Column Gap */}
+          <div className="space-y-2">
+            <Label htmlFor="column-gap">Column Gap</Label>
+            <Select value={content.column_gap} onValueChange={handleColumnGapChange}>
+              <SelectTrigger id="column-gap">
+                <SelectValue placeholder="Select gap" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="sm">Small</SelectItem>
+                <SelectItem value="md">Medium</SelectItem>
+                <SelectItem value="lg">Large</SelectItem>
+                <SelectItem value="xl">Extra Large</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Background Configuration */}
+        <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <h4 className="text-md font-medium text-gray-900 dark:text-gray-100">Background</h4>
+          <BackgroundSelector
+            background={content.background || { type: 'none' }}
+            onChange={(newBackground) => {
+              onChange({
+                ...content,
+                background: newBackground,
+              });
+            }}
+          />
+        </div>
+      </>
     </div>
   );
 }

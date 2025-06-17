@@ -134,9 +134,6 @@ export async function updateBlock(blockId: number, newContent: any, pageId?: num
     return { error: `Failed to update block: ${error.message}` };
   }
 
-  if (pageId) revalidatePath(`/cms/pages/${pageId}/edit`);
-  if (postId) revalidatePath(`/cms/posts/${postId}/edit`); // For when we add blocks to posts
-
   return { success: true, updatedBlock: data as Block };
 }
 

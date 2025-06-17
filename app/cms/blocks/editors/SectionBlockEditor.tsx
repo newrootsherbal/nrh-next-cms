@@ -1,7 +1,7 @@
 // app/cms/blocks/editors/SectionBlockEditor.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,40 +75,36 @@ interface SectionBlockEditorProps {
   content: Partial<SectionBlockContent>;
   onChange: (newContent: SectionBlockContent) => void;
   blockType?: "section" | "hero";
+  isConfigPanelOpen?: boolean;
 }
 
 export default function SectionBlockEditor({
   content,
   onChange,
   blockType = "section",
+  isConfigPanelOpen,
 }: SectionBlockEditorProps) {
-  // Ensure we have default values first
-  const sectionContent: SectionBlockContent = {
-    container_type: content.container_type || "container",
-    background: content.background || { type: "none" },
-    responsive_columns: content.responsive_columns || {
-      mobile: 1,
-      tablet: 2,
-      desktop: 3,
-    },
-    column_gap: content.column_gap || "md",
-    padding: content.padding || { top: "md", bottom: "md" },
-    column_blocks: content.column_blocks || [],
-  };
+  const processedContent = useMemo((): SectionBlockContent => {
+    const defaults: SectionBlockContent = {
+      container_type: "container",
+      background: { type: "none" },
+      responsive_columns: { mobile: 1, tablet: 2, desktop: 3 },
+      column_gap: "md",
+      padding: { top: "md", bottom: "md" },
+      column_blocks: [],
+    };
 
-  const [columns, setColumns] = useState<SectionBlockContent["column_blocks"]>(
-    []
-  );
+    return {
+      container_type: content.container_type ?? defaults.container_type,
+      background: content.background ?? defaults.background,
+      responsive_columns:
+        content.responsive_columns ?? defaults.responsive_columns,
+      column_gap: content.column_gap ?? defaults.column_gap,
+      padding: content.padding ?? defaults.padding,
+      column_blocks: content.column_blocks ?? defaults.column_blocks,
+    };
+  }, [content]);
 
-  useEffect(() => {
-    const numCols = content.responsive_columns?.desktop || 1;
-    const existingCols = content.column_blocks || [];
-    const newCols = Array.from(
-      { length: numCols },
-      (_, i) => existingCols[i] || []
-    );
-    setColumns(newCols);
-  }, [content.column_blocks, content.responsive_columns?.desktop]);
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draggedBlock, setDraggedBlock] = useState<any>(null);
@@ -129,15 +125,15 @@ export default function SectionBlockEditor({
     columnIndex: number,
     newBlocks: SectionBlockContent["column_blocks"][0]
   ) => {
-    const newColumns = [...columns];
+    const newColumns = [...(processedContent.column_blocks || [])];
     newColumns[columnIndex] = newBlocks;
-    onChange({ ...sectionContent, ...content, column_blocks: newColumns });
+    onChange({ ...processedContent, column_blocks: newColumns });
   };
 
   // Get blocks for a specific column from the 2D array
   const getColumnBlocks = (columnIndex: number) => {
     // With 2D array structure, directly return the column's blocks
-    return columns[columnIndex] || [];
+    return (processedContent.column_blocks || [])[columnIndex] || [];
   };
 
   // Parse drag item ID to get column and block indices
@@ -175,7 +171,9 @@ export default function SectionBlockEditor({
       parsed.columnIndex !== undefined &&
       parsed.blockIndex !== undefined
     ) {
-      const block = columns[parsed.columnIndex]?.[parsed.blockIndex];
+      const block = (processedContent.column_blocks || [])[parsed.columnIndex]?.[
+        parsed.blockIndex
+      ];
       setDraggedBlock(block);
     }
   };
@@ -197,7 +195,7 @@ export default function SectionBlockEditor({
       return;
     }
 
-    const newColumnBlocks = [...columns];
+    const newColumnBlocks = [...(processedContent.column_blocks || [])];
     const sourceColumnIndex = activeData.columnIndex;
     const sourceBlockIndex = activeData.blockIndex;
 
@@ -241,8 +239,7 @@ export default function SectionBlockEditor({
 
     // Final state update
     onChange({
-      ...sectionContent,
-      ...content,
+      ...processedContent,
       column_blocks: newColumnBlocks,
     });
   };
@@ -258,7 +255,7 @@ export default function SectionBlockEditor({
     }),
   };
 
-  return (
+return (
     <DndContext
       sensors={sensors}
       collisionDetection={closestCorners}
@@ -266,12 +263,14 @@ export default function SectionBlockEditor({
       onDragEnd={handleDragEnd}
     >
       <div className="space-y-6 p-4 border-t mt-2">
-        <SectionConfigPanel
-          content={sectionContent}
-          onChange={(newPartialContent) => {
-            onChange({ ...sectionContent, ...newPartialContent });
-          }}
-        />
+        {isConfigPanelOpen && (
+          <SectionConfigPanel
+            content={processedContent}
+            onChange={(newPartialContent) => {
+              onChange({ ...processedContent, ...newPartialContent });
+            }}
+          />
+        )}
 
         {/* Column Content Management */}
         <div className="space-y-4">
@@ -282,7 +281,7 @@ export default function SectionBlockEditor({
           </div>
 
           <SortableContext
-            items={columns
+            items={(processedContent.column_blocks || [])
               .flatMap((columnBlocks, columnIndex) =>
                 columnBlocks.map(
                   (_, blockIndex) =>
@@ -291,16 +290,23 @@ export default function SectionBlockEditor({
               )
               .concat(
                 Array.from(
-                  { length: columns.length },
+                  { length: (processedContent.column_blocks || []).length },
                   (_, i) => `${blockType}-column-droppable-${i}`
                 )
               )}
             strategy={verticalListSortingStrategy}
           >
             <div
-              className={`grid gap-4 grid-cols-1 ${columns.length > 1 ? `lg:grid-cols-${Math.min(columns.length, 2)}` : ""}`}
+              className={
+                (processedContent.column_blocks || []).length === 1
+                  ? "block"
+                  : `grid gap-4
+                    grid-cols-${processedContent.responsive_columns.mobile}
+                    md:grid-cols-${processedContent.responsive_columns.tablet}
+                    lg:grid-cols-${processedContent.responsive_columns.desktop}`
+              }
             >
-              {Array.from({ length: columns.length }, (_, columnIndex) => (
+              {Array.from({ length: (processedContent.column_blocks || []).length }, (_, columnIndex) => (
                 <ColumnEditor
                   key={`${blockType}-column-${columnIndex}`}
                   columnIndex={columnIndex}

@@ -1,21 +1,21 @@
 // app/cms/blocks/components/BlockEditorArea.tsx
 "use client";
 
-import React, { useState, useTransition, useEffect, ComponentType } from "react"; // Ensure React is imported
-import dynamic from 'next/dynamic'; // Import dynamic
-import type { Block, BlockType } from "@/utils/supabase/types"; // Added SectionBlockContent
+import React, { useState, useTransition, useEffect, ComponentType, useCallback, useRef } from "react";
+import dynamic from 'next/dynamic';
+import debounce from 'lodash.debounce';
+import type { Block, BlockType } from "@/utils/supabase/types";
 import { availableBlockTypes } from "@/utils/supabase/types";
-import { getBlockDefinition, type SectionBlockContent } from "@/lib/blocks/blockRegistry"; // Added for dynamic editor loading
+import { getBlockDefinition, type SectionBlockContent } from "@/lib/blocks/blockRegistry";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-  // DialogTrigger, // Not explicitly used for triggering, open state is controlled
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -28,11 +28,9 @@ import { Label } from "@/components/ui/label";
 import {
   createBlockForPage,
   createBlockForPost,
-  updateBlock, // Added updateBlock
+  updateBlock,
   updateMultipleBlockOrders,
 } from "@/app/cms/blocks/actions";
-
-// DND Kit imports
 import {
   DndContext,
   closestCenter,
@@ -48,10 +46,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-
-// Import the new SortableBlockItem and the extracted EditableBlock
-import { SortableBlockItem } from "./SortableBlockItem"; // This will internally use your EditableBlock
-import EditableBlock from "./EditableBlock"; // Import the actual EditableBlock
+import { SortableBlockItem } from "./SortableBlockItem";
 
 interface BlockEditorAreaProps {
   parentId: number;
@@ -67,31 +62,58 @@ interface NestedBlockData {
 }
 
 interface EditingNestedBlockInfo {
-  parentBlockId: string; // This is the string ID of the parent Section block
+  parentBlockId: string;
   columnIndex: number;
   blockIndexInColumn: number;
-  blockData: NestedBlockData; // Type of the individual block within the column
+  blockData: NestedBlockData;
 }
 
 export default function BlockEditorArea({ parentId, parentType, initialBlocks, languageId }: BlockEditorAreaProps) {
   const [blocks, setBlocks] = useState<Block[]>(() => initialBlocks.sort((a, b) => a.order - b.order));
+  const lastSavedBlocks = useRef(blocks);
   const [isPending, startTransition] = useTransition();
   const [isSavingNested, startSavingNestedTransition] = useTransition();
   const [selectedBlockTypeToAdd, setSelectedBlockTypeToAdd] = useState<BlockType | "">("");
-
-  const [editingBlockId, setEditingBlockId] = useState<number | null>(null);
-  const [tempBlockContent, setTempBlockContent] = useState<any>(null);
   const [editingNestedBlockInfo, setEditingNestedBlockInfo] = useState<EditingNestedBlockInfo | null>(null);
   const [NestedBlockEditorComponent, setNestedBlockEditorComponent] = useState<ComponentType<any> | null>(null);
   const [tempNestedBlockContent, setTempNestedBlockContent] = useState<any>(null);
 
-
-  // Update local state if initialBlocks prop changes (e.g., after parent form save)
-   useEffect(() => {
-    setBlocks(initialBlocks.sort((a, b) => a.order - b.order));
+  useEffect(() => {
+    const sortedBlocks = initialBlocks.sort((a, b) => a.order - b.order);
+    setBlocks(sortedBlocks);
+    lastSavedBlocks.current = sortedBlocks;
   }, [initialBlocks]);
 
-  // Define dynamic imports for each editor type for nested blocks
+  const debouncedSave = useCallback(
+    debounce(async (blockToSave: Block) => {
+      const result = await updateBlock(
+        blockToSave.id,
+        blockToSave.content,
+        parentType === "page" ? parentId : null,
+        parentType === "post" ? parentId : null
+      );
+
+      if (result.success && result.updatedBlock) {
+        // On success, update the last saved state ref
+        lastSavedBlocks.current = blocks;
+      } else {
+        // On failure, revert the UI to the last known good state
+        alert("Failed to save changes. Reverting.");
+        setBlocks(lastSavedBlocks.current);
+      }
+    }, 1200),
+    [parentId, parentType, blocks]
+  );
+
+  const handleContentChange = (blockId: number, newContent: any) => {
+    const updatedBlock = {
+      ...blocks.find(b => b.id === blockId)!,
+      content: newContent,
+    };
+    setBlocks(prevBlocks => prevBlocks.map(b => b.id === blockId ? updatedBlock : b));
+    debouncedSave(updatedBlock);
+  };
+
   const DynamicTextBlockEditor = dynamic(() => import(/* webpackChunkName: "nested-text-block-editor" */ '@/app/cms/blocks/editors/TextBlockEditor'), { loading: () => <p>Loading editor...</p> });
   const DynamicHeadingBlockEditor = dynamic(() => import(/* webpackChunkName: "nested-heading-block-editor" */ '@/app/cms/blocks/editors/HeadingBlockEditor'), { loading: () => <p>Loading editor...</p> });
   const DynamicImageBlockEditor = dynamic(() => import(/* webpackChunkName: "nested-image-block-editor" */ '@/app/cms/blocks/editors/ImageBlockEditor'), { loading: () => <p>Loading editor...</p> });
@@ -126,15 +148,12 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
             SelectedEditor = DynamicVideoEmbedBlockEditor;
             break;
           case 'section':
-            // Note: Nesting sections within sections might need careful UI/UX consideration
-            // and potentially a different editor or approach.
-            // For now, we allow it if a SectionBlockEditor can handle being nested.
             SelectedEditor = DynamicSectionBlockEditor;
             break;
           default:
             console.warn(`No dynamic editor configured for nested block type: ${blockType}`);
             alert(`Error: Editor not configured for ${blockType}.`);
-            setEditingNestedBlockInfo(null); // Close modal on error
+            setEditingNestedBlockInfo(null);
             return;
         }
         setNestedBlockEditorComponent(() => SelectedEditor);
@@ -144,7 +163,7 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
         alert(`Error: Could not load editor for ${blockType}.`);
         setNestedBlockEditorComponent(null);
         setTempNestedBlockContent(null);
-        setEditingNestedBlockInfo(null); // Close modal on error
+        setEditingNestedBlockInfo(null);
       }
     } else {
       setNestedBlockEditorComponent(null);
@@ -160,10 +179,7 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
 
     startSavingNestedTransition(() => {
       const { parentBlockId, columnIndex, blockIndexInColumn } = editingNestedBlockInfo;
-
-      // Create a deep copy of the blocks to modify
       const updatedBlocks = JSON.parse(JSON.stringify(blocks)) as Block[];
-
       const parentSectionBlockIndex = updatedBlocks.findIndex(b => String(b.id) === parentBlockId && b.block_type === 'section');
 
       if (parentSectionBlockIndex === -1) {
@@ -173,18 +189,14 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
       }
 
       const parentSectionBlock = updatedBlocks[parentSectionBlockIndex];
-      // Ensure content is treated as SectionBlockContent
       const sectionContent = parentSectionBlock.content as SectionBlockContent;
 
-
-      // Ensure column_blocks and the specific column exist
       if (!sectionContent.column_blocks || !sectionContent.column_blocks[columnIndex]) {
         console.error("Column blocks or specific column not found in parent section block:", sectionContent);
         alert("Error: Could not find the column structure to save changes.");
         return;
       }
 
-      // Create a deep copy of the column_blocks to avoid direct state mutation issues
       const copiedColumnBlocks = JSON.parse(JSON.stringify(sectionContent.column_blocks)) as SectionBlockContent['column_blocks'];
 
       if (!copiedColumnBlocks[columnIndex] || !copiedColumnBlocks[columnIndex][blockIndexInColumn]) {
@@ -193,55 +205,32 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
           return;
       }
 
-      // Update the content of the specific nested block
       copiedColumnBlocks[columnIndex][blockIndexInColumn].content = tempNestedBlockContent;
-
-      // Update the parent section block's content
       parentSectionBlock.content = { ...sectionContent, column_blocks: copiedColumnBlocks };
 
-
-      // Update the local 'blocks' state optimistically
       const newBlocksState = updatedBlocks.map(b =>
         b.id === parentSectionBlock.id ? parentSectionBlock : b
       ).sort((a,b) => a.order - b.order);
       setBlocks(newBlocksState);
 
-
-      // Persist the change to the parentSectionBlock using updateBlock action
       startTransition(async () => {
-        try {
-          const result = await updateBlock(
-            parentSectionBlock.id, // ID of the parent section block
-            parentSectionBlock.content, // Its new content (which now includes the updated nested block)
-            parentType === "page" ? parentId : null,
-            parentType === "post" ? parentId : null
-          );
+        const result = await updateBlock(
+          parentSectionBlock.id,
+          parentSectionBlock.content,
+          parentType === "page" ? parentId : null,
+          parentType === "post" ? parentId : null
+        );
 
-          if (result && result.success && result.updatedBlock) {
-            // Server confirmed save, update state with server's version of the block
-            setBlocks(prevBlocks =>
-              prevBlocks.map(b => (b.id === parentSectionBlock.id ? result.updatedBlock as Block : b)).sort((a, b) => a.order - b.order)
-            );
-            setEditingNestedBlockInfo(null); // Close modal
-          } else if (result?.error) {
-            alert(`Error saving nested block changes: ${result.error}`);
-            // Revert optimistic update if the save failed by refetching or using original blocks
-            // For simplicity, current optimistic update remains, but a robust solution might revert.
-            console.error("Reverting optimistic update might be needed here.");
-            setBlocks(blocks.sort((a,b)=>a.order-b.order)); // Basic revert to previous state
-          } else {
-            alert("An unknown error occurred while saving nested block changes.");
-            setBlocks(blocks.sort((a,b)=>a.order-b.order));
-          }
-        } catch (error) {
-          console.error("Failed to save nested block changes:", error);
-          alert("A critical error occurred while saving nested block changes. Please try again.");
-          setBlocks(blocks.sort((a,b)=>a.order-b.order));
+        if (result.success && result.updatedBlock) {
+          lastSavedBlocks.current = blocks;
+          setEditingNestedBlockInfo(null);
+        } else {
+          alert(`Error saving nested block changes: ${result.error}`);
+          setBlocks(lastSavedBlocks.current);
         }
       });
     });
   };
-
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -264,7 +253,9 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
         return;
       }
       if (result && result.success && result.newBlock) {
-        setBlocks(prev => [...prev, result.newBlock!].sort((a,b) => a.order - b.order));
+        const newBlock = result.newBlock as Block;
+        setBlocks(prev => [...prev, newBlock].sort((a,b) => a.order - b.order));
+        lastSavedBlocks.current = [...blocks, newBlock].sort((a,b) => a.order - b.order);
         setSelectedBlockTypeToAdd("");
       } else if (result?.error) {
         alert(`Error adding block: ${result.error}`);
@@ -272,119 +263,44 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
     });
   };
 
-  const handleDeleteBlockClient = (blockId: number) => {
-    // Server action `deleteBlock` is called from `EditableBlock` now.
-    // This function updates local state.
-     setBlocks(prev => prev.filter(b => b.id !== blockId));
-     // Optionally, call the server action here if not handled by EditableBlock,
-     // but it's better to keep server action calls close to the trigger.
-  };
-
- const handleStartEdit = (block: Block) => {
-    setEditingBlockId(block.id);
-    setTempBlockContent(JSON.parse(JSON.stringify(block.content))); // Deep copy for editing
-  };
-
-  const handleTempContentChange = (newContent: any) => {
-    setTempBlockContent(newContent);
-  };
-
-  const handleSaveEdit = async (blockId: number) => {
-    if (tempBlockContent === null) {
-      console.warn("No temporary content to save for block:", blockId);
-      setEditingBlockId(null); // Still exit editing mode
-      return;
-    }
-
-    startTransition(async () => {
-      try {
-        const result = await updateBlock(
-          blockId,
-          tempBlockContent,
-          parentType === "page" ? parentId : null,
-          parentType === "post" ? parentId : null
-        );
-
-        if (result && result.success && result.updatedBlock) {
-          setBlocks(prevBlocks =>
-            prevBlocks.map(b => (b.id === blockId ? result.updatedBlock as Block : b)).sort((a, b) => a.order - b.order)
-          );
-          setEditingBlockId(null);
-          setTempBlockContent(null);
-        } else if (result?.error) {
-          alert(`Error updating block: ${result.error}`);
-          // Consider not clearing editing state here, or providing more specific feedback
-        } else {
-          alert("An unknown error occurred while updating the block.");
-        }
-      } catch (error) {
-        console.error("Failed to save block:", error);
-        alert("A critical error occurred while saving the block. Please try again.");
-        // Optionally, reset editing state to allow user to retry or cancel
-        // setEditingBlockId(null);
-        // setTempBlockContent(null);
-      }
-    });
-  };
-
-  const handleCancelEdit = () => {
-    setEditingBlockId(null);
-    setTempBlockContent(null);
-  };
-
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      // Capture the current state of blocks to use for potential revert
-      const originalBlocks = [...blocks]; // Create a shallow copy
-
+      const originalBlocks = [...blocks];
       const oldIndex = originalBlocks.findIndex((item) => item.id === active.id);
       const newIndex = originalBlocks.findIndex((item) => item.id === over.id);
 
       if (oldIndex === -1 || newIndex === -1) {
         console.error("Drag and drop error: item not found.", { activeId: active.id, overId: over.id });
-        return; // Exit if items aren't found
+        return;
       }
 
-      // Calculate the new visual order
       const reorderedItemsArray = arrayMove(originalBlocks, oldIndex, newIndex);
-
-      // Create the final list of items with updated 'order' properties for UI and DB
       const finalItemsWithUpdatedOrder = reorderedItemsArray.map((item, index) => ({
         ...item,
         order: index,
       }));
 
-      // 1. Optimistically update the UI
       setBlocks(finalItemsWithUpdatedOrder);
 
-      // 2. Prepare data for DB update
       const itemsToUpdateDb = finalItemsWithUpdatedOrder.map(item => ({
         id: item.id,
         order: item.order,
       }));
 
-      // 3. Perform server update and handle potential revert
       startTransition(async () => {
-        try {
-          const result = await updateMultipleBlockOrders(
-            itemsToUpdateDb,
-            parentType === "page" ? parentId : null,
-            parentType === "post" ? parentId : null
-          );
+        const result = await updateMultipleBlockOrders(
+          itemsToUpdateDb,
+          parentType === "page" ? parentId : null,
+          parentType === "post" ? parentId : null
+        );
 
-          if (result?.error) {
-            alert(`Error reordering blocks: ${result.error}`);
-            // Revert to the state *before* this drag operation
-            setBlocks(originalBlocks.sort((a, b) => a.order - b.order));
-          }
-          // If successful, the optimistic update is already in place.
-        } catch (error) {
-          console.error("Failed to reorder blocks:", error);
-          alert("A critical error occurred while reordering the blocks. Please try again.");
-          // Revert to the state *before* this drag operation as a fallback
-          setBlocks(originalBlocks.sort((a, b) => a.order - b.order));
+        if (result?.error) {
+          alert(`Error reordering blocks: ${result.error}`);
+          setBlocks(originalBlocks);
+        } else {
+          lastSavedBlocks.current = finalItemsWithUpdatedOrder;
         }
       });
     }
@@ -444,42 +360,27 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
-          <div> {/* Relying on SortableBlockItem's mb-4 for consistent spacing */}
+          <div>
             {blocks.map((block) => (
               <SortableBlockItem
                 key={block.id}
                 block={block}
-                // onDelete is now handled by EditableBlock directly calling server action
-                // onUpdateContent is also handled by EditableBlock
-                isEditing={editingBlockId === block.id}
-                onSetEditing={(isEditing) => {
-                    if (isEditing) handleStartEdit(block);
-                    else handleCancelEdit();
-                }}
-                onSaveEdit={async () => {
-                    // Server call is now initiated by handleSaveEdit
-                    await handleSaveEdit(block.id);
-                }}
-                onCancelEdit={handleCancelEdit}
-                tempContent={editingBlockId === block.id ? tempBlockContent : null}
-                onTempContentChange={handleTempContentChange}
-                // Pass the server action for delete to EditableBlock
+                onContentChange={handleContentChange}
                 onDelete={async (blockIdToDelete) => {
-                    startTransition(() => {
-                        // Import deleteBlock directly here to avoid undefined error
-                        import("@/app/cms/blocks/actions").then(({ deleteBlock }) => {
+                    startTransition(async () => {
+                        const result = await import("@/app/cms/blocks/actions").then(({ deleteBlock }) => 
                             deleteBlock(blockIdToDelete, parentType === "page" ? parentId : null, parentType === "post" ? parentId : null)
-                                .then((result) => {
-                                    if (result && result.success) {
-                                        setBlocks(prev => prev.filter(b => b.id !== blockIdToDelete));
-                                    } else if (result?.error) {
-                                        alert(`Error deleting block: ${result.error}`);
-                                    }
-                                });
-                        });
+                        );
+                        if (result && result.success) {
+                            const newBlocks = blocks.filter(b => b.id !== blockIdToDelete);
+                            setBlocks(newBlocks);
+                            lastSavedBlocks.current = newBlocks;
+                        } else if (result?.error) {
+                            alert(`Error deleting block: ${result.error}`);
+                        }
                     });
                 }}
-                onEditNestedBlock={handleEditNestedBlock} // Pass the new handler
+                onEditNestedBlock={handleEditNestedBlock}
               />
             ))}
           </div>
@@ -489,7 +390,7 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
       {editingNestedBlockInfo && (
         <Dialog open={!!editingNestedBlockInfo} onOpenChange={(isOpen) => {
           if (!isOpen) {
-            setEditingNestedBlockInfo(null); // Also reset if closed via 'x' or overlay click
+            setEditingNestedBlockInfo(null);
             setNestedBlockEditorComponent(null);
             setTempNestedBlockContent(null);
           }
@@ -508,29 +409,23 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
                 (() => {
                   const blockType = editingNestedBlockInfo.blockData.block_type;
                   if (blockType === "posts_grid") {
-                    // Construct the full 'block' prop for PostsGridBlockEditor
                     const fullBlockForEditor: Block = {
-                      // These are from the temporary nested block structure
                       block_type: editingNestedBlockInfo.blockData.block_type,
-                      content: tempNestedBlockContent, // This is the content being edited
-                      // Add defaults for other Block properties that PostsGridBlockEditor might expect
-                      // Ideally, the original parent section block's context or dummy values
-                      id: (editingNestedBlockInfo.blockData as any).id || 0, // temp_id is not the db id
-                      language_id: languageId, // Use languageId from BlockEditorArea props
+                      content: tempNestedBlockContent,
+                      id: (editingNestedBlockInfo.blockData as any).id || 0,
+                      language_id: languageId,
                       order: (editingNestedBlockInfo.blockData as any).order || 0,
                       created_at: (editingNestedBlockInfo.blockData as any).created_at || new Date().toISOString(),
                       updated_at: (editingNestedBlockInfo.blockData as any).updated_at || new Date().toISOString(),
                       page_id: parentType === 'page' ? parentId : null,
                       post_id: parentType === 'post' ? parentId : null,
                     };
-                    // Pass isNestedEditing and onChange for PostsGridBlockEditor
                     return <NestedBlockEditorComponent
                               block={fullBlockForEditor}
                               isNestedEditing={true}
                               onChange={setTempNestedBlockContent}
                            />;
                   } else {
-                    // Standard rendering for other block types
                     return (
                       <NestedBlockEditorComponent
                         content={tempNestedBlockContent}
@@ -542,17 +437,10 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
               ) : (
                 <p>Loading editor or missing data...</p>
               )}
-              {/* Debugging info:
-              <pre className="mt-4 p-2 bg-slate-100 dark:bg-slate-800 rounded text-xs overflow-auto max-h-[200px]">
-                <strong>Temp Nested Content:</strong><br/>
-                {JSON.stringify(tempNestedBlockContent, null, 2)}
-              </pre>
-              */}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => {
                 setEditingNestedBlockInfo(null);
-                // No need to reset components here, useEffect handles it
               }}>
                 Cancel
               </Button>

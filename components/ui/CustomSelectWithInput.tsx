@@ -57,40 +57,58 @@ export function CustomSelectWithInput({
   return (
     <div className="space-y-2">
       <div className="flex items-center">
-        <Label>{label}</Label>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button type="button" className="ml-2">
-                <Info className="h-4 w-4 text-muted-foreground" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{tooltipContent}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+      <Label>{label}</Label>
+      <TooltipProvider>
+        <Tooltip>
+        <TooltipTrigger asChild>
+          <button type="button" className="ml-2">
+          <Info className="h-4 w-4 text-muted-foreground" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{tooltipContent}</p>
+        </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       </div>
-      <Select onValueChange={handleSelectChange} value={selectValue}>
-        <SelectTrigger>
+      {showCustomInput ? (
+      <div className="flex gap-2">
+        <div className="flex-1">
+        <Select onValueChange={handleSelectChange} value={selectValue}>
+          <SelectTrigger>
           <SelectValue placeholder="Select a value" />
-        </SelectTrigger>
-        <SelectContent>
+          </SelectTrigger>
+          <SelectContent>
           {options.map(option => (
             <SelectItem key={option.value} value={option.value}>
-              {option.label}
+            {option.label}
             </SelectItem>
           ))}
           <SelectItem value="custom">Custom</SelectItem>
+          </SelectContent>
+        </Select>
+        </div>
+        <Input
+        className="flex-1"
+        value={isCustomValue ? value : ""}
+        onChange={e => onChange(e.target.value)}
+        placeholder="Enter custom value"
+        />
+      </div>
+      ) : (
+      <Select onValueChange={handleSelectChange} value={selectValue}>
+        <SelectTrigger>
+        <SelectValue placeholder="Select a value" />
+        </SelectTrigger>
+        <SelectContent>
+        {options.map(option => (
+          <SelectItem key={option.value} value={option.value}>
+          {option.label}
+          </SelectItem>
+        ))}
+        <SelectItem value="custom">Custom</SelectItem>
         </SelectContent>
       </Select>
-      {showCustomInput && (
-        <Input
-          className="mt-2"
-          value={isCustomValue ? value : ""}
-          onChange={e => onChange(e.target.value)}
-          placeholder="Enter custom value"
-        />
       )}
     </div>
   )
