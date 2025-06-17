@@ -1,14 +1,13 @@
 // app/cms/blocks/components/EditableBlock.tsx
 "use client";
 
-import React, { useState, useEffect, Suspense, useRef, useMemo } from 'react';
-import dynamic from 'next/dynamic';
-import type { Block, ImageBlockContent } from "@/utils/supabase/types";
-// Directly import PostsGridBlockEditor for the targeted fix
+import React, { useState, Suspense, useRef, useMemo, lazy, LazyExoticComponent, ComponentType } from 'react';
+import type { Block } from "@/utils/supabase/types";
 import PostsGridBlockEditor from '../editors/PostsGridBlockEditor';
 import { Button } from "@/components/ui/button";
-import { GripVertical, Trash2, Edit2, Check, X } from "lucide-react";
-import { getBlockDefinition } from "@/lib/blocks/blockRegistry";
+import { GripVertical, Trash2, Edit2 } from "lucide-react";
+import { getBlockDefinition, blockRegistry } from "@/lib/blocks/blockRegistry";
+import { BlockEditorModal } from './BlockEditorModal';
 
 // Define R2_BASE_URL, ideally this would come from a shared config or context
 const R2_BASE_URL = process.env.NEXT_PUBLIC_R2_BASE_URL || "";
@@ -28,7 +27,6 @@ export default function EditableBlock({
   dragHandleProps,
   onEditNestedBlock,
 }: EditableBlockProps) {
-  const isInitialMount = useRef(true);
   // Add a guard for undefined block prop
   if (!block) {
     // Or some other placeholder/error display
@@ -36,62 +34,20 @@ export default function EditableBlock({
   }
 
   const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
+  const [editingBlock, setEditingBlock] = useState<Block | null>(null);
+  const [LazyEditor, setLazyEditor] = useState<LazyExoticComponent<ComponentType<any>> | null>(null);
 
-  // Define dynamic imports for each editor type
-  // Note: PostsGridBlockEditor is imported statically above due to a "targeted fix"
-  const DynamicTextBlockEditor = dynamic(() => import(/* webpackChunkName: "text-block-editor" */ '../editors/TextBlockEditor'), { loading: () => <p>Loading editor...</p> });
-  const DynamicHeadingBlockEditor = dynamic(() => import(/* webpackChunkName: "heading-block-editor" */ '../editors/HeadingBlockEditor'), { loading: () => <p>Loading editor...</p> });
-  const DynamicImageBlockEditor = dynamic(() => import(/* webpackChunkName: "image-block-editor" */ '../editors/ImageBlockEditor'), { loading: () => <p>Loading editor...</p> });
-  const DynamicButtonBlockEditor = dynamic(() => import(/* webpackChunkName: "button-block-editor" */ '../editors/ButtonBlockEditor'), { loading: () => <p>Loading editor...</p> });
-  const DynamicVideoEmbedBlockEditor = dynamic(() => import(/* webpackChunkName: "video-embed-block-editor" */ '../editors/VideoEmbedBlockEditor'), { loading: () => <p>Loading editor...</p> });
-  const DynamicSectionBlockEditor = dynamic(() => import(/* webpackChunkName: "section-block-editor" */ '../editors/SectionBlockEditor'), { loading: () => <p>Loading editor...</p> });
-
-
-  const EditorComponent = useMemo(() => {
-    if (!block?.block_type) return null;
-
-    switch (block.block_type) {
-      case 'text':
-        return DynamicTextBlockEditor;
-      case 'heading':
-        return DynamicHeadingBlockEditor;
-      case 'image':
-        return DynamicImageBlockEditor;
-      case 'button':
-        return DynamicButtonBlockEditor;
-      case 'video_embed':
-        return DynamicVideoEmbedBlockEditor;
-      case 'hero':
-      case 'section':
-        return DynamicSectionBlockEditor;
-      case 'posts_grid':
-        return PostsGridBlockEditor; // Return the statically imported one
-      default:
-        return null;
+  const SectionEditor = useMemo(() => {
+    if (block.block_type === 'section' || block.block_type === 'hero') {
+      const editorFilename = blockRegistry[block.block_type]?.editorComponentFilename;
+      if (editorFilename) {
+        return lazy(() => import(`../editors/${editorFilename}`));
+      }
     }
-  }, [block?.block_type]);
+    return null;
+  }, [block.block_type]);
 
 
-  const renderEditor = () => {
-    if (!EditorComponent) {
-      return (
-        <div className="flex items-center justify-center py-8 min-h-[100px]">
-          <div className="text-sm text-muted-foreground">Loading editor...</div>
-        </div>
-      );
-    }
-
-    const editorProps: any = {
-      content: block.content || {},
-      onChange: (newContent: any) => {
-        onContentChange(block.id, newContent);
-      },
-      blockType: block.block_type,
-      isConfigPanelOpen: isConfigPanelOpen,
-    };
-
-    return <EditorComponent {...editorProps} />;
-  };
 
   const renderPreview = () => {
     // Safe access to block_type for preview
@@ -124,9 +80,17 @@ export default function EditableBlock({
     if (isSection) {
       setIsConfigPanelOpen(!isConfigPanelOpen);
     } else {
-      // For other blocks, we might want a modal or inline editor.
-      // For now, let's just log it. The old logic is removed.
-      console.log("Edit clicked for non-section block:", block.block_type);
+      const editorFilename = blockRegistry[block.block_type]?.editorComponentFilename;
+      if (block.block_type === 'posts_grid') {
+        const LazifiedPostsGridEditor = lazy(() => Promise.resolve({ default: PostsGridBlockEditor }));
+        setLazyEditor(() => LazifiedPostsGridEditor);
+        setEditingBlock(block);
+      }
+      else if (editorFilename) {
+        const Editor = lazy(() => import(`../editors/${editorFilename}`));
+        setLazyEditor(() => Editor);
+        setEditingBlock(block);
+      }
     }
   };
 
@@ -152,9 +116,28 @@ export default function EditableBlock({
       </div>
       {isSection ? (
         <div className="mt-2 min-h-[200px]">
-          {renderEditor()}
+          <Suspense fallback={<div className="flex justify-center items-center h-full"><p>Loading Editor...</p></div>}>
+            {SectionEditor && <SectionEditor block={block} content={block.content || {}} onChange={(newContent: any) => onContentChange(block.id, newContent)} blockType={block.block_type as 'section' | 'hero'} isConfigPanelOpen={isConfigPanelOpen} />}
+          </Suspense>
         </div>
       ) : renderPreview()}
+
+      {editingBlock && LazyEditor && (
+        <BlockEditorModal
+          isOpen={!!editingBlock}
+          block={{...editingBlock, type: editingBlock.block_type as any}}
+          EditorComponent={LazyEditor}
+          onClose={() => {
+            setEditingBlock(null);
+            setLazyEditor(null);
+          }}
+          onSave={(newContent: any) => {
+            onContentChange(block.id, newContent);
+            setEditingBlock(null);
+            setLazyEditor(null);
+          }}
+        />
+      )}
     </div>
   );
 }

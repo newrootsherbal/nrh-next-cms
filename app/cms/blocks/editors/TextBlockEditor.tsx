@@ -17,7 +17,7 @@ export default function TextBlockEditor({ content, onChange }: TextBlockEditorPr
   };
 
   return (
-    <div className="space-y-2 p-3 border-t mt-2">
+    <div className="h-full flex flex-col">
       <Label htmlFor={`text-block-editor-tiptap-${Math.random()}`} className="sr-only">Text Content</Label>
       <RichTextEditor
         initialContent={content.html_content || "<p></p>"} // Start with an empty paragraph if no content

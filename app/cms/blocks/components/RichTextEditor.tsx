@@ -71,7 +71,7 @@ export default function RichTextEditor({ initialContent, onChange, editable = tr
     },
     editorProps: {
       attributes: {
-        class: 'prose dark:prose-invert prose-sm sm:prose-base focus:outline-none min-h-[150px] p-3 bg-background',
+        class: 'prose dark:prose-invert max-w-none h-full focus:outline-none',
       },
     },
   });
@@ -111,17 +111,17 @@ export default function RichTextEditor({ initialContent, onChange, editable = tr
   };
 
   return (
-    <div className="border border-input rounded-md shadow-sm">
+    <div className="h-full flex flex-col border rounded-md">
       {editable && <MenuBar editor={editor} toggleSourceView={toggleSourceView} isSourceView={isSourceView} />}
       {isSourceView && editable ? (
         <textarea
           value={htmlSource}
           onChange={handleSourceChange}
-          className="w-full min-h-[150px] p-3 font-mono text-sm border-t border-input focus:outline-none bg-background text-foreground"
+          className="w-full min-h-[150px] p-3 font-mono text-sm border-t focus:outline-none bg-background text-foreground flex-grow"
           disabled={!editable}
         />
       ) : (
-        <EditorContent editor={editor} />
+        <EditorContent editor={editor} className="flex-1 overflow-y-auto p-2" />
       )}
     </div>
   );

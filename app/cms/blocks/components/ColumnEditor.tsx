@@ -1,47 +1,31 @@
 // app/cms/blocks/components/ColumnEditor.tsx
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { Label } from '../../../../components/ui/label';
+import React, { useState, lazy } from 'react';
 import { Button } from '../../../../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
-import { PlusCircle, Trash2, Edit2, Check, X, GripVertical, ChevronDown, ChevronUp } from "lucide-react";
+import { PlusCircle, Trash2, Edit2, GripVertical } from "lucide-react";
 import type { SectionBlockContent } from '../../../../lib/blocks/blockRegistry';
 import { availableBlockTypes, getBlockDefinition, getInitialContent, BlockType } from '../../../../lib/blocks/blockRegistry';
-import dynamic from 'next/dynamic';
 import { useDroppable } from "@dnd-kit/core";
-import { useSortable, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { BlockEditorModal } from './BlockEditorModal';
 
-// Dynamically imported editor components
-const TextBlockEditorComponent = dynamic(() => import('../editors/TextBlockEditor'));
-const HeadingBlockEditorComponent = dynamic(() => import('../editors/HeadingBlockEditor'));
-const ImageBlockEditorComponent = dynamic(() => import('../editors/ImageBlockEditor'));
-const ButtonBlockEditorComponent = dynamic(() => import('../editors/ButtonBlockEditor'));
-const PostsGridBlockEditorComponent = dynamic(() => import('../editors/PostsGridBlockEditor'));
-const VideoEmbedBlockEditorComponent = dynamic(() => import('../editors/VideoEmbedBlockEditor'));
 
-const editorComponentMap: Partial<Record<BlockType, React.ComponentType<any>>> = {
-  text: TextBlockEditorComponent,
-  heading: HeadingBlockEditorComponent,
-  image: ImageBlockEditorComponent,
-  button: ButtonBlockEditorComponent,
-  posts_grid: PostsGridBlockEditorComponent,
-  video_embed: VideoEmbedBlockEditorComponent,
-};
+type ColumnBlock = SectionBlockContent['column_blocks'][0][0];
 
 // Sortable block item component for column blocks
 interface SortableColumnBlockProps {
-  block: SectionBlockContent['column_blocks'][0][0];
+  block: ColumnBlock;
   index: number;
   columnIndex: number;
   onEdit: () => void;
   onDelete: () => void;
-  isEditing: boolean;
   blockType: 'section' | 'hero';
 }
 
-function SortableColumnBlock({ block, index, columnIndex, onEdit, onDelete, isEditing, blockType }: SortableColumnBlockProps) {
+function SortableColumnBlock({ block, index, columnIndex, onEdit, onDelete, blockType }: SortableColumnBlockProps) {
   const {
     attributes,
     listeners,
@@ -50,7 +34,7 @@ function SortableColumnBlock({ block, index, columnIndex, onEdit, onDelete, isEd
     transition,
     isDragging,
   } = useSortable({
-    id: `${blockType}-column-${columnIndex}-block-${index}`,
+    id: block.temp_id || `${blockType}-column-${columnIndex}-block-${index}`,
     data: {
       type: 'block',
       blockType,
@@ -125,42 +109,26 @@ function SortableColumnBlock({ block, index, columnIndex, onEdit, onDelete, isEd
 // Column editor component
 export interface ColumnEditorProps {
   columnIndex: number;
-  blocks: SectionBlockContent['column_blocks'][0];
-  onBlocksChange: (newBlocks: SectionBlockContent['column_blocks'][0]) => void;
+  blocks: ColumnBlock[];
+  onBlocksChange: (newBlocks: ColumnBlock[]) => void;
   blockType: 'section' | 'hero';
 }
 
+type EditingBlock = ColumnBlock & { index: number };
+
 export default function ColumnEditor({ columnIndex, blocks, onBlocksChange, blockType }: ColumnEditorProps) {
-  const [editingBlockIndex, setEditingBlockIndex] = useState<number | null>(null);
-  const [tempBlockContent, setTempBlockContent] = useState<any>(null);
-  const [EditorComponent, setEditorComponent] = useState<React.ComponentType<any> | null>(null);
+  const [editingBlock, setEditingBlock] = useState<EditingBlock | null>(null);
   const [selectedBlockType, setSelectedBlockType] = useState<BlockType | "">("");
+  const [LazyEditor, setLazyEditor] = useState<React.LazyExoticComponent<React.ComponentType<any>> | null>(null);
 
   const { setNodeRef: setDroppableNodeRef, isOver } = useDroppable({
     id: `${blockType}-column-droppable-${columnIndex}`,
   });
 
-  useEffect(() => {
-    if (editingBlockIndex === null) {
-      setEditorComponent(null);
-      return;
-    }
-    const block = blocks[editingBlockIndex];
-    const Editor = editorComponentMap[block.block_type];
-    if (Editor) {
-      setEditorComponent(() => Editor);
-    } else {
-      if (block.block_type !== 'section') {
-        console.error(`No editor component found for block type: ${block.block_type}`);
-      }
-      setEditorComponent(null);
-    }
-  }, [editingBlockIndex, blocks]);
-
   const handleAddBlock = () => {
     if (!selectedBlockType) return;
     const initialContent = getInitialContent(selectedBlockType);
-    const newBlock = {
+    const newBlock: ColumnBlock = {
       block_type: selectedBlockType,
       content: initialContent || {},
       temp_id: `temp-${Date.now()}-${Math.random()}`
@@ -170,36 +138,32 @@ export default function ColumnEditor({ columnIndex, blocks, onBlocksChange, bloc
   };
 
   const handleDeleteBlock = (index: number) => {
-    const newBlocks = blocks.filter((_: any, i: number) => i !== index);
+    const newBlocks = blocks.filter((_, i) => i !== index);
     onBlocksChange(newBlocks);
-    if (editingBlockIndex === index) {
-      setEditingBlockIndex(null);
-      setTempBlockContent(null);
+  };
+
+  const handleStartEdit = (block: ColumnBlock, index: number) => {
+    const blockDef = getBlockDefinition(block.block_type);
+    if (blockDef && blockDef.editorComponentFilename) {
+      const Editor = lazy(() => import(`../editors/${blockDef.editorComponentFilename.replace(/\.tsx$/, '')}`));
+      setLazyEditor(Editor);
+      setEditingBlock({ ...block, index });
+    } else {
+      console.error(`No editor component found for block type: ${block.block_type}`);
     }
   };
 
-  const handleStartEdit = (index: number) => {
-    setEditingBlockIndex(index);
-    setTempBlockContent(JSON.parse(JSON.stringify(blocks[index].content)));
-  };
+  const handleSave = (newContent: any) => {
+    if (editingBlock === null) return;
 
-  const handleSaveEdit = () => {
-    if (editingBlockIndex === null) return;
-    const newBlocks = [...blocks];
-    if (tempBlockContent !== null) {
-      newBlocks[editingBlockIndex] = {
-        ...newBlocks[editingBlockIndex],
-        content: tempBlockContent
-      };
-    }
-    onBlocksChange(newBlocks);
-    setEditingBlockIndex(null);
-    setTempBlockContent(null);
-  };
-
-  const handleCancelEdit = () => {
-    setEditingBlockIndex(null);
-    setTempBlockContent(null);
+    const updatedBlocks = [...blocks];
+    updatedBlocks[editingBlock.index] = {
+      ...updatedBlocks[editingBlock.index],
+      content: newContent,
+    };
+    onBlocksChange(updatedBlocks);
+    setEditingBlock(null);
+    setLazyEditor(null);
   };
 
   return (
@@ -245,45 +209,36 @@ export default function ColumnEditor({ columnIndex, blocks, onBlocksChange, bloc
           </div>
         ) : (
           <div className="space-y-2">
-            {blocks.map((block: SectionBlockContent['column_blocks'][0][0], index: number) => (
-              <div key={`${blockType}-column-${columnIndex}-block-${index}`}>
+            {blocks.map((block, index) => (
+              <div key={block.temp_id || `${blockType}-column-${columnIndex}-block-${index}`}>
                 <SortableColumnBlock
                   block={block}
                   index={index}
                   columnIndex={columnIndex}
                   blockType={blockType}
-                  onEdit={() => handleStartEdit(index)}
+                  onEdit={() => handleStartEdit(block, index)}
                   onDelete={() => handleDeleteBlock(index)}
-                  isEditing={editingBlockIndex === index}
                 />
-                {editingBlockIndex === index && EditorComponent && (
-                  <div className="mt-2 p-3 border border-blue-200 dark:border-blue-800 rounded bg-blue-50 dark:bg-blue-900/20">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
-                        Editing {getBlockDefinition(block.block_type)?.label}
-                      </span>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="sm" onClick={handleSaveEdit} className="h-6 w-6 p-0 text-green-600">
-                          <Check className="h-3 w-3" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={handleCancelEdit} className="h-6 w-6 p-0 text-red-600">
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="text-sm">
-                      <EditorComponent
-                        content={tempBlockContent}
-                        onChange={setTempBlockContent}
-                      />
-                    </div>
-                  </div>
-                )}
               </div>
             ))}
           </div>
         )}
       </div>
+      {editingBlock && LazyEditor && (
+        <BlockEditorModal
+          isOpen={!!editingBlock}
+          onClose={() => {
+            setEditingBlock(null);
+            setLazyEditor(null);
+          }}
+          onSave={handleSave}
+          block={{
+            type: editingBlock.block_type,
+            content: editingBlock.content,
+          }}
+          EditorComponent={LazyEditor}
+        />
+      )}
     </div>
   );
 }
