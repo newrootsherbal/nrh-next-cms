@@ -48,7 +48,7 @@ It features:
         NEXT_PUBLIC_SUPABASE_URL=[https://your-project-ref.supabase.co](https://your-project-ref.supabase.co)
         NEXT_PUBLIC_SUPABASE_ANON_KEY=your-public-anon-key
         SUPABASE_SERVICE_ROLE_KEY=your-service-role-key # Found in API settings, needed for admin actions like deleting users
-SUPABASE_PROJECT_ID=your-supabase-project-id # Used by the Supabase CLI (e.g., in supabase/config.toml)
+        SUPABASE_PROJECT_ID=your-supabase-project-id # Used by the Supabase CLI (e.g., in supabase/config.toml)
 
         # Cloudflare R2 Storage (from your Cloudflare R2 bucket settings & API token)
         NEXT_PUBLIC_R2_BASE_URL=[https://your-r2-public-url.r2.dev/your-bucket-name](https://your-r2-public-url.r2.dev/your-bucket-name) # Or your custom domain for R2
@@ -155,6 +155,13 @@ SUPABASE_PROJECT_ID=your-supabase-project-id # Used by the Supabase CLI (e.g., i
     * `lib/cloudflare/`: Client for Cloudflare R2.
 * `utils/supabase/`: Supabase client setup, types, and middleware helpers.
 * `supabase/migrations/`: SQL database migrations.
+
+## Documentation
+
+For a deeper understanding of the CMS's internal workings, please refer to the detailed documentation:
+
+*   **[CMS Application Overview](./docs/cms-application-overview.md):** A high-level guide to the Next.js application structure, core modules, and key functionalities.
+*   **[Block Editor Architecture](./docs/cms-architecture-overview.md):** A technical deep-dive into the architecture of the block-based content editor.
 
 ## Deployment
 
