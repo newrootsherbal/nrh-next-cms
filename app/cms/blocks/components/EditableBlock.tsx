@@ -113,6 +113,7 @@ export default function EditableBlock({
   };
 
   const isSection = block?.block_type === 'section' || block?.block_type === 'hero';
+  const blockDefinition = getBlockDefinition(block.block_type as any);
 
   return (
     <div
@@ -123,16 +124,22 @@ export default function EditableBlock({
     >
       <div className="flex justify-between items-center mb-2 pb-2 border-b">
         <div className="flex items-center gap-2">
-          {dragHandleProps && (
-            <button {...dragHandleProps} className="cursor-grab p-1 -ml-1" aria-label="Drag to reorder">
-              <GripVertical className="h-5 w-5 text-muted-foreground hover:text-foreground" />
-            </button>
-          )}
-          <span className="font-medium capitalize">{block?.block_type || 'Unknown Block'}</span>
+          <button {...dragHandleProps} className="p-1 rounded-md hover:bg-muted cursor-grab" title="Drag to reorder">
+            <GripVertical className="h-5 w-5" />
+          </button>
+          <h3 className="font-semibold">{blockDefinition?.label || block.block_type}</h3>
         </div>
         <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" onClick={handleEditClick} title={isSection ? "Toggle Section Config" : "Edit"}>
-                <Edit2 className="h-4 w-4 text-muted-foreground" />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEditClick();
+              }}
+              title={isSection ? "Toggle Section Config" : "Edit"}
+            >
+              <Edit2 className="h-4 w-4 text-muted-foreground" />
             </Button>
           <Button variant="ghost" size="icon" onClick={() => onDelete(block.id)} title="Delete">
             <Trash2 className="h-4 w-4 text-red-600" />

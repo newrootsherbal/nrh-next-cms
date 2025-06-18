@@ -60,25 +60,20 @@ function SortableColumnBlock({ block, index, columnIndex, onEdit, onDelete, bloc
       ref={setNodeRef}
       style={style}
       onClick={onClick}
-      className={cn(
-        "group relative p-2 border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-900 shadow-sm",
-        "cursor-pointer hover:border-primary"
-      )}
-    >
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-2">
-          <button
-            {...attributes}
-            {...listeners}
-            className="cursor-grab p-1 opacity-0 group-hover:opacity-100 transition-opacity touch-none"
-            aria-label="Drag to reorder"
-          >
-            <GripVertical className="h-3 w-3 text-gray-400" />
-          </button>
-          <span className="text-xs font-medium text-gray-600 dark:text-gray-300 capitalize">
-            {blockLabel}
-          </span>
-        </div>
+     {...attributes}
+     {...listeners}
+     className={cn(
+       "group relative p-2 border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-900 shadow-sm",
+       "cursor-pointer hover:border-primary"
+     )}
+   >
+     <div className="flex items-center justify-between mb-1">
+       <div className="flex items-center gap-2">
+         <GripVertical className="h-3 w-3 text-gray-400" />
+         <span className="text-xs font-medium text-gray-600 dark:text-gray-300 capitalize">
+           {blockLabel}
+         </span>
+       </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <Button variant="ghost" size="sm" onClick={onEdit} className="h-6 w-6 p-0" title="Edit block">
             <Edit2 className="h-3 w-3" />
