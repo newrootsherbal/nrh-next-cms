@@ -174,6 +174,21 @@ This project is optimized for deployment on [Vercel](https://vercel.com/).
 4.  Vercel will automatically build and deploy your Next.js application.
 5.  Ensure your Supabase Database Webhooks are pointing to your production Next.js API endpoint for revalidation.
 
+## Database Backup
+
+This project includes a simple script to backup your Supabase PostgreSQL database.
+
+**Requirements:**
+*   You must have the PostgreSQL command-line tools (`pg_dump`) installed and available in your system's PATH.
+
+**Usage:**
+To create a backup, run the following command from your project root:
+
+```bash
+npm run db:backup
+```
+
+This command will generate a timestamped SQL dump file and save it to the `backup/` directory.
 ## Feedback and Issues
 
 Please file feedback and issues on the GitHub repository for this project.
