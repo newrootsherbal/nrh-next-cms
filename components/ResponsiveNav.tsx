@@ -43,6 +43,11 @@ const buildHierarchy = (items: NavigationItem[]): HierarchicalNavigationItem[] =
 
 interface ResponsiveNavProps {
   homeLinkHref: string;
+logo?: {
+    file_path: string;
+    alt_text: string;
+  } | null;
+  siteTitle: string;
   navItems: NavigationItem[];
   canAccessCms: boolean;
   cmsDashboardLinkHref: string;
@@ -59,6 +64,8 @@ export default function ResponsiveNav({
   cmsDashboardLinkLabel,
   headerAuthComponent,
   languageSwitcherComponent,
+  logo,
+  siteTitle,
 }: ResponsiveNavProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [expandedMobileItems, setExpandedMobileItems] = useState<Record<string, boolean>>({});
@@ -184,6 +191,13 @@ export default function ResponsiveNav({
       <div className="flex justify-between items-center w-full">
         {/* Left side: Home link (visible on desktop and mobile) */}
         <div className="flex items-center">
+          <AnimatedLink href={homeLinkHref} className="flex items-center space-x-2 rtl:space-x-reverse">
+            {logo ? (
+              <img src={logo.file_path} alt={logo.alt_text} className="h-8 w-auto" />
+            ) : (
+              <span className="text-xl font-semibold text-foreground">{siteTitle}</span>
+            )}
+          </AnimatedLink>
           {/* Desktop: Additional Nav items */}
           <div className="hidden md:flex items-baseline font-semibold ml-6 space-x-1"> {/* Adjusted space-x for items with internal padding */}
             {hierarchicalNavItems.length > 0 && renderDesktopNavItems(hierarchicalNavItems)}

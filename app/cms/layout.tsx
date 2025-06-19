@@ -1,7 +1,7 @@
 // app/cms/layout.tsx
 "use client"
 
-import React, { type ReactNode, useEffect } from "react"
+import React, { type ReactNode, useEffect, useState } from "react"
 import { useAuth } from "@/context/AuthContext"
 import { useRouter, usePathname } from "next/navigation" // Import usePathname
 import { AnimatedLink } from "@/components/transitions" // Changed to AnimatedLink
@@ -13,6 +13,8 @@ import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { signOutAction } from "@/app/actions";
+import { getActiveLogo } from "@/app/cms/settings/logos/actions";
+import { type Logo } from "@/utils/supabase/types";
 
 const LoadingSpinner = () => (
   <div className="flex justify-center items-center h-full w-full py-20">
@@ -59,12 +61,51 @@ const NavItem = ({ href, icon: Icon, children, isActive, adminOnly, writerOnly, 
   )
 };
 
+type CollapsibleNavItemProps = {
+  icon: React.ElementType
+  title: string
+  children: React.ReactNode
+  isActive?: boolean
+  adminOnly?: boolean
+  isAdmin?: boolean
+}
+
+const CollapsibleNavItem = ({ icon: Icon, title, children, isActive, adminOnly, isAdmin }: CollapsibleNavItemProps) => {
+  const [isOpen, setIsOpen] = React.useState(isActive);
+
+  if (adminOnly && !isAdmin) return null
+
+  return (
+    <li>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all w-full",
+          isActive
+            ? "bg-primary/10 text-primary dark:bg-primary/20"
+            : "text-slate-600 hover:text-primary hover:bg-primary/5 dark:text-slate-300 dark:hover:bg-primary/10",
+        )}
+      >
+        <Icon className="h-5 w-5" />
+        <span>{title}</span>
+        <ChevronRight className={cn("h-4 w-4 ml-auto transition-transform", isOpen && "rotate-90")} />
+      </button>
+      {isOpen && (
+        <ul className="pl-6 space-y-1.5 mt-1.5">
+          {children}
+        </ul>
+      )}
+    </li>
+  )
+};
+
 
 export default function CmsLayout({ children }: { children: ReactNode }) {
   const { user, profile, role, isLoading, isAdmin, isWriter } = useAuth();
   const router = useRouter();
   const pathname = usePathname(); // Use the usePathname hook
   const [cmsSidebarOpen, setCmsSidebarOpen] = React.useState(false);
+  const [logo, setLogo] = useState<Logo | null>(null);
 
   useEffect(() => {
     if (!isLoading) {
@@ -75,6 +116,15 @@ export default function CmsLayout({ children }: { children: ReactNode }) {
       }
     }
   }, [user, role, isLoading, router, isAdmin, isWriter]);
+
+  useEffect(() => {
+    const fetchLogo = async () => {
+      const activeLogo = await getActiveLogo();
+      setLogo(activeLogo);
+    };
+
+    fetchLogo();
+  }, []);
 
   useEffect(() => {
     const mainLayoutElement = document.querySelector('body > div > main > div.flex-1.w-full.flex.flex-col.items-center');
@@ -144,6 +194,7 @@ export default function CmsLayout({ children }: { children: ReactNode }) {
   else if (pathname.startsWith("/cms/settings/languages") && pathname.includes("/edit")) pageTitle = "Edit Language";
   else if (pathname.startsWith("/cms/settings/languages")) pageTitle = "Language Settings";
   // Fallback for general /cms/settings if no more specific language path matches
+  else if (pathname.startsWith("/cms/settings/logos")) pageTitle = "Logos";
   else if (pathname.startsWith("/cms/settings")) pageTitle = "Settings";
 
 
@@ -171,9 +222,13 @@ export default function CmsLayout({ children }: { children: ReactNode }) {
         <div className="flex flex-col h-full">
           <div className="p-4 border-b dark:border-slate-700/60 h-16 flex items-center shrink-0">
             <AnimatedLink href="/cms/dashboard" className="flex items-center gap-2 px-2">
-              <div className="h-8 w-8 rounded-md bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white font-bold">
-                NRH
-              </div>
+              {logo && logo.media ? (
+                <img src={logo.media.file_path} alt={logo.media.alt_text || 'Logo'} className="h-8 w-auto" />
+              ) : (
+                <div className="h-8 w-8 rounded-md bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white font-bold">
+                  NRH
+                </div>
+              )}
               <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70 dark:from-primary dark:to-primary/80">
                 CMS
               </h2>
@@ -208,9 +263,20 @@ export default function CmsLayout({ children }: { children: ReactNode }) {
                   <NavItem href="/cms/users" icon={Users} isActive={pathname.startsWith("/cms/users")} adminOnly isAdmin={isAdmin}>
                     Manage Users
                   </NavItem>
-                  <NavItem href="/cms/settings/languages" icon={LanguagesIconLucide} isActive={pathname.startsWith("/cms/settings/languages")} adminOnly isAdmin={isAdmin}>
-                    Languages
-                  </NavItem>
+                  <CollapsibleNavItem
+                    icon={Settings}
+                    title="Settings"
+                    isActive={pathname.startsWith("/cms/settings")}
+                    adminOnly
+                    isAdmin={isAdmin}
+                  >
+                    <NavItem href="/cms/settings/languages" icon={LanguagesIconLucide} isActive={pathname.startsWith("/cms/settings/languages")} adminOnly isAdmin={isAdmin}>
+                      Languages
+                   </NavItem>
+                   <NavItem href="/cms/settings/logos" icon={ImageIconLucide} isActive={pathname.startsWith("/cms/settings/logos")} adminOnly isAdmin={isAdmin}>
+                     Logos
+                   </NavItem>
+                 </CollapsibleNavItem>
                 </>
               )}
             </ul>

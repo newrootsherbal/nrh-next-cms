@@ -1,13 +1,14 @@
 // components/Header.tsx
 import { createClient as createSupabaseServerClient } from '../utils/supabase/server'; // Adjusted path
-// import Link from 'next/link'; // Appears unused, ResponsiveNav handles links
-import { getProfileWithRoleServerSide } from '../utils/supabase/server'; // Adjusted path
-import type { UserRole, NavigationItem } from '../utils/supabase/types'; // Adjusted path
-import HeaderAuth from './header-auth'; // Adjusted path if needed, assuming it's in components/
-import LanguageSwitcher from './LanguageSwitcher';
-import { getNavigationMenu } from '../app/cms/navigation/actions'; // Adjusted path
-// import { headers } from 'next/headers'; // No longer needed here
-import ResponsiveNav from './ResponsiveNav'; // Import the new client component
+ // import Link from 'next/link'; // Appears unused, ResponsiveNav handles links
+ import { getProfileWithRoleServerSide } from '../utils/supabase/server'; // Adjusted path
+ import type { UserRole, NavigationItem } from '../utils/supabase/types'; // Adjusted path
+ import HeaderAuth from './header-auth'; // Adjusted path if needed, assuming it's in components/
+ import LanguageSwitcher from './LanguageSwitcher';
+ import { getNavigationMenu } from '../app/cms/navigation/actions'; // Adjusted path
+ import { getActiveLogo } from '@/app/cms/settings/logos/actions';
+ // import { headers } from 'next/headers'; // No longer needed here
+ import ResponsiveNav from './ResponsiveNav'; // Import the new client component
 
 interface HeaderProps {
   currentLocale: string;
@@ -36,6 +37,12 @@ export default async function Header({ currentLocale, currentPageData }: HeaderP
     console.error("[Header.tsx] Error fetching header navigation:", error);
     // Gracefully handle error, e.g. by leaving headerNavItems empty
   }
+
+  const logoData = await getActiveLogo();
+  const logo = logoData && logoData.media ? {
+    file_path: logoData.media.file_path,
+    alt_text: logoData.media.alt_text || 'Site logo',
+  } : null;
   
   return (
     <ResponsiveNav
@@ -46,6 +53,8 @@ export default async function Header({ currentLocale, currentPageData }: HeaderP
       cmsDashboardLinkLabel="CMS Dashboard"
       headerAuthComponent={<HeaderAuth />}
       languageSwitcherComponent={<LanguageSwitcher currentPageData={currentPageData} />}
+      logo={logo}
+      siteTitle="NRH"
     />
   );
 }

@@ -139,6 +139,8 @@ export interface Media {
   id: string; // uuid
   uploader_id?: string | null;
   file_name: string;
+  file_path: string;
+  alt_text?: string | null;
   object_key: string;
   file_type?: string | null;
   size_bytes?: number | null;
@@ -149,6 +151,13 @@ export interface Media {
   updated_at: string;
   variants?: any[] | null; // JSONB, for storing different image versions
   blur_data_url?: string | null; // For image placeholders
+}
+export interface Logo {
+  id: string; // uuid
+  created_at: string;
+  name: string;
+  media_id: string | null;
+  media?: Media | null;
 }
 
 export type MenuLocation = 'HEADER' | 'FOOTER' | 'SIDEBAR';

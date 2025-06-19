@@ -180,10 +180,10 @@ export async function middleware(request: NextRequest) {
         process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ''
       }`,
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://pub-a31e3f1a87d144898aeb489a8221f92e.r2.dev",
+      "img-src 'self' data: blob: https://nrh-next-cms.e260676f72b0b18314b868f136ed72ae.r2.cloudflarestorage.com https://pub-a31e3f1a87d144898aeb489a8221f92e.r2.dev",
       "font-src 'self'",
       "object-src 'none'",
-      "connect-src 'self' https://ppcppwsfnrptznvbxnsz.supabase.co wss://ppcppwsfnrptznvbxnsz.supabase.co",
+      "connect-src 'self' https://ppcppwsfnrptznvbxnsz.supabase.co wss://ppcppwsfnrptznvbxnsz.supabase.co https://nrh-next-cms.e260676f72b0b18314b868f136ed72ae.r2.cloudflarestorage.com https://pub-a31e3f1a87d144898aeb489a8221f92e.r2.dev",
       "frame-src 'self' https://www.youtube.com",
       "form-action 'self'",
       "base-uri 'self'",

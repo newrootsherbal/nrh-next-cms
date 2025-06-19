@@ -39,11 +39,11 @@ CREATE POLICY "blocks_authenticated_comprehensive_select" ON public.blocks
   USING (
     (
       -- Condition for ADMIN or WRITER: they can read ALL blocks
-      public.get_current_user_role() IN ('ADMIN', 'WRITER')
+      (SELECT public.get_current_user_role()) IN ('ADMIN', 'WRITER')
     ) OR
     (
       -- Condition for USER: they can read blocks of published parents
-      (public.get_current_user_role() = 'USER') AND
+      ((SELECT public.get_current_user_role()) = 'USER') AND
       (
         (page_id IS NOT NULL AND EXISTS(SELECT 1 FROM public.pages p WHERE p.id = blocks.page_id AND p.status = 'published')) OR
         (post_id IS NOT NULL AND EXISTS(SELECT 1 FROM public.posts pt WHERE pt.id = blocks.post_id AND pt.status = 'published' AND (pt.published_at IS NULL OR pt.published_at <= now())))
@@ -60,20 +60,20 @@ COMMENT ON POLICY "blocks_authenticated_comprehensive_select" ON public.blocks I
 CREATE POLICY "blocks_admin_writer_can_insert" ON public.blocks
   FOR INSERT
   TO authenticated
-  WITH CHECK (public.get_current_user_role() IN ('ADMIN', 'WRITER'));
+  WITH CHECK ((SELECT public.get_current_user_role()) IN ('ADMIN', 'WRITER'));
 COMMENT ON POLICY "blocks_admin_writer_can_insert" ON public.blocks IS 'Admins/Writers can insert blocks.';
 
 CREATE POLICY "blocks_admin_writer_can_update" ON public.blocks
   FOR UPDATE
   TO authenticated
-  USING (public.get_current_user_role() IN ('ADMIN', 'WRITER')) -- Who can be targeted by an update
-  WITH CHECK (public.get_current_user_role() IN ('ADMIN', 'WRITER')); -- What rows can be created/modified by them
+  USING ((SELECT public.get_current_user_role()) IN ('ADMIN', 'WRITER')) -- Who can be targeted by an update
+  WITH CHECK ((SELECT public.get_current_user_role()) IN ('ADMIN', 'WRITER')); -- What rows can be created/modified by them
 COMMENT ON POLICY "blocks_admin_writer_can_update" ON public.blocks IS 'Admins/Writers can update blocks.';
 
 CREATE POLICY "blocks_admin_writer_can_delete" ON public.blocks
   FOR DELETE
   TO authenticated
-  USING (public.get_current_user_role() IN ('ADMIN', 'WRITER'));
+  USING ((SELECT public.get_current_user_role()) IN ('ADMIN', 'WRITER'));
 COMMENT ON POLICY "blocks_admin_writer_can_delete" ON public.blocks IS 'Admins/Writers can delete blocks.';
 
 COMMIT;
