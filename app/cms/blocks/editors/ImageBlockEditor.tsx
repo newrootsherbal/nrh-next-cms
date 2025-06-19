@@ -29,30 +29,36 @@ export default function ImageBlockEditor({ content, onChange }: BlockEditorProps
   // Effect to fetch media details (like object_key) if only media_id is present in content
   useEffect(() => {
     if (content.media_id && !content.object_key) {
-      setIsLoadingMediaDetails(true);
       const fetchMediaDetails = async () => {
-        const { data, error } = await supabase
-          .from('media')
-          .select('id, object_key, description, file_name, width, height, blur_data_url') // Fetch needed fields including width, height and blur_data_url
-          .eq('id', content.media_id!)
-          .single();
-        if (data) {
-          onChange({ // Update the parent form's content state
-            media_id: data.id,
-            object_key: data.object_key,
-            alt_text: content.alt_text || data.description || data.file_name,
-            caption: content.caption || "",
-            width: data.width,
-            height: data.height,
-            blur_data_url: data.blur_data_url,
-          });
-          setSelectedMediaObjectKey(data.object_key);
-        } else {
-          console.error("Error fetching selected media details:", error);
-          // Handle case where media_id is invalid or item deleted
-          onChange({ media_id: content.media_id ?? null, object_key: null, alt_text: "Error: Media not found", caption: "", width: null, height: null, blur_data_url: null });
+        setIsLoadingMediaDetails(true);
+        try {
+          const { data, error } = await supabase
+            .from('media')
+            .select('id, object_key, description, file_name, width, height, blur_data_url') // Fetch needed fields including width, height and blur_data_url
+            .eq('id', content.media_id!)
+            .single();
+          if (data) {
+            onChange({ // Update the parent form's content state
+              media_id: data.id,
+              object_key: data.object_key,
+              alt_text: content.alt_text || data.description || data.file_name,
+              caption: content.caption || "",
+              width: data.width,
+              height: data.height,
+              blur_data_url: data.blur_data_url,
+            });
+            setSelectedMediaObjectKey(data.object_key);
+          } else {
+            console.error("Error fetching selected media details:", error);
+            // Handle case where media_id is invalid or item deleted
+            onChange({ media_id: content.media_id ?? null, object_key: null, alt_text: "Error: Media not found", caption: "", width: null, height: null, blur_data_url: null });
+          }
+        } catch (error) {
+            console.error("Fatal error fetching media details:", error);
+            onChange({ media_id: content.media_id ?? null, object_key: null, alt_text: "Error: Could not fetch media", caption: "", width: null, height: null, blur_data_url: null });
+        } finally {
+            setIsLoadingMediaDetails(false);
         }
-        setIsLoadingMediaDetails(false);
       };
       fetchMediaDetails();
     } else if (content.object_key) {
@@ -67,14 +73,24 @@ export default function ImageBlockEditor({ content, onChange }: BlockEditorProps
     if (isModalOpen) {
       const fetchLibrary = async () => {
         setIsLoadingLibrary(true);
-        let query = supabase.from('media').select('*').order('created_at', { ascending: false }).limit(20);
-        if (searchTerm) {
-          query = query.ilike('file_name', `%${searchTerm}%`);
+        try {
+            let query = supabase.from('media').select('*').order('created_at', { ascending: false }).limit(20);
+            if (searchTerm) {
+              query = query.ilike('file_name', `%${searchTerm}%`);
+            }
+            const { data, error } = await query;
+            if (data) {
+                setMediaLibrary(data);
+            } else {
+                console.error("Error fetching media library:", error);
+                setMediaLibrary([]); // Clear library on error
+            }
+        } catch (error) {
+            console.error("Fatal error fetching media library:", error);
+            setMediaLibrary([]); // Clear library on error
+        } finally {
+            setIsLoadingLibrary(false);
         }
-        const { data, error } = await query;
-        if (data) setMediaLibrary(data);
-        else console.error("Error fetching media library:", error);
-        setIsLoadingLibrary(false);
       };
       fetchLibrary();
     }
