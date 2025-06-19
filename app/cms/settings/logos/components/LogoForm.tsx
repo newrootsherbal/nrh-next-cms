@@ -17,7 +17,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Search, CheckCircle, ImageIcon, X as XIcon } from 'lucide-react'
-import { createClient as createBrowserClient } from '@/utils/supabase/client'
+import { useAuth } from '@/context/AuthContext'
 import MediaUploadForm from '@/app/cms/media/components/MediaUploadForm'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
@@ -44,6 +44,7 @@ interface LogoFormProps {
 }
 
 export default function LogoForm({ logo, action }: LogoFormProps) {
+  const { supabase } = useAuth()
   const router = useRouter()
   const [logoDetails, setLogoDetails] = useState<LogoDetails>({
     id: logo?.id,
@@ -61,27 +62,32 @@ export default function LogoForm({ logo, action }: LogoFormProps) {
   const [mediaLibrary, setMediaLibrary] = useState<Media[]>([])
   const [isLoadingMedia, setIsLoadingMedia] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [supabase] = useState(() => createBrowserClient())
-
   useEffect(() => {
     if (isModalOpen) {
       const fetchLibrary = async () => {
+        if (!supabase) return
         setIsLoadingMedia(true)
-        let query = supabase
-          .from('media')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(50)
-        if (searchTerm) {
-          query = query.ilike('file_name', `%${searchTerm}%`)
+        console.log('Executing media library query...')
+        try {
+          let query = supabase
+            .from('media')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(50)
+          if (searchTerm) {
+            query = query.ilike('file_name', `%${searchTerm}%`)
+          }
+          const { data, error } = await query
+          if (data) {
+            setMediaLibrary(data)
+          } else {
+            console.error('Error fetching media library:', error)
+          }
+        } catch (e) {
+          console.error('FATAL: Media library query failed:', e)
+        } finally {
+          setIsLoadingMedia(false)
         }
-        const { data, error } = await query
-        if (data) {
-          setMediaLibrary(data)
-        } else {
-          console.error('Error fetching media library:', error)
-        }
-        setIsLoadingMedia(false)
       }
       fetchLibrary()
     }

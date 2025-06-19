@@ -2,7 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
-import { User, Subscription } from '@supabase/supabase-js';
+import { User, Subscription, SupabaseClient } from '@supabase/supabase-js';
 import { createClient as createSupabaseBrowserClient, getProfileWithRoleClientSide } from '@/utils/supabase/client';
 import { Profile, UserRole } from '@/utils/supabase/types';
 
@@ -16,10 +16,11 @@ interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   role: UserRole | null;
-  isLoading: boolean; 
+  isLoading: boolean;
   isAdmin: boolean;
   isWriter: boolean;
   isUserRole: boolean;
+  supabase: SupabaseClient | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -119,7 +120,8 @@ export const AuthProvider = ({ children, serverUser, serverProfile }: AuthProvid
     isAdmin,
     isWriter,
     isUserRole,
-  }), [user, profile, role, isLoading, isAdmin, isWriter, isUserRole]);
+    supabase,
+  }), [user, profile, role, isLoading, isAdmin, isWriter, isUserRole, supabase]);
 
   return (
     <AuthContext.Provider value={value}>

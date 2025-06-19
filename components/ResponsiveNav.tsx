@@ -1,54 +1,65 @@
 "use client";
 
 import { AnimatedLink } from '@/components/transitions'; // Changed to AnimatedLink
-import React, { useState, useEffect, useMemo } from 'react'; // Added React for JSX namespace
-import { usePathname } from 'next/navigation';
-import type { NavigationItem } from '../utils/supabase/types'; // Relative path from components/
-import { useCurrentContent } from '@/context/CurrentContentContext';
+import React, { useState, useEffect, useMemo } from 'react'
+import { usePathname } from 'next/navigation'
+import type { Logo, NavigationItem } from '../utils/supabase/types' // Relative path from components/
+import { useCurrentContent } from '@/context/CurrentContentContext'
+import Image from 'next/image'
+
+const R2_BASE_URL = process.env.NEXT_PUBLIC_R2_BASE_URL || ''
 
 // Define a type for hierarchical navigation items
 interface HierarchicalNavigationItem extends NavigationItem {
-  children: HierarchicalNavigationItem[];
+  children: HierarchicalNavigationItem[]
 }
 
 // SVG Icon for dropdowns/expandable sections
 const ChevronDownIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" {...props}>
-    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.23 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 20 20"
+    fill="currentColor"
+    {...props}
+  >
+    <path
+      fillRule="evenodd"
+      d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.23 8.27a.75.75 0 01.02-1.06z"
+      clipRule="evenodd"
+    />
   </svg>
-);
+)
 
 // Utility function to build the hierarchy from a flat list
-const buildHierarchy = (items: NavigationItem[]): HierarchicalNavigationItem[] => {
-  const hierarchy: HierarchicalNavigationItem[] = [];
-  const itemMap: { [id: string]: HierarchicalNavigationItem } = {};
+const buildHierarchy = (
+  items: NavigationItem[],
+): HierarchicalNavigationItem[] => {
+  const hierarchy: HierarchicalNavigationItem[] = []
+  const itemMap: { [id: string]: HierarchicalNavigationItem } = {}
 
   items.forEach(item => {
-    itemMap[item.id] = { ...item, children: [] };
-  });
+    itemMap[item.id] = { ...item, children: [] }
+  })
 
   items.forEach(item => {
     if (item.parent_id && itemMap[item.parent_id]) {
-      itemMap[item.parent_id].children.push(itemMap[item.id]);
+      itemMap[item.parent_id].children.push(itemMap[item.id])
     } else {
       // Add to root if no parent_id or parent_id not in map (handles orphaned items gracefully)
-      if (itemMap[item.id]) { // Ensure item itself exists in map
-        hierarchy.push(itemMap[item.id]);
+      if (itemMap[item.id]) {
+        // Ensure item itself exists in map
+        hierarchy.push(itemMap[item.id])
       }
     }
-  });
-  return hierarchy;
-};
-
+  })
+  return hierarchy
+}
 
 interface ResponsiveNavProps {
-  homeLinkHref: string;
-logo?: {
-    file_path: string;
-    alt_text: string;
-  } | null;
-  siteTitle: string;
-  navItems: NavigationItem[];
+  homeLinkHref: string
+  logo?: Logo | null
+  siteTitle: string
+  navItems: NavigationItem[]
   canAccessCms: boolean;
   cmsDashboardLinkHref: string;
   cmsDashboardLinkLabel: string;
@@ -191,11 +202,23 @@ export default function ResponsiveNav({
       <div className="flex justify-between items-center w-full">
         {/* Left side: Home link (visible on desktop and mobile) */}
         <div className="flex items-center">
-          <AnimatedLink href={homeLinkHref} className="flex items-center space-x-2 rtl:space-x-reverse">
-            {logo ? (
-              <img src={logo.file_path} alt={logo.alt_text} className="h-8 w-auto" />
+          <AnimatedLink
+            href={homeLinkHref}
+            className="flex items-center space-x-2 rtl:space-x-reverse"
+          >
+            {logo && logo.media ? (
+              <Image
+                src={`${R2_BASE_URL}/${logo.media.object_key}`}
+                alt={logo.media.alt_text || 'Site logo'}
+                width={logo.media.width || 100}
+                height={logo.media.height || 32}
+                className="h-14 w-auto object-contain"
+                priority
+              />
             ) : (
-              <span className="text-xl font-semibold text-foreground">{siteTitle}</span>
+              <span className="text-xl font-semibold text-foreground">
+                {siteTitle}
+              </span>
             )}
           </AnimatedLink>
           {/* Desktop: Additional Nav items */}

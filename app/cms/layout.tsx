@@ -15,6 +15,9 @@ import { cn } from "@/lib/utils"
 import { signOutAction } from "@/app/actions";
 import { getActiveLogo } from "@/app/cms/settings/logos/actions";
 import { type Logo } from "@/utils/supabase/types";
+import Image from "next/image";
+
+const R2_BASE_URL = process.env.NEXT_PUBLIC_R2_BASE_URL || '';
 
 const LoadingSpinner = () => (
   <div className="flex justify-center items-center h-full w-full py-20">
@@ -223,7 +226,13 @@ export default function CmsLayout({ children }: { children: ReactNode }) {
           <div className="p-4 border-b dark:border-slate-700/60 h-16 flex items-center shrink-0">
             <AnimatedLink href="/cms/dashboard" className="flex items-center gap-2 px-2">
               {logo && logo.media ? (
-                <img src={logo.media.file_path} alt={logo.media.alt_text || 'Logo'} className="h-8 w-auto" />
+                <Image
+                  src={`${R2_BASE_URL}/${logo.media.object_key}`}
+                  alt={logo.media.alt_text || 'Logo'}
+                  width={logo.media.width || 100}
+                  height={logo.media.height || 32}
+                  className="h-12 w-auto object-contain"
+                />
               ) : (
                 <div className="h-8 w-8 rounded-md bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white font-bold">
                   NRH

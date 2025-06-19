@@ -1,4 +1,4 @@
-DROP POLICY IF EXISTS "Allow admin users to insert logos" ON public.logos;
+DROP POLICY IF EXISTS "Allow admins to manage logos" ON public.logos;
 
 CREATE POLICY "Allow admin and writer users to insert logos"
 ON public.logos

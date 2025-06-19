@@ -1,17 +1,18 @@
 // app/cms/media/components/MediaImage.tsx
 "use client";
 
-import React from 'react';
-import Image from 'next/image';
+import React from 'react'
+import Image from 'next/image'
+import { cn } from '@/lib/utils'
 
 interface MediaImageProps {
-  src: string;
-  alt: string;
-  width: number;
-  height: number;
-  blurDataURL?: string | null;
-  className?: string;
-  priority?: boolean; // Optional: to allow prioritizing critical images
+  src: string
+  alt: string
+  width?: number | null
+  height?: number | null
+  blurDataURL?: string | null
+  className?: string
+  priority?: boolean
 }
 
 const MediaImage: React.FC<MediaImageProps> = ({
@@ -21,14 +22,35 @@ const MediaImage: React.FC<MediaImageProps> = ({
   height,
   blurDataURL,
   className,
-  priority = false
+  priority = false,
 }) => {
-  // Basic error handling: if src is missing, or width/height are invalid, render a placeholder or nothing.
-  // next/image will throw an error if width/height are 0 or not numbers.
-  if (!src || !width || !height || width <= 0 || height <= 0) {
-    // You could return a placeholder component here if desired
-    // For now, returning null or a simple div to indicate an issue.
-    return <div className={`bg-muted text-muted-foreground flex items-center justify-center ${className || ''}`} style={{width: width || 100, height: height || 100}}>Invalid Image</div>;
+  const isValid = src && width && height && width > 0 && height > 0
+
+  if (!isValid) {
+    const placeholderWidth = typeof width === 'number' && width > 0 ? width : 100
+    const placeholderHeight =
+      typeof height === 'number' && height > 0 ? height : 100
+
+    const hasSizeClass = className?.includes('w-') || className?.includes('h-')
+
+    return (
+      <div
+        className={cn(
+          'bg-muted text-muted-foreground flex items-center justify-center',
+          className,
+        )}
+        style={
+          !hasSizeClass
+            ? {
+                width: placeholderWidth,
+                height: placeholderHeight,
+              }
+            : {}
+        }
+      >
+        Invalid Image
+      </div>
+    )
   }
 
   return (
@@ -41,11 +63,8 @@ const MediaImage: React.FC<MediaImageProps> = ({
       placeholder={blurDataURL ? 'blur' : 'empty'}
       blurDataURL={blurDataURL || undefined}
       priority={priority}
-      // onError can be used, but it's more for logging or setting a state
-      // It doesn't allow changing the src directly like the old img tag.
-      // For a visual fallback, you'd typically handle it outside or use a wrapper.
     />
-  );
-};
+  )
+}
 
-export default MediaImage;
+export default MediaImage

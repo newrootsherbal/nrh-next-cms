@@ -38,12 +38,8 @@ export default async function Header({ currentLocale, currentPageData }: HeaderP
     // Gracefully handle error, e.g. by leaving headerNavItems empty
   }
 
-  const logoData = await getActiveLogo();
-  const logo = logoData && logoData.media ? {
-    file_path: logoData.media.file_path,
-    alt_text: logoData.media.alt_text || 'Site logo',
-  } : null;
-  
+  const logoData = await getActiveLogo()
+
   return (
     <ResponsiveNav
       homeLinkHref="/"
@@ -52,9 +48,11 @@ export default async function Header({ currentLocale, currentPageData }: HeaderP
       cmsDashboardLinkHref="/cms/dashboard"
       cmsDashboardLinkLabel="CMS Dashboard"
       headerAuthComponent={<HeaderAuth />}
-      languageSwitcherComponent={<LanguageSwitcher currentPageData={currentPageData} />}
-      logo={logo}
+      languageSwitcherComponent={
+        <LanguageSwitcher currentPageData={currentPageData} />
+      }
+      logo={logoData}
       siteTitle="NRH"
     />
-  );
+  )
 }

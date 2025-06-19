@@ -20,6 +20,7 @@ import {
 import { deleteLogo, getLogos } from './actions'
 import MediaImage from '@/app/cms/media/components/MediaImage'
 
+const R2_BASE_URL = process.env.NEXT_PUBLIC_R2_BASE_URL || ''
 
 export default async function CmsLogosListPage() {
   const logos = await getLogos()
@@ -62,16 +63,16 @@ export default async function CmsLogosListPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {logos.map((logo) => (
+              {logos.map(logo => (
                 <TableRow key={logo.id}>
                   <TableCell>
                     {logo.media ? (
                       <MediaImage
-                        src={logo.media.file_path}
+                        src={`${R2_BASE_URL}/${logo.media.object_key}`}
                         alt={logo.media.alt_text || logo.name}
                         width={logo.media.width || 100}
                         height={logo.media.height || 100}
-                        className="w-16 h-16 object-contain"
+                        className="max-w-16 max-h-16 object-contain"
                       />
                     ) : (
                       <div className="w-16 h-16 bg-muted rounded-sm flex items-center justify-center">
