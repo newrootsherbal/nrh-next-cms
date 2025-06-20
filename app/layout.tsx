@@ -18,6 +18,7 @@ import { getCopyrightSettings } from '@/app/cms/settings/copyright/actions';
 //   { ssr: false }
 // ); // Moved into DynamicPageTransitionWrapper
 import type { Database } from "@/utils/supabase/types"; // Import Language type
+import type { Metadata } from 'next';
 
 type Language = Database['public']['Tables']['languages']['Row'];
 
@@ -43,7 +44,7 @@ const DEFAULT_LOCALE_FOR_LAYOUT = 'en';
 
 // Removed DynamicPageTransitionProvider and DynamicClientOnlyTransitionOrchestrator dynamic imports
 
-export const metadata = {
+export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
   title: 'My Ultra-Fast CMS',
   description: 'A block-based TypeScript CMS with Next.js and Supabase',
