@@ -3,8 +3,11 @@
 import { AnimatedLink } from '@/components/transitions'; // Changed to AnimatedLink
 import React, { useState, useEffect, useMemo } from 'react'
 import { usePathname } from 'next/navigation'
-import type { Logo, NavigationItem } from '../utils/supabase/types' // Relative path from components/
+import type { Database } from '../utils/supabase/types' // Relative path from components/
 import { useCurrentContent } from '@/context/CurrentContentContext'
+
+type Logo = Database['public']['Tables']['logos']['Row'] & { media: (Database['public']['Tables']['media']['Row'] & { alt_text: string | null }) | null };
+type NavigationItem = Database['public']['Tables']['navigation_items']['Row'];
 import Image from 'next/image'
 
 const R2_BASE_URL = process.env.NEXT_PUBLIC_R2_BASE_URL || ''

@@ -2,8 +2,16 @@
 import { createClient } from "@/utils/supabase/server";
 import UserForm from "../../components/UserForm";
 import { updateUserProfile } from "../../actions";
-import type { Profile, AuthUser } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import { notFound } from "next/navigation";
+
+type Profile = Database['public']['Tables']['profiles']['Row'];
+type AuthUser = {
+    id: string;
+    email: string | undefined;
+    created_at: string | undefined;
+    last_sign_in_at: string | undefined;
+};
 
 async function getUserAndProfileData(userId: string): Promise<{ authUser: AuthUser; profile: Profile | null } | null> {
   const supabase = createClient();

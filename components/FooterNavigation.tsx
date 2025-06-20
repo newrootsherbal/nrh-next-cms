@@ -1,7 +1,9 @@
 // components/FooterNavigation.tsx
 import { AnimatedLink } from '@/components/transitions'; // Changed to AnimatedLink
-import type { NavigationItem } from '@/utils/supabase/types';
+import type { Database } from '@/utils/supabase/types';
 import { getNavigationMenu } from '@/app/cms/navigation/actions';
+
+type NavigationItem = Database['public']['Tables']['navigation_items']['Row'];
 import { headers } from 'next/headers';
 
 const DEFAULT_LOCALE_FOR_FOOTER = 'en'; // Define a default locale

@@ -6,7 +6,8 @@
     "analyze": "cross-env ANALYZE=true next build",
     "start": "next start",
     "db:backfill:images": "tsx scripts/backfill-image-meta.ts",
-    "db:backup": "node scripts/backup.js"
+    "db:backup": "node scripts/backup.js",
+    "db:types": "npx supabase gen types typescript --project-id ppcppwsfnrptznvbxnsz --schema public > utils/supabase/types.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.810.0",

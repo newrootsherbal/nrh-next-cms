@@ -4,7 +4,9 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import type { Language } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
+
+type Language = Database["public"]["Tables"]["languages"]["Row"];
 
 // Helper to check admin role
 async function verifyAdmin(supabase: ReturnType<typeof createClient>): Promise<boolean> {
@@ -32,6 +34,21 @@ export async function getLanguages(): Promise<{ data: Language[] | null; error: 
   }
   return { data, error: null };
 }
+export async function getActiveLanguagesServerSide(): Promise<Language[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("languages")
+    .select("*")
+    .eq("is_active", true) // Assuming there's an is_active column
+    .order("name", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching active languages:", error);
+    throw new Error("Failed to fetch active languages.");
+  }
+  
+  return data || [];
+}
 export async function getLanguageByCode(code: string): Promise<{ data: Language | null; error: string | null; }> {
   const supabase = createClient();
   const { data, error } = await supabase
@@ -51,6 +68,7 @@ type UpsertLanguagePayload = {
   code: string;
   name: string;
   is_default: boolean;
+  is_active: boolean;
 };
 
 export async function createLanguage(formData: FormData) {
@@ -64,6 +82,7 @@ export async function createLanguage(formData: FormData) {
     code: formData.get("code") as string,
     name: formData.get("name") as string,
     is_default: formData.get("is_default") === "on", // Checkbox value
+    is_active: formData.get("is_active") === "on",
   };
 
   if (!rawFormData.code || !rawFormData.name) {
@@ -135,6 +154,7 @@ export async function updateLanguage(languageId: number, formData: FormData) {
     code: formData.get("code") as string,
     name: formData.get("name") as string,
     is_default: formData.get("is_default") === "on",
+    is_active: formData.get("is_active") === "on",
   };
 
   if (!rawFormData.code || !rawFormData.name) {

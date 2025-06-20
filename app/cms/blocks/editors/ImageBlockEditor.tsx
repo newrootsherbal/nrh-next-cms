@@ -6,8 +6,19 @@ import Image from 'next/image';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import type { ImageBlockContent, Media } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import { createClient as createBrowserClient } from '@/utils/supabase/client';
+
+type Media = Database['public']['Tables']['media']['Row'];
+export type ImageBlockContent = {
+    media_id: string | null;
+    object_key: string | null;
+    alt_text: string | null;
+    caption: string | null;
+    width: number | null;
+    height: number | null;
+    blur_data_url: string | null;
+};
 import { ImageIcon, CheckCircle, Search, X as XIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import MediaUploadForm from '@/app/cms/media/components/MediaUploadForm'; // Import the upload form

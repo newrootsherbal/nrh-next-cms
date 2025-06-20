@@ -1,7 +1,10 @@
 // components/blocks/PostsGridBlock.tsx
 import React from 'react';
-import type { Block, PostWithMediaDimensions } from '../../utils/supabase/types';
+import type { Database } from '../../utils/supabase/types';
 import { createClient } from '../../utils/supabase/server'; // Added import
+import type { PostWithMediaDimensions } from './types';
+
+type Block = Database['public']['Tables']['blocks']['Row'];
 // import Link from 'next/link'; // Unused, PostsGridClient handles links
 import PostsGridClient from './PostsGridClient';
 import { fetchPaginatedPublishedPosts } from '../../app/actions/postActions'; // fetchInitialPublishedPosts removed
@@ -37,10 +40,10 @@ const PostsGridBlock: React.FC<PostsGridBlockProps> = async ({ block, languageId
     console.error("Error fetching initial posts directly in PostsGridBlock:", queryError);
     postsError = queryError.message;
   } else {
-    initialPosts = postsData?.map(p => {
+    initialPosts = (postsData as any)?.map((p: any) => {
       // feature_media_object is an object here, not an array, due to the query structure media!feature_image_id(object_key, width, height)
       // Cast to 'unknown' then to the expected single object type to satisfy TypeScript, reflecting runtime reality.
-      const mediaObject = p.feature_media_object as unknown as { object_key: string; width?: number | null; height?: number | null } | null;
+      const mediaObject = p.feature_media_object as unknown as { object_key: string; width?: number | null; height?: number | null; blur_data_url?: string | null } | null;
       const imageUrl = mediaObject?.object_key
         ? `${process.env.NEXT_PUBLIC_R2_BASE_URL}/${mediaObject.object_key}`
         : null;
@@ -51,6 +54,7 @@ const PostsGridBlock: React.FC<PostsGridBlockProps> = async ({ block, languageId
         feature_image_url: imageUrl,
         feature_image_width: mediaObject?.width || null,
         feature_image_height: mediaObject?.height || null,
+        blur_data_url: mediaObject?.blur_data_url || null,
       };
     }) as PostWithMediaDimensions[] || [];
     totalCount = count || 0;

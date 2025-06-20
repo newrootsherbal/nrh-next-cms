@@ -4,8 +4,10 @@
 import React from 'react';
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Trash2 } from "lucide-react";
-import type { Post } from "@/utils/supabase/types"; // Assuming Post type is relevant, or just use postId
+import type { Database } from "@/utils/supabase/types"; // Assuming Post type is relevant, or just use postId
 import { deletePost } from "../actions"; // Import the server action
+
+type Post = Database['public']['Tables']['posts']['Row'];
 
 interface DeletePostButtonClientProps {
   postId: number;

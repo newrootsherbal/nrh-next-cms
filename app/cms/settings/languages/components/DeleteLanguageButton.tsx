@@ -3,8 +3,10 @@
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Trash2, ShieldAlert } from "lucide-react";
 import { deleteLanguage } from "../actions"; // Server action
-import type { Language } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import { useTransition } from 'react';
+
+type Language = Database['public']['Tables']['languages']['Row'];
 
 interface DeleteLanguageClientButtonProps {
   language: Language;

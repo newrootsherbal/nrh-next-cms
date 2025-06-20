@@ -12,11 +12,14 @@ import { CurrentContentProvider } from "@/context/CurrentContentContext"; // Imp
 // import { PageTransitionProvider } from '@/components/transitions/PageTransitionProvider'; // Will be dynamically imported
 // import { ClientOnlyTransitionOrchestrator } from '@/components/transitions/ClientOnlyTransitionOrchestrator'; // Will be dynamically imported
 import { getActiveLanguagesServerSide } from "@/utils/supabase/server"; // Import server-side language fetcher
+import { getCopyrightSettings } from '@/app/cms/settings/copyright/actions';
 // const DynamicTransitionWrapper = dynamic(() =>
 //   import('@/components/transitions').then((mod) => mod.TransitionWrapper),
 //   { ssr: false }
 // ); // Moved into DynamicPageTransitionWrapper
-import type { Language } from "@/utils/supabase/types"; // Import Language type
+import type { Database } from "@/utils/supabase/types"; // Import Language type
+
+type Language = Database['public']['Tables']['languages']['Row'];
 
 // const DynamicPageTransitionWrapperClient = dynamic(() =>
 //   import('@/components/transitions/DynamicPageTransitionWrapper').then((mod) => mod.DynamicPageTransitionWrapper),
@@ -91,7 +94,10 @@ export default async function RootLayout({
     // Fallback to default locale if languages can't be fetched
     serverDeterminedLocale = DEFAULT_LOCALE_FOR_LAYOUT;
   }
-
+ 
+  const copyrightSettings = await getCopyrightSettings();
+  const copyrightTemplate = copyrightSettings[serverDeterminedLocale] || copyrightSettings['en'] || '© {year} My Ultra-Fast CMS. All rights reserved.';
+  const copyrightText = copyrightTemplate.replace('{year}', new Date().getFullYear().toString());
 
   const nonce = headerList.get('x-nonce') || '';
   return (
@@ -136,7 +142,7 @@ export default async function RootLayout({
                         <div className="mx-auto flex flex-col items-center justify-center gap-6 text-center text-xs">
                           <FooterNavigation />
                           <div className="flex flex-row items-center gap-2">
-                            <p className="text-muted-foreground">© {new Date().getFullYear()} My Ultra-Fast CMS. All rights reserved.</p>
+                            <p className="text-muted-foreground">{copyrightText}</p>
                             <DynamicThemeSwitcher />
                           </div>
                         </div>

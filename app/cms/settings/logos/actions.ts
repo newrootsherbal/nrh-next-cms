@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import type { Logo } from './types'
 
 export async function createLogo(payload: {
   name: string
@@ -57,7 +58,6 @@ export async function deleteLogo(id: string) {
 
   revalidatePath('/cms/settings/logos')
 }
-import { type Logo } from '@/utils/supabase/types'
 
 export async function getLogos() {
   const supabase = createClient()

@@ -5,8 +5,15 @@ import React from 'react';
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'; // Import base client
 import { notFound } from "next/navigation";
 import type { Metadata, ResolvingMetadata } from 'next';
-import type { Post as PostType, Block as BlockType, Language } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import PostClientContent from "./PostClientContent";
+
+type PostType = Database['public']['Tables']['posts']['Row'] & {
+  feature_image_url?: string;
+  blocks: BlockType[];
+};
+type BlockType = Database['public']['Tables']['blocks']['Row'];
+type Language = Database['public']['Tables']['languages']['Row'];
 import { getPostDataBySlug } from "./page.utils";
 import BlockRenderer from "../../../components/BlockRenderer";
 import { getSsgSupabaseClient } from "@/utils/supabase/ssg-client"; // Correct import

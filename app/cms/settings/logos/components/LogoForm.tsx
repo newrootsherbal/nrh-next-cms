@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import type { Logo, Media } from '@/utils/supabase/types'
+import type { Database } from '@/utils/supabase/types'
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,8 @@ import MediaUploadForm from '@/app/cms/media/components/MediaUploadForm'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 
+type Logo = Database['public']['Tables']['logos']['Row'];
+type Media = Database['public']['Tables']['media']['Row'];
 const R2_BASE_URL = process.env.NEXT_PUBLIC_R2_BASE_URL || ''
 
 interface LogoDetails {

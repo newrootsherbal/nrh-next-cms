@@ -5,8 +5,14 @@ import React from 'react'; // Added React import for JSX
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { ButtonBlockContent } from "@/utils/supabase/types";
 import { BlockEditorProps } from '../components/BlockEditorModal';
+
+export type ButtonBlockContent = {
+    text?: string;
+    url?: string;
+    variant?: 'default' | 'outline' | 'secondary' | 'ghost' | 'link';
+    size?: 'default' | 'sm' | 'lg';
+};
 
 const buttonVariants: ButtonBlockContent['variant'][] = ['default', 'outline', 'secondary', 'ghost', 'link'];
 const buttonSizes: ButtonBlockContent['size'][] = ['default', 'sm', 'lg'];

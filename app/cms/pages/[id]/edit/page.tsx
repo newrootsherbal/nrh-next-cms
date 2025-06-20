@@ -4,8 +4,12 @@ import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/utils/supabase/server";
 import PageForm from "../../components/PageForm";
 import { updatePage } from "../../actions";
-import type { Page, Block, Language } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import { notFound, redirect } from "next/navigation";
+
+type Page = Database['public']['Tables']['pages']['Row'];
+type Block = Database['public']['Tables']['blocks']['Row'];
+type Language = Database['public']['Tables']['languages']['Row'];
 import BlockEditorArea from "@/app/cms/blocks/components/BlockEditorArea";
 import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
 import { Button } from "@/components/ui/button";

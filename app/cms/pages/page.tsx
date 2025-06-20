@@ -21,8 +21,11 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 // Server action `deletePage` is used by DeletePageButtonClient
-import type { Page, Language } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import { getActiveLanguagesServerSide } from "@/utils/supabase/server";
+
+type Page = Database['public']['Tables']['pages']['Row'];
+type Language = Database['public']['Tables']['languages']['Row'];
 import LanguageFilterSelect from "@/app/cms/components/LanguageFilterSelect";
 import DeletePageButtonClient from "./components/DeletePageButtonClient"; // Import the client component
 

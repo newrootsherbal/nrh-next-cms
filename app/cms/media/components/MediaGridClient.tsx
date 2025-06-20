@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState, useTransition, useEffect } from "react";
-import type { Media } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import { Button } from "@/components/ui/button";
+
+type Media = Database['public']['Tables']['media']['Row'];
 import { Checkbox } from "@/components/ui/checkbox";
 import { Trash2, Edit3, MoreHorizontal, FileText, Image as ImageIconLucideHost, AlertCircle } from "lucide-react";
 import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink

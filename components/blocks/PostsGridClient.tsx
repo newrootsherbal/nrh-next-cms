@@ -2,8 +2,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import type { PostWithMediaDimensions } from '../../utils/supabase/types';
+import type { Database } from '../../utils/supabase/types';
 import { AnimatedLink } from '@/components/transitions'; // Changed to AnimatedLink
+
+type PostWithMediaDimensions = Database['public']['Tables']['posts']['Row'] & {
+    feature_image_url: string | null;
+    feature_image_width: number | null;
+    feature_image_height: number | null;
+    blur_data_url: string | null;
+};
 import Image from 'next/image';
 import { Button } from '../ui/button'; // Adjusted path
 import PostCardSkeleton from './PostCardSkeleton'; // Added import

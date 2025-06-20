@@ -4,8 +4,10 @@
 import React, { useState, useTransition, useEffect, ComponentType, useCallback, useRef } from "react";
 import dynamic from 'next/dynamic';
 import debounce from 'lodash.debounce';
-import type { Block, BlockType } from "@/utils/supabase/types";
-import { availableBlockTypes } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
+import { availableBlockTypes, type BlockType } from "@/lib/blocks/blockRegistry";
+
+type Block = Database["public"]["Tables"]["blocks"]["Row"];
 import { getBlockDefinition, type SectionBlockContent } from "@/lib/blocks/blockRegistry";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
@@ -193,7 +195,7 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
       }
 
       const parentSectionBlock = updatedBlocks[parentSectionBlockIndex];
-      const sectionContent = parentSectionBlock.content as SectionBlockContent;
+      const sectionContent = parentSectionBlock.content as unknown as SectionBlockContent;
 
       if (!sectionContent.column_blocks || !sectionContent.column_blocks[columnIndex]) {
         console.error("Column blocks or specific column not found in parent section block:", sectionContent);
@@ -210,7 +212,7 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
       }
 
       copiedColumnBlocks[columnIndex][blockIndexInColumn].content = tempNestedBlockContent;
-      parentSectionBlock.content = { ...sectionContent, column_blocks: copiedColumnBlocks };
+      parentSectionBlock.content = { ...sectionContent, column_blocks: copiedColumnBlocks } as any;
 
       const newBlocksState = updatedBlocks.map(b =>
         b.id === parentSectionBlock.id ? parentSectionBlock : b
@@ -322,7 +324,7 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
     const parentSectionBlock = blocks.find(b => String(b.id) === parentBlockIdStr && b.block_type === 'section');
 
     if (parentSectionBlock) {
-      const sectionContent = parentSectionBlock.content as SectionBlockContent;
+      const sectionContent = parentSectionBlock.content as unknown as SectionBlockContent;
       if (sectionContent.column_blocks &&
           sectionContent.column_blocks[columnIndex] &&
           sectionContent.column_blocks[columnIndex][blockIndexInColumn]) {

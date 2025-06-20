@@ -1,6 +1,14 @@
 import React from "react";
 import PostsGridBlock from "@/components/blocks/PostsGridBlock";
-import type { PostsGridBlockContent, Block } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
+
+type Block = Database['public']['Tables']['blocks']['Row'];
+type PostsGridBlockContent = {
+    title?: string;
+    postsPerPage?: number;
+    columns?: number;
+    showPagination?: boolean;
+};
 
 interface PostsGridBlockRendererProps {
   content: PostsGridBlockContent;

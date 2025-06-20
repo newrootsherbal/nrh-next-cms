@@ -2,8 +2,10 @@
 'use client'; // This directive applies to the rest of the file.
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { Language } from '@/utils/supabase/types';
+import { Database } from '@/utils/supabase/types';
 import { getActiveLanguagesClientSide } from '@/utils/supabase/client';
+
+type Language = Database['public']['Tables']['languages']['Row'];
 import Cookies from 'js-cookie';
 import { useRouter, usePathname } from 'next/navigation'; // Import usePathname
 
@@ -78,7 +80,7 @@ export const LanguageProvider = ({
             languagesToUse = fetchedLangs;
             setAvailableLanguages(fetchedLangs);
             defaultLangToUse = fetchedLangs.find(lang => lang.is_default) || fetchedLangs[0] || null;
-            setDefaultLanguage(defaultLangToUse);
+            setDefaultLanguage(defaultLangToUse ?? null);
           }
         } catch (error) {
           console.error("LanguageContext: Error fetching languages client-side", error);

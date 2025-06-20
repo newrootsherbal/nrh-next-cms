@@ -4,14 +4,24 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from "@/utils/supabase/client";
-import type { Post as PostType, Block as BlockType, Language, ImageBlockContent, Media } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import { useLanguage } from '@/context/LanguageContext';
+
+type PostType = Database['public']['Tables']['posts']['Row'];
+type BlockType = Database['public']['Tables']['blocks']['Row'];
+type Language = Database['public']['Tables']['languages']['Row'];
+type Media = Database['public']['Tables']['media']['Row'];
+
+export type ImageBlockContent = {
+  media_id: string | null;
+  object_key?: string;
+};
 import { useCurrentContent } from '@/context/CurrentContentContext';
 import { AnimatedLink } from '@/components/transitions'; // Changed to AnimatedLink
 import { usePageTransition } from '@/components/transitions'; // Added for programmatic nav
 
 interface PostClientContentProps {
-  initialPostData: (PostType & { blocks: BlockType[]; language_code: string; language_id: number; translation_group_id: string; }) | null;
+  initialPostData: (PostType & { blocks: BlockType[]; language_code: string; language_id: number; translation_group_id: string; feature_image_url?: string | null; }) | null;
   currentSlug: string; // The slug of the currently viewed page/post
   children: React.ReactNode;
   translatedSlugs?: { [key: string]: string };

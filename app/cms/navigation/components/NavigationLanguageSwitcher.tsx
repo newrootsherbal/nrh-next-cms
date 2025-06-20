@@ -6,7 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import { AnimatedLink } from '@/components/transitions'; // Changed to AnimatedLink
 import { Button } from '@/components/ui/button';
 import { Languages as LanguagesIcon, CheckCircle, PlusCircle } from 'lucide-react'; // Changed icon name
-import type { Language, NavigationItem } from '@/utils/supabase/types';
+import type { Database } from '@/utils/supabase/types';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from '@/lib/utils';
 
+type Language = Database['public']['Tables']['languages']['Row'];
+type NavigationItem = Database['public']['Tables']['navigation_items']['Row'];
 interface NavigationLanguageSwitcherProps {
   currentItem: NavigationItem; // Current navigation item being edited
   allSiteLanguages: Language[];

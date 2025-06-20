@@ -1,7 +1,10 @@
 // middleware.ts
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import type { Profile, UserRole } from '@/utils/supabase/types';
+import type { Database } from "@/utils/supabase/types";
+
+type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+type UserRole = Database["public"]["Enums"]["user_role"];
 
 const LANGUAGE_COOKIE_KEY = 'NEXT_USER_LOCALE';
 const DEFAULT_LOCALE = 'en';
@@ -176,7 +179,7 @@ export async function middleware(request: NextRequest) {
   if (nonceValue) {
     const csp = [
       "default-src 'self'",
-      `script-src 'self' 'nonce-${nonceValue}' 'strict-dynamic' ${
+      `script-src 'self' 'nonce-${nonceValue}' 'unsafe-inline' ${
         process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ''
       }`,
       "style-src 'self' 'unsafe-inline'",

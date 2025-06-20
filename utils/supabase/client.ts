@@ -1,7 +1,10 @@
 // utils/supabase/client.ts
 import { createBrowserClient } from '@supabase/ssr';
 import { SupabaseClient } from '@supabase/supabase-js'; // Correct import for the type
-import { Profile, Language } from './types'; // Import custom types
+import { Database } from './types'; // Import custom types
+
+type Profile = Database['public']['Tables']['profiles']['Row'];
+type Language = Database['public']['Tables']['languages']['Row'];
 
 // This is the standard client creation function from the Vercel example
 export const createClient = () => {

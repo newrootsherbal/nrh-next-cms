@@ -11,8 +11,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from '@/components/ui/label'; // Optional, if you want a label
-import type { Language } from '@/utils/supabase/types';
+import type { Database } from '@/utils/supabase/types';
 import { Languages as LanguageIcon } from 'lucide-react';
+
+type Language = Database['public']['Tables']['languages']['Row'];
 
 interface LanguageFilterSelectProps {
   allLanguages: Language[];

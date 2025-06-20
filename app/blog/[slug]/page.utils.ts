@@ -1,6 +1,15 @@
 // app/blog/[slug]/page.utils.ts
 import { createClient } from "@/utils/supabase/server";
-import type { Post as PostType, Block as BlockType, ImageBlockContent, Language } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
+
+type PostType = Database['public']['Tables']['posts']['Row'];
+type BlockType = Database['public']['Tables']['blocks']['Row'];
+
+// Define a more specific type for the content of an Image Block
+export type ImageBlockContent = {
+  media_id: string | null;
+  object_key?: string; // Optional because it's added later
+};
 
 // Fetches post data by its language-specific slug.
 // Includes logic to fetch object_key for image blocks.
@@ -44,7 +53,7 @@ export async function getPostDataBySlug(slug: string): Promise<(PostType & { blo
   let blocksWithMediaData: BlockType[] = postData.blocks || [];
   if (blocksWithMediaData.length > 0) {
     const imageBlockMediaIds = blocksWithMediaData
-      .filter(block => block.block_type === 'image' && block.content?.media_id)
+      .filter(block => block.block_type === 'image' && (block.content as ImageBlockContent)?.media_id)
       .map(block => (block.content as ImageBlockContent).media_id)
       .filter(id => id !== null && typeof id === 'string') as string[];
 
@@ -56,7 +65,7 @@ export async function getPostDataBySlug(slug: string): Promise<(PostType & { blo
       } else if (mediaItems) {
         const mediaMap = new Map(mediaItems.map(m => [m.id, m.object_key]));
         blocksWithMediaData = blocksWithMediaData.map(block => {
-          if (block.block_type === 'image' && block.content?.media_id) {
+          if (block.block_type === 'image' && (block.content as ImageBlockContent)?.media_id) {
             const currentContent = block.content as ImageBlockContent;
             const objectKey = mediaMap.get(currentContent.media_id!);
             if (objectKey) {

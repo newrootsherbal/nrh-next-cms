@@ -33,8 +33,10 @@ import {
 } from "lucide-react";
 import { createClient as createBrowserClient } from "@/utils/supabase/client";
 import type { SectionBlockContent } from "@/lib/blocks/blockRegistry";
-import type { Media } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import MediaUploadForm from "@/app/cms/media/components/MediaUploadForm";
+
+type Media = Database['public']['Tables']['media']['Row'];
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import { CustomSelectWithInput } from "@/components/ui/CustomSelectWithInput";
 import { ColorPicker } from "@/components/ui/ColorPicker";

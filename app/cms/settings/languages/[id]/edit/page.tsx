@@ -3,8 +3,10 @@ import React from "react";
 import { createClient } from "@/utils/supabase/server";
 import LanguageForm from "../../components/LanguageForm";
 import { updateLanguage } from "../../actions";
-import type { Language } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import { notFound } from "next/navigation";
+
+type Language = Database['public']['Tables']['languages']['Row'];
 import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";

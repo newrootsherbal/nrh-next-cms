@@ -2,11 +2,13 @@
 "use client";
 
 import React, { useState, Suspense, useRef, useMemo, lazy, LazyExoticComponent, ComponentType } from 'react';
-import type { Block } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import PostsGridBlockEditor from '../editors/PostsGridBlockEditor';
+
+type Block = Database['public']['Tables']['blocks']['Row'];
 import { Button } from "@/components/ui/button";
 import { GripVertical, Trash2, Edit2 } from "lucide-react";
-import { getBlockDefinition, blockRegistry } from "@/lib/blocks/blockRegistry";
+import { getBlockDefinition, blockRegistry, BlockType } from "@/lib/blocks/blockRegistry";
 import { BlockEditorModal } from './BlockEditorModal';
 import { cn } from '@/lib/utils';
 
@@ -42,7 +44,7 @@ export default function EditableBlock({
 
   const SectionEditor = useMemo(() => {
     if (block.block_type === 'section' || block.block_type === 'hero') {
-      const editorFilename = blockRegistry[block.block_type]?.editorComponentFilename;
+      const editorFilename = blockRegistry[block.block_type as BlockType]?.editorComponentFilename;
       if (editorFilename) {
         return lazy(() => import(`../editors/${editorFilename}`));
       }
@@ -56,7 +58,7 @@ export default function EditableBlock({
     if (block.block_type === 'section' || block.block_type === 'hero') {
       setIsConfigPanelOpen(prev => !prev);
     } else {
-      const editorFilename = blockRegistry[block.block_type]?.editorComponentFilename;
+      const editorFilename = blockRegistry[block.block_type as BlockType]?.editorComponentFilename;
       if (block.block_type === 'posts_grid') {
         const LazifiedPostsGridEditor = lazy(() => Promise.resolve({ default: PostsGridBlockEditor }));
         setLazyEditor(() => LazifiedPostsGridEditor);

@@ -4,8 +4,10 @@
 import React from 'react';
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Trash2 } from "lucide-react";
-import type { Media } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import { deleteMediaItem } from "../actions"; // Import the server action
+
+type Media = Database['public']['Tables']['media']['Row'];
 
 interface DeleteMediaButtonClientProps {
   mediaItem: Media;

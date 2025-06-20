@@ -3,8 +3,10 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
-import type { Media } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import { encodedRedirect } from "@/utils/utils"; // Ensure this is correctly imported
+
+type Media = Database['public']['Tables']['media']['Row'];
 
 // --- recordMediaUpload and updateMediaItem functions to be updated similarly ---
 
@@ -91,7 +93,7 @@ export async function recordMediaUpload(payload: {
     description: payload.description || null,
     width: primaryVariant.width,
     height: primaryVariant.height,
-    variants: allVariantsToStore, // Store all variants including the original
+    variants: allVariantsToStore as any, // Store all variants including the original
     blur_data_url: payload.blurDataUrl || null, // Store if provided
     // Ensure all other required fields for 'Media' type are present or nullable
   };

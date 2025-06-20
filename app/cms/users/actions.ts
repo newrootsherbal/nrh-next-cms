@@ -4,7 +4,10 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import type { Profile, UserRole } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
+
+type Profile = Database['public']['Tables']['profiles']['Row'];
+type UserRole = Database['public']['Enums']['user_role'];
 
 // Helper to check admin role using the server client
 async function verifyAdmin(supabase: ReturnType<typeof createClient>): Promise<{ isAdmin: boolean; error?: string; userId?: string }> {

@@ -14,8 +14,10 @@ import {
   DialogClose,
 } from '../../../../components/ui/dialog';
 import { Input } from '../../../../components/ui/input';
-import type { Media } from '../../../../utils/supabase/types';
+import type { Database } from '../../../../utils/supabase/types';
 import { createClient as createBrowserClient } from '../../../../utils/supabase/client';
+
+type Media = Database['public']['Tables']['media']['Row'];
 
 const R2_BASE_URL = process.env.NEXT_PUBLIC_R2_BASE_URL || "";
 

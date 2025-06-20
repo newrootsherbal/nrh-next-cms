@@ -4,8 +4,10 @@ import { createClient } from "@/utils/supabase/server";
 // import Link from "next/link"; // Unused, MediaGridClient handles item links
 import { Button } from "@/components/ui/button";
 import { Image as ImageIconLucideHost } from "lucide-react"; // Removed unused icons, kept ImageIconLucideHost for empty state
-import type { Media } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 // DropdownMenu related imports are now handled within MediaGridClient or its sub-components if needed individually.
+
+type Media = Database['public']['Tables']['media']['Row'];
 // If page.tsx itself doesn't directly use DropdownMenu, these can be removed from here.
 // For now, assuming MediaGridClient handles its own dropdowns.
 import MediaUploadForm from "./components/MediaUploadForm";

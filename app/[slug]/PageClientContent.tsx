@@ -4,11 +4,14 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation'; // For navigation on lang switch
 import { createClient } from "@/utils/supabase/client";
-import type { Page as PageType, Block as BlockType, Language, ImageBlockContent, Media } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import { useLanguage } from '@/context/LanguageContext';
 import { useCurrentContent } from '@/context/CurrentContentContext';
 import { AnimatedLink } from '@/components/transitions'; // Changed to AnimatedLink
 import { usePageTransition } from '@/components/transitions'; // Added for programmatic nav
+
+type PageType = Database['public']['Tables']['pages']['Row'];
+type BlockType = Database['public']['Tables']['blocks']['Row'];
 
 interface PageClientContentProps {
   initialPageData: (PageType & { blocks: BlockType[]; language_code: string; language_id: number; translation_group_id: string; }) | null;

@@ -4,8 +4,10 @@
 import React from 'react';
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { Block } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import { GripVertical } from "lucide-react";
+
+type Block = Database['public']['Tables']['blocks']['Row'];
 
 import EditableBlock, { EditableBlockProps } from "./EditableBlock"; // Import the actual component and its props
 

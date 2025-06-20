@@ -4,7 +4,10 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { User, Subscription, SupabaseClient } from '@supabase/supabase-js';
 import { createClient as createSupabaseBrowserClient, getProfileWithRoleClientSide } from '@/utils/supabase/client';
-import { Profile, UserRole } from '@/utils/supabase/types';
+import { Database } from '@/utils/supabase/types';
+
+type Profile = Database['public']['Tables']['profiles']['Row'];
+type UserRole = Database['public']['Enums']['user_role'];
 
 interface AuthProviderProps {
   children: ReactNode;

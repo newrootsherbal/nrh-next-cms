@@ -34,9 +34,12 @@ import {
 } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
 import { HierarchicalNavItem, SortableNavItem } from './SortableNavItem';
-import type { NavigationItem, MenuLocation } from '@/utils/supabase/types';
+import type { Database } from '@/utils/supabase/types';
 import { updateNavigationStructureBatch } from '../actions';
 import { GripVertical, MoreHorizontal } from 'lucide-react';
+
+type NavigationItem = Database['public']['Tables']['navigation_items']['Row'];
+type MenuLocation = Database['public']['Enums']['menu_location'];
 import { Badge } from '@/components/ui/badge';
 import { createPortal } from 'react-dom';
 

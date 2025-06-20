@@ -7,7 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox'; // Assuming shadcn/ui Checkbox
-import type { Language } from '@/utils/supabase/types';
+import type { Database } from "@/utils/supabase/types";
+
+type Language = Database["public"]["Tables"]["languages"]["Row"];
 import { useAuth } from '@/context/AuthContext';
 
 interface LanguageFormProps {
@@ -33,6 +35,7 @@ export default function LanguageForm({
   const [code, setCode] = useState(language?.code || "");
   const [name, setName] = useState(language?.name || "");
   const [isDefault, setIsDefault] = useState(language?.is_default || false);
+  const [isActive, setIsActive] = useState(language?.is_active ?? true);
 
   const [formMessage, setFormMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
@@ -52,6 +55,11 @@ export default function LanguageForm({
         formData.delete('is_default'); // Remove if not checked, action handles "on" or missing
     } else {
         formData.set('is_default', 'on');
+    }
+    if (isActive) {
+      formData.set('is_active', 'on');
+    } else {
+      formData.delete('is_active');
     }
 
 
@@ -126,6 +134,19 @@ export default function LanguageForm({
        {isTheOnlyDefaultLanguage && isDefault && (
           <p className="text-xs text-amber-600">This is the only default language. To change, set another language as default.</p>
       )}
+
+      <div className="flex items-center space-x-2 pt-2">
+        <Checkbox
+          id="is_active"
+          name="is_active"
+          checked={isActive}
+          onCheckedChange={(checked) => setIsActive(checked as boolean)}
+        />
+        <Label htmlFor="is_active" className="font-normal leading-none">
+          Language is Active
+        </Label>
+      </div>
+      <p className="text-xs text-muted-foreground -mt-1">Inactive languages are hidden from public view but still available for content management.</p>
 
 
       <div className="flex justify-end space-x-3 pt-4">

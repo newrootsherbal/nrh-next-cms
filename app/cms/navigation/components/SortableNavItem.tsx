@@ -16,7 +16,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import DeleteNavItemButton from "./DeleteNavItemButton"; // Assuming this exists and works
-import type { NavigationItem } from '@/utils/supabase/types'; // Ensure this path is correct
+import type { Database } from '@/utils/supabase/types'; // Ensure this path is correct
+
+type NavigationItem = Database['public']['Tables']['navigation_items']['Row'];
 
 // Extended NavItem type for rendering
 export interface HierarchicalNavItem extends NavigationItem {

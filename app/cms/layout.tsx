@@ -6,7 +6,8 @@ import { useAuth } from "@/context/AuthContext"
 import { useRouter, usePathname } from "next/navigation" // Import usePathname
 import { AnimatedLink } from "@/components/transitions" // Changed to AnimatedLink
 import {
-  LayoutDashboard, FileText, PenTool, Users, Settings, ChevronRight, LogOut, Menu, ListTree, Image as ImageIconLucide, X, Languages as LanguagesIconLucide
+  LayoutDashboard, FileText, PenTool, Users, Settings, ChevronRight, LogOut, Menu, ListTree, Image as ImageIconLucide, X, Languages as LanguagesIconLucide,
+  Copyright as CopyrightIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -14,8 +15,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { signOutAction } from "@/app/actions";
 import { getActiveLogo } from "@/app/cms/settings/logos/actions";
-import { type Logo } from "@/utils/supabase/types";
+import { type Database } from "@/utils/supabase/types";
 import Image from "next/image";
+import { type Logo } from './settings/logos/types';
 
 const R2_BASE_URL = process.env.NEXT_PUBLIC_R2_BASE_URL || '';
 
@@ -166,7 +168,7 @@ export default function CmsLayout({ children }: { children: ReactNode }) {
   }
 
   const getInitials = () => {
-    if (profile && profile.full_name) return profile.full_name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+    if (profile && profile.full_name) return profile.full_name.split(' ').map((n: string) => n[0]).join('').substring(0,2).toUpperCase();
     if (profile && profile.username) return profile.username.substring(0,2).toUpperCase();
     if (user && user.email) return user.email.charAt(0).toUpperCase();
     return "U"; // Default fallback
@@ -198,6 +200,8 @@ export default function CmsLayout({ children }: { children: ReactNode }) {
   else if (pathname.startsWith("/cms/settings/languages")) pageTitle = "Language Settings";
   // Fallback for general /cms/settings if no more specific language path matches
   else if (pathname.startsWith("/cms/settings/logos")) pageTitle = "Logos";
+  else if (pathname.startsWith("/cms/settings/copyright")) pageTitle = "Copyright Settings";
+  else if (pathname.startsWith("/cms/settings/copyright")) pageTitle = "Copyright Settings";
   else if (pathname.startsWith("/cms/settings")) pageTitle = "Settings";
 
 
@@ -285,6 +289,9 @@ export default function CmsLayout({ children }: { children: ReactNode }) {
                    <NavItem href="/cms/settings/logos" icon={ImageIconLucide} isActive={pathname.startsWith("/cms/settings/logos")} adminOnly isAdmin={isAdmin}>
                      Logos
                    </NavItem>
+                    <NavItem href="/cms/settings/copyright" icon={CopyrightIcon} isActive={pathname.startsWith("/cms/settings/copyright")} adminOnly isAdmin={isAdmin}>
+                      Copyright
+                    </NavItem>
                  </CollapsibleNavItem>
                 </>
               )}

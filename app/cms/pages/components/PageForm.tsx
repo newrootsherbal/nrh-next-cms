@@ -14,8 +14,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { Page, PageStatus, Language } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import { useAuth } from "@/context/AuthContext";
+
+type Page = Database['public']['Tables']['pages']['Row'];
+type PageStatus = Database['public']['Enums']['page_status'];
+type Language = Database['public']['Tables']['languages']['Row'];
 // Remove: import { getActiveLanguagesClientSide } from "@/utils/supabase/client";
 
 interface PageFormProps {

@@ -2,8 +2,11 @@
 import { createClient as createSupabaseServerClient } from '../utils/supabase/server'; // Adjusted path
  // import Link from 'next/link'; // Appears unused, ResponsiveNav handles links
  import { getProfileWithRoleServerSide } from '../utils/supabase/server'; // Adjusted path
- import type { UserRole, NavigationItem } from '../utils/supabase/types'; // Adjusted path
+ import type { Database } from '../utils/supabase/types'; // Adjusted path
  import HeaderAuth from './header-auth'; // Adjusted path if needed, assuming it's in components/
+
+ type UserRole = Database['public']['Enums']['user_role'];
+ type NavigationItem = Database['public']['Tables']['navigation_items']['Row'];
  import LanguageSwitcher from './LanguageSwitcher';
  import { getNavigationMenu } from '../app/cms/navigation/actions'; // Adjusted path
  import { getActiveLogo } from '@/app/cms/settings/logos/actions';

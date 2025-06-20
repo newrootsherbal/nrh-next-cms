@@ -19,8 +19,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { UserWithProfile, AuthUser } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+type Profile = Database['public']['Tables']['profiles']['Row'];
+type AuthUser = {
+    id: string;
+    email: string | undefined;
+    created_at: string | undefined;
+    last_sign_in_at: string | undefined;
+};
+type UserWithProfile = {
+    authUser: AuthUser;
+    profile: Profile | null;
+};
 import { DeleteUserButtonClient } from "./components/DeleteUserButton";
 
 async function getUsersData(currentAdminId: string): Promise<UserWithProfile[]> {

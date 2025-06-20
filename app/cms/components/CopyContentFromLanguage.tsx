@@ -21,8 +21,10 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { copyBlocksFromLanguage } from "@/app/cms/blocks/actions";
-import type { Language } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import { useRouter } from "next/navigation";
+
+type Language = Database['public']['Tables']['languages']['Row'];
 import { AlertCircle, CheckCircle2, Copy as CopyIcon } from "lucide-react";
 
 interface CopyContentFromLanguageProps {

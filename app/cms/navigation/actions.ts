@@ -4,8 +4,12 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath, unstable_noStore } from "next/cache";
 import { redirect } from "next/navigation";
-import type { NavigationItem, MenuLocation, Language } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import { v4 as uuidv4 } from 'uuid';
+
+type NavigationItem = Database['public']['Tables']['navigation_items']['Row'];
+type MenuLocation = Database['public']['Enums']['menu_location'];
+type Language = Database['public']['Tables']['languages']['Row'];
 import { encodedRedirect } from "@/utils/utils";
 
 // Helper to check admin role

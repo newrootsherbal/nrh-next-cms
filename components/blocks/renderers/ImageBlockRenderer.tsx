@@ -1,6 +1,15 @@
 import React from "react";
 import Image from "next/image";
-import type { ImageBlockContent } from "@/utils/supabase/types";
+
+export type ImageBlockContent = {
+    media_id: string | null;
+    object_key: string | null;
+    alt_text: string | null;
+    caption: string | null;
+    width: number | null;
+    height: number | null;
+    blur_data_url: string | null;
+};
 
 const R2_BASE_URL = process.env.NEXT_PUBLIC_R2_BASE_URL || "";
 

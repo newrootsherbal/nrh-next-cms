@@ -21,8 +21,11 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 // deletePost server action is now used by DeletePostButtonClient
-import type { Post, Language } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import { getActiveLanguagesServerSide } from "@/utils/supabase/server";
+
+type Post = Database['public']['Tables']['posts']['Row'] & { feature_image_url?: string | null };
+type Language = Database['public']['Tables']['languages']['Row'];
 import LanguageFilterSelect from "@/app/cms/components/LanguageFilterSelect";
 import DeletePostButtonClient from "./components/DeletePostButtonClient"; // Import the new client component
 

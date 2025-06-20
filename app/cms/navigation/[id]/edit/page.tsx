@@ -3,8 +3,11 @@ import React from "react";
 import { createClient } from "@/utils/supabase/server";
 import NavigationItemForm from "../../components/NavigationItemForm";
 import { updateNavigationItem } from "../../actions";
-import type { NavigationItem, Language } from "@/utils/supabase/types"; // Ensure Language is imported
+import type { Database } from "@/utils/supabase/types"; // Ensure Language is imported
 import { notFound, redirect } from "next/navigation";
+
+type NavigationItem = Database['public']['Tables']['navigation_items']['Row'];
+type Language = Database['public']['Tables']['languages']['Row'];
 import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Languages as LanguagesIcon } from "lucide-react"; // Changed icon

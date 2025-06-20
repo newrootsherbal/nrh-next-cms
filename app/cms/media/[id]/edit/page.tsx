@@ -3,8 +3,10 @@ import React from "react";
 import { createClient } from "@/utils/supabase/server";
 import MediaEditForm from "../../components/MediaEditForm"; // Adjusted path
 import { updateMediaItem } from "../../actions"; // Server action for updating
-import type { Media } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import { notFound, redirect } from "next/navigation";
+
+type Media = Database['public']['Tables']['media']['Row'];
 import { ArrowLeft } from "lucide-react";
 import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
 import { Button } from "@/components/ui/button";

@@ -3,8 +3,11 @@ import { createClient } from "@/utils/supabase/server";
 import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
 import { Button } from "@/components/ui/button";
 import { PlusCircle, ListTree } from "lucide-react";
-import type { NavigationItem, MenuLocation } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import { getActiveLanguagesServerSide } from "@/utils/supabase/server";
+
+type NavigationItem = Database['public']['Tables']['navigation_items']['Row'] & { pages?: { slug: string } | null };
+type MenuLocation = Database['public']['Enums']['menu_location'];
 import NavigationMenuDnd from "./components/NavigationMenuDnd"; // Import the new DND component
 
 interface NavItemWithDetails extends NavigationItem {

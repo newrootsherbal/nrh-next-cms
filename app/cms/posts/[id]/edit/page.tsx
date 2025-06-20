@@ -4,8 +4,13 @@ import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/utils/supabase/server";
 import PostForm from "../../components/PostForm"; // Adjusted path
 import { updatePost } from "../../actions";
-import type { Post as PostType, Block as BlockType, Language, Media } from "@/utils/supabase/types"; // Ensure Language and Media are imported
+import type { Database } from "@/utils/supabase/types"; // Ensure Language and Media are imported
 import { notFound, redirect } from "next/navigation";
+
+type PostType = Database['public']['Tables']['posts']['Row'];
+type BlockType = Database['public']['Tables']['blocks']['Row'];
+type Language = Database['public']['Tables']['languages']['Row'];
+type Media = Database['public']['Tables']['media']['Row'];
 import BlockEditorArea from "@/app/cms/blocks/components/BlockEditorArea";
 import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
 import { Button } from "@/components/ui/button";

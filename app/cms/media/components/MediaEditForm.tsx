@@ -7,8 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import type { Media } from '@/utils/supabase/types';
+import type { Database } from '@/utils/supabase/types';
 import { useAuth } from '@/context/AuthContext';
+
+type Media = Database['public']['Tables']['media']['Row'];
 import { updateMediaItem } from '../actions'; // Server action
 import { FileText } from 'lucide-react';
 

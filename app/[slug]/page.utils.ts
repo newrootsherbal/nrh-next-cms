@@ -1,6 +1,15 @@
 // app/[slug]/page.utils.ts
 import { getSsgSupabaseClient } from "../../utils/supabase/ssg-client";
-import type { Page as PageType, Block as BlockType, ImageBlockContent } from "../../utils/supabase/types";
+import type { Database } from "../../utils/supabase/types";
+
+type PageType = Database['public']['Tables']['pages']['Row'];
+type BlockType = Database['public']['Tables']['blocks']['Row'];
+
+// Define a more specific type for the content of an Image Block
+export type ImageBlockContent = {
+  media_id: string | null;
+  object_key?: string; // Optional because it's added later
+};
 // SupabaseClient import removed as it's unused
 
 // Interface to represent a page object after the initial database query and selection
@@ -88,7 +97,7 @@ export async function getPageDataBySlug(slug: string): Promise<(PageType & { blo
   let blocksWithMediaData: BlockType[] = selectedPage.blocks || [];
   if (blocksWithMediaData.length > 0) {
     const imageBlockMediaIds = blocksWithMediaData
-      .filter(block => block.block_type === 'image' && block.content?.media_id)
+      .filter(block => block.block_type === 'image' && (block.content as ImageBlockContent)?.media_id)
       .map(block => (block.content as ImageBlockContent).media_id)
       .filter(id => id !== null && typeof id === 'string') as string[];
 
@@ -99,7 +108,7 @@ export async function getPageDataBySlug(slug: string): Promise<(PageType & { blo
       } else if (mediaItems) {
         const mediaMap = new Map(mediaItems.map(m => [m.id, m.object_key]));
         blocksWithMediaData = blocksWithMediaData.map(block => {
-          if (block.block_type === 'image' && block.content?.media_id) {
+          if (block.block_type === 'image' && (block.content as ImageBlockContent)?.media_id) {
             const currentContent = block.content as ImageBlockContent;
             const objectKey = mediaMap.get(currentContent.media_id!);
             if (objectKey) return { ...block, content: { ...currentContent, object_key: objectKey } };

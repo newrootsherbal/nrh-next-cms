@@ -1,8 +1,10 @@
 // components/BlockRenderer.tsx
 import React from "react";
 import dynamic from "next/dynamic";
-import type { Block } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import { getBlockDefinition, type SectionBlockContent } from "@/lib/blocks/blockRegistry";
+
+type Block = Database['public']['Tables']['blocks']['Row'];
 import HeroBlockRenderer from "./blocks/renderers/HeroBlockRenderer"; // Static import for LCP
 
 interface BlockRendererProps {
@@ -20,7 +22,7 @@ const DynamicBlockRenderer: React.FC<DynamicBlockRendererProps> = ({
   block,
   languageId,
 }) => {
-  const blockDefinition = getBlockDefinition(block.block_type);
+  const blockDefinition = getBlockDefinition(block.block_type as any);
   
   if (!blockDefinition) {
     return (
@@ -87,7 +89,7 @@ const BlockRenderer: React.FC<BlockRendererProps> = ({
           return (
             <HeroBlockRenderer
               key={block.id}
-              content={block.content as SectionBlockContent}
+              content={block.content as unknown as SectionBlockContent}
               languageId={languageId}
             />
           );

@@ -13,8 +13,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { NavigationItem, MenuLocation, Language, Page } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import { useAuth } from "@/context/AuthContext";
+
+type NavigationItem = Database['public']['Tables']['navigation_items']['Row'];
+type MenuLocation = Database['public']['Enums']['menu_location'];
+type Language = Database['public']['Tables']['languages']['Row'];
+type Page = Database['public']['Tables']['pages']['Row'];
 import { getActiveLanguagesClientSide, createClient as createBrowserClient } from "@/utils/supabase/client";
 
 interface NavigationItemFormProps {

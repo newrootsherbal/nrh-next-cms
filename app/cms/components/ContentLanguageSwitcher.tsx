@@ -6,7 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import { AnimatedLink } from '@/components/transitions'; // Changed to AnimatedLink
 import { Button } from '@/components/ui/button';
 import { Languages, CheckCircle } from 'lucide-react';
-import type { Language, Page, Post } from '@/utils/supabase/types';
+import type { Database } from '@/utils/supabase/types';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +17,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from '@/lib/utils'; // For conditional styling
 
+type Language = Database['public']['Tables']['languages']['Row'];
+type Page = Database['public']['Tables']['pages']['Row'];
+type Post = Database['public']['Tables']['posts']['Row'];
 interface ContentLanguageSwitcherProps {
   currentItem: (Page | Post) & { language_code?: string; translation_group_id: string; }; // Must have translation_group_id
   itemType: 'page' | 'post';

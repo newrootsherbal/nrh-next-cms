@@ -1,7 +1,13 @@
 import React from "react";
 import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
 import { Button } from "@/components/ui/button";
-import type { ButtonBlockContent } from "@/utils/supabase/types";
+
+export type ButtonBlockContent = {
+    text?: string;
+    url?: string;
+    variant?: 'default' | 'outline' | 'secondary' | 'ghost' | 'link';
+    size?: 'default' | 'sm' | 'lg';
+};
 
 interface ButtonBlockRendererProps {
   content: ButtonBlockContent;

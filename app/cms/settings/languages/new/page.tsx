@@ -3,7 +3,9 @@ import React from "react";
 import LanguageForm from "../components/LanguageForm";
 import { createLanguage } from "../actions";
 import { createClient } from "@/utils/supabase/server"; // To fetch all languages for the form logic
-import type { Language } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
+
+type Language = Database['public']['Tables']['languages']['Row'];
 
 async function getAllLanguages(): Promise<Language[]> {
     const supabase = createClient();

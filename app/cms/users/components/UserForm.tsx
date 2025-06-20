@@ -13,8 +13,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Profile, UserRole, AuthUser } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import { useAuth } from "@/context/AuthContext";
+
+type Profile = Database['public']['Tables']['profiles']['Row'];
+type UserRole = Database['public']['Enums']['user_role'];
+type AuthUser = {
+    id: string;
+    email: string | undefined;
+    created_at: string | undefined;
+    last_sign_in_at: string | undefined;
+};
 
 interface UserFormProps {
   userToEditAuth: AuthUser; // Auth details (email, id) - email usually not editable here

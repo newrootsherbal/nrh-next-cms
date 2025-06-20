@@ -2,7 +2,10 @@ import 'server-only';
 // utils/supabase/server.ts
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies, type UnsafeUnwrappedCookies } from 'next/headers';
-import { Profile, Language } from './types'; // Import custom types
+import { Database } from './types'; // Import custom types
+
+type Profile = Database['public']['Tables']['profiles']['Row'];
+type Language = Database['public']['Tables']['languages']['Row'];
 
 // This is the standard server client creation function from the Vercel example
 export const createClient = () => {

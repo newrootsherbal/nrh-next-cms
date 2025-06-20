@@ -4,8 +4,12 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import type { Page, PageStatus, Language } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import { v4 as uuidv4 } from 'uuid';
+
+type Page = Database['public']['Tables']['pages']['Row'];
+type PageStatus = Database['public']['Enums']['page_status'];
+type Language = Database['public']['Tables']['languages']['Row'];
 import { encodedRedirect } from "@/utils/utils"; // Ensure this is correctly imported
 
 // --- createPage and updatePage functions remain unchanged ---

@@ -2,7 +2,9 @@
 import PageForm from "../components/PageForm";
 import { createPage } from "../actions"; // Server action for creating a page
 import { createClient } from "../../../../utils/supabase/server";
-import type { Language } from "../../../../utils/supabase/types";
+import type { Database } from "../../../../utils/supabase/types";
+
+type Language = Database['public']['Tables']['languages']['Row'];
 
 export default async function NewPage() {
   const supabase = createClient();

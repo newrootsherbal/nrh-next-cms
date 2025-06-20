@@ -3,8 +3,11 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
-import type { Block, BlockType } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import { getInitialContent, isValidBlockType } from "@/lib/blocks/blockRegistry";
+
+type Block = Database['public']['Tables']['blocks']['Row'];
+type BlockType = Database['public']['Tables']['blocks']['Row']['block_type'];
 
 // Helper to verify user can edit the parent (page/post)
 async function canEditParent(

@@ -20,8 +20,10 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import type { Language } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import DeleteLanguageClientButton from './components/DeleteLanguageButton';
+
+type Language = Database['public']['Tables']['languages']['Row'];
 
 async function getLanguages(): Promise<Language[]> {
   const supabase = createClient();

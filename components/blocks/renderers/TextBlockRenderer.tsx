@@ -1,5 +1,8 @@
 import React from "react";
-import type { TextBlockContent } from "@/utils/supabase/types";
+
+export type TextBlockContent = {
+    html_content?: string;
+};
 
 interface TextBlockRendererProps {
   content: TextBlockContent;

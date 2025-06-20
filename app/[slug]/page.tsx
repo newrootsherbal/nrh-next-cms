@@ -108,7 +108,7 @@ export default async function DynamicPage({ params: paramsPromise }: PageProps) 
   if (pageData && pageData.blocks && r2BaseUrl) {
     for (const block of pageData.blocks) {
       if (block.block_type === "section" && block.content) {
-        const sectionContent = block.content as SectionBlockContent;
+        const sectionContent = block.content as unknown as SectionBlockContent;
         if (
           sectionContent.background &&
           sectionContent.background.type === "image" &&

@@ -9,7 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress"; // Assuming you have this shadcn/ui component
 import { UploadCloud, XCircle, CheckCircle2 } from "lucide-react";
 import { recordMediaUpload } from "../actions"; // Server action
-import type { Media } from "@/utils/supabase/types"; // Import Media type
+import type { Database } from "@/utils/supabase/types"; // Import Media type
+
+type Media = Database['public']['Tables']['media']['Row'];
 
 interface UploadResponse {
   presignedUrl: string;

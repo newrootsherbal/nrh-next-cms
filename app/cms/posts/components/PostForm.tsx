@@ -24,8 +24,13 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import type { Post, PageStatus, Language, Media } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
 import { useAuth } from "@/context/AuthContext";
+
+type Post = Database['public']['Tables']['posts']['Row'];
+type PageStatus = Database['public']['Enums']['page_status'];
+type Language = Database['public']['Tables']['languages']['Row'];
+type Media = Database['public']['Tables']['media']['Row'];
 // import MediaGridClient from "@/app/cms/media/components/MediaGridClient"; // Will render a custom grid instead
 import MediaImage from "@/app/cms/media/components/MediaImage"; // For displaying images in the modal
 import { getMediaItems } from "@/app/cms/media/actions";

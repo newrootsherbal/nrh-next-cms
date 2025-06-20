@@ -1,6 +1,8 @@
 import { createClient, getProfileWithRoleServerSide } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
-import { UserRole } from "@/utils/supabase/types";
+import type { Database } from "@/utils/supabase/types";
+
+export type UserRole = Database['public']['Enums']['user_role'];
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
