@@ -12,7 +12,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, PlusCircle, Edit3, FileText, Languages as LanguageIcon } from "lucide-react"; // Trash2 removed from here
+import {
+  MoreHorizontal,
+  PlusCircle,
+  Edit3,
+  FileText,
+  Languages as LanguageIcon,
+} from "lucide-react"; // Trash2 removed from here
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,15 +30,17 @@ import {
 import type { Database } from "@/utils/supabase/types";
 import { getActiveLanguagesServerSide } from "@/utils/supabase/server";
 
-type Page = Database['public']['Tables']['pages']['Row'];
-type Language = Database['public']['Tables']['languages']['Row'];
+type Page = Database["public"]["Tables"]["pages"]["Row"];
+type Language = Database["public"]["Tables"]["languages"]["Row"];
 import LanguageFilterSelect from "@/app/cms/components/LanguageFilterSelect";
 import DeletePageButtonClient from "./components/DeletePageButtonClient"; // Import the client component
 
-async function getPagesWithDetails(filterLanguageId?: number): Promise<{ page: Page; languageCode: string }[]> {
+async function getPagesWithDetails(
+  filterLanguageId?: number
+): Promise<{ page: Page; languageCode: string }[]> {
   const supabase = createClient();
   const languages = await getActiveLanguagesServerSide();
-  const langMap = new Map(languages.map(l => [l.id, l.code]));
+  const langMap = new Map(languages.map((l) => [l.id, l.code]));
 
   let query = supabase
     .from("pages")
@@ -51,11 +59,14 @@ async function getPagesWithDetails(filterLanguageId?: number): Promise<{ page: P
   }
   if (!pagesData) return [];
 
-  return pagesData.map(p => {
+  return pagesData.map((p) => {
     const langInfo = p.languages as unknown as { code: string } | null;
     return {
       page: p as Page,
-      languageCode: langInfo?.code?.toUpperCase() || langMap.get(p.language_id)?.toUpperCase() || 'N/A',
+      languageCode:
+        langInfo?.code?.toUpperCase() ||
+        langMap.get(p.language_id)?.toUpperCase() ||
+        "N/A",
     };
   });
 }
@@ -70,9 +81,13 @@ interface CmsPagesListPageProps {
 export default async function CmsPagesListPage(props: CmsPagesListPageProps) {
   const searchParams = await props.searchParams;
   const allLanguages = await getActiveLanguagesServerSide();
-  const selectedLangId = searchParams?.lang ? parseInt(searchParams.lang, 10) : undefined;
+  const selectedLangId = searchParams?.lang
+    ? parseInt(searchParams.lang, 10)
+    : undefined;
 
-  const isValidLangId = selectedLangId ? allLanguages.some(l => l.id === selectedLangId) : true;
+  const isValidLangId = selectedLangId
+    ? allLanguages.some((l) => l.id === selectedLangId)
+    : true;
   const filterLangId = isValidLangId ? selectedLangId : undefined;
 
   const pagesWithDetails = await getPagesWithDetails(filterLangId);
@@ -106,7 +121,9 @@ export default async function CmsPagesListPage(props: CmsPagesListPageProps) {
         <div className="text-center py-10 border rounded-lg dark:border-slate-700">
           <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
           <h3 className="mt-2 text-sm font-medium text-foreground">
-            {filterLangId ? "No pages found for the selected language." : "No pages found."}
+            {filterLangId
+              ? "No pages found for the selected language."
+              : "No pages found."}
           </h3>
           <p className="mt-1 text-sm text-muted-foreground">
             Get started by creating a new page.
@@ -128,31 +145,53 @@ export default async function CmsPagesListPage(props: CmsPagesListPageProps) {
                 <TableHead>Status</TableHead>
                 <TableHead>Language</TableHead>
                 <TableHead className="hidden md:table-cell">Slug</TableHead>
-                <TableHead className="hidden lg:table-cell">Last Updated</TableHead>
+                <TableHead className="hidden lg:table-cell">
+                  Last Updated
+                </TableHead>
                 <TableHead className="text-right w-[80px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {pagesWithDetails.map(({ page, languageCode }) => (
                 <TableRow key={page.id} className="dark:border-slate-700">
-                  <TableCell className="font-medium">{page.title}</TableCell>
+                  <TableCell className="font-medium">
+                    <AnimatedLink
+                      href={`/cms/pages/${page.id}/edit`}
+                      className="flex items-center cursor-pointer"
+                    >
+                      <Edit3 className="mr-2 h-4 w-4" />
+                      {page.title}
+                    </AnimatedLink>
+                  </TableCell>
                   <TableCell>
                     <Badge
                       variant={
-                        page.status === "published" ? "default" :
-                        page.status === "draft" ? "secondary" : "destructive"
+                        page.status === "published"
+                          ? "default"
+                          : page.status === "draft"
+                            ? "secondary"
+                            : "destructive"
                       }
                       className={
-                        page.status === "published" ? "bg-green-100 text-green-700 dark:bg-green-700/30 dark:text-green-300 dark:border-green-700/50" :
-                        page.status === "draft" ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-700/30 dark:text-yellow-300 dark:border-yellow-700/50" :
-                        "bg-slate-100 text-slate-700 dark:bg-slate-700/30 dark:text-slate-300 dark:border-slate-600"
+                        page.status === "published"
+                          ? "bg-green-100 text-green-700 dark:bg-green-700/30 dark:text-green-300 dark:border-green-700/50"
+                          : page.status === "draft"
+                            ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-700/30 dark:text-yellow-300 dark:border-yellow-700/50"
+                            : "bg-slate-100 text-slate-700 dark:bg-slate-700/30 dark:text-slate-300 dark:border-slate-600"
                       }
                     >
-                      {page.status.charAt(0).toUpperCase() + page.status.slice(1)}
+                      {page.status.charAt(0).toUpperCase() +
+                        page.status.slice(1)}
                     </Badge>
                   </TableCell>
-                  <TableCell><Badge variant="outline" className="dark:border-slate-600">{languageCode}</Badge></TableCell>
-                  <TableCell className="text-muted-foreground text-xs hidden md:table-cell">/{page.slug}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="dark:border-slate-600">
+                      {languageCode}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-xs hidden md:table-cell">
+                    /{page.slug}
+                  </TableCell>
                   <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">
                     {new Date(page.updated_at).toLocaleDateString()}
                   </TableCell>
@@ -161,18 +200,26 @@ export default async function CmsPagesListPage(props: CmsPagesListPageProps) {
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">
                           <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Page actions for {page.title}</span>
+                          <span className="sr-only">
+                            Page actions for {page.title}
+                          </span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <AnimatedLink href={`/cms/pages/${page.id}/edit`} className="flex items-center cursor-pointer">
+                          <AnimatedLink
+                            href={`/cms/pages/${page.id}/edit`}
+                            className="flex items-center cursor-pointer"
+                          >
                             <Edit3 className="mr-2 h-4 w-4" /> Edit
                           </AnimatedLink>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         {/* Use the Client Component for the delete button */}
-                        <DeletePageButtonClient pageId={page.id} pageTitle={page.title} />
+                        <DeletePageButtonClient
+                          pageId={page.id}
+                          pageTitle={page.title}
+                        />
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
