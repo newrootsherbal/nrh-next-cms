@@ -20,51 +20,26 @@ type NavigationItem = Database['public']['Tables']['navigation_items']['Row'];
 type MenuLocation = Database['public']['Enums']['menu_location'];
 type Language = Database['public']['Tables']['languages']['Row'];
 type Page = Database['public']['Tables']['pages']['Row'];
-import { getActiveLanguagesClientSide, createClient as createBrowserClient } from "@/utils/supabase/client";
+import { createClient as createBrowserClient } from "@/utils/supabase/client";
 
 interface NavigationItemFormProps {
   item?: NavigationItem | null;
   formAction: (formData: FormData) => Promise<{ error?: string } | void>;
   actionButtonText?: string;
   isEditing?: boolean;
+  languages: Language[];
+  parentItems: (Pick<NavigationItem, 'id' | 'label' | 'translation_group_id' | 'language_id' | 'parent_id'> & { menu_key: MenuLocation | null })[];
+  pages: Pick<Page, 'id' | 'title' | 'slug' | 'language_id'>[];
 }
-
-// Helper to fetch potential parent items and pages for dropdowns
-async function getFormDataSources(currentLanguageId?: number, currentMenuKey?: MenuLocation, currentItemId?: number) {
-  const supabase = createBrowserClient();
-  // Fetch all active languages
-  const languagesResult = await getActiveLanguagesClientSide();
-
-  // Fetch pages only if a language ID is available
-  const pagesResult = currentLanguageId
-    ? await supabase.from("pages").select("id, title, slug").eq("language_id", currentLanguageId).order("title")
-    : { data: [], error: null };
-
-  // Fetch parent items only if language ID and menu key are available
-  const parentItemsResult = (currentLanguageId && currentMenuKey)
-    ? await supabase
-        .from("navigation_items")
-        .select("id, label, translation_group_id") // Also fetch translation_group_id for parents
-        .eq("language_id", currentLanguageId)
-        .eq("menu_key", currentMenuKey)
-        .neq("id", currentItemId || 0) // Exclude self if editing
-        // .is("parent_id", null) // Consider fetching all, or implement smarter parent selection
-        .order("order")
-    : { data: [], error: null };
-
-  return {
-    languages: languagesResult || [],
-    pages: pagesResult.data || [],
-    parentItems: parentItemsResult.data || [],
-  };
-}
-
 
 export default function NavigationItemForm({
   item,
   formAction,
   actionButtonText = "Save Item",
   isEditing = false,
+  languages,
+  parentItems,
+  pages,
 }: NavigationItemFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -84,16 +59,16 @@ export default function NavigationItemForm({
     targetLanguageIdForTranslation || item?.language_id?.toString() || ""
   );
   const [menuKey, setMenuKey] = useState<MenuLocation | "">(
-    initialMenuKeyFromParam || item?.menu_key || ""
+    initialMenuKeyFromParam || item?.menu_key || "HEADER"
   );
   const [order, setOrder] = useState<string>(item?.order?.toString() || "0");
   const [parentId, setParentId] = useState<string>(item?.parent_id?.toString() || "");
   const [pageId, setPageId] = useState<string>(item?.page_id?.toString() || "");
 
-  const [availableLanguages, setAvailableLanguages] = useState<Language[]>([]);
+  const [availableLanguages, setAvailableLanguages] = useState<Language[]>(languages);
   const [availablePages, setAvailablePages] = useState<Pick<Page, 'id' | 'title' | 'slug'>[]>([]);
-  const [availableParentItems, setAvailableParentItems] = useState<Pick<NavigationItem, 'id' | 'label' | 'translation_group_id'>[]>([]);
-  const [dataLoading, setDataLoading] = useState(true);
+  const [availableParentItems, setAvailableParentItems] = useState<(Pick<NavigationItem, 'id' | 'label' | 'translation_group_id'> & { menu_key: MenuLocation | null })[]>([]);
+  const [dataLoading, setDataLoading] = useState(false);
   const [formMessage, setFormMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
   useEffect(() => {
@@ -104,29 +79,26 @@ export default function NavigationItemForm({
   }, [searchParams]);
 
   useEffect(() => {
-    async function fetchData() {
-      setDataLoading(true);
-      const currentLangId = languageId ? parseInt(languageId) : undefined;
-      const currentMenuKeyVal = menuKey || undefined;
-
-      const sources = await getFormDataSources(
-        currentLangId,
-        currentMenuKeyVal,
-        item?.id
-      );
-      setAvailableLanguages(sources.languages);
-      setAvailablePages(sources.pages);
-      setAvailableParentItems(sources.parentItems);
-
-      // If creating new (not editing) and no language ID is set yet (and not creating a specific translation)
-      if (!isEditing && !languageId && !targetLanguageIdForTranslation && sources.languages.length > 0) {
-        const defaultLang = sources.languages.find(l => l.is_default) || sources.languages[0];
-        if (defaultLang) setLanguageId(defaultLang.id.toString());
-      }
-      setDataLoading(false);
+    if (!isEditing && !languageId && !targetLanguageIdForTranslation && languages.length > 0) {
+      const defaultLang = languages.find(l => l.is_default) || languages[0];
+      if (defaultLang) setLanguageId(defaultLang.id.toString());
     }
-    fetchData();
-  }, [item?.id, languageId, menuKey, isEditing, targetLanguageIdForTranslation]);
+  }, [isEditing, languageId, targetLanguageIdForTranslation, languages]);
+
+  useEffect(() => {
+    const currentLangId = languageId ? parseInt(languageId, 10) : null;
+    if (currentLangId) {
+      const filteredPages = pages.filter(p => p.language_id === currentLangId);
+      setAvailablePages(filteredPages);
+
+      const filteredParentItems = parentItems.filter(p => p.language_id === currentLangId && p.id !== item?.id);
+      // @ts-ignore
+      setAvailableParentItems(filteredParentItems);
+    } else {
+      setAvailablePages([]);
+      setAvailableParentItems([]);
+    }
+  }, [languageId, pages, parentItems, item?.id]);
 
   const handlePageSelect = (selectedPageId: string) => {
     setPageId(selectedPageId);
@@ -232,6 +204,7 @@ export default function NavigationItemForm({
         <Select
             name="menu_key"
             value={menuKey}
+            defaultValue="HEADER"
             onValueChange={(val) => {
                 setMenuKey(val as MenuLocation);
                 setParentId(""); // Reset parent if menu key changes
@@ -257,7 +230,9 @@ export default function NavigationItemForm({
           <SelectTrigger className="mt-1"><SelectValue placeholder="None (Top Level)" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="___NONE___">None (Top Level)</SelectItem>
-            {availableParentItems.map((parent) => (
+            {availableParentItems
+              .filter(p => p.menu_key === menuKey)
+              .map((parent) => (
               <SelectItem key={parent.id} value={parent.id.toString()}>{parent.label}</SelectItem>
             ))}
           </SelectContent>

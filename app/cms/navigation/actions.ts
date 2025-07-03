@@ -89,26 +89,82 @@ export async function createNavigationItem(formData: FormData) {
   let successMessage = "Navigation item created successfully.";
 
   if (newNavItem && !fromGroupId && !targetLangIdForTranslation) {
+    // Get other languages to create placeholder translations
     const { data: languages, error: langError } = await supabase
       .from("languages")
       .select("id, code")
-      .neq("id", newNavItem.language_id); 
+      .neq("id", newNavItem.language_id);
 
     if (langError) {
       console.error("Error fetching other languages for nav item auto-creation:", langError);
     } else if (languages && languages.length > 0) {
+      let parentTranslationGroupId: string | null = null;
+      if (newNavItem.parent_id) {
+        const { data: parentItem, error: parentError } = await supabase
+          .from("navigation_items")
+          .select("translation_group_id")
+          .eq("id", newNavItem.parent_id)
+          .single();
+        if (parentError) {
+          console.error(`Error fetching parent translation group ID:`, parentError);
+        } else {
+          parentTranslationGroupId = parentItem.translation_group_id;
+        }
+      }
+
+      let pageTranslationGroupId: string | null = null;
+      if (newNavItem.page_id) {
+        const { data: linkedPage, error: pageError } = await supabase
+          .from("pages")
+          .select("translation_group_id")
+          .eq("id", newNavItem.page_id)
+          .single();
+        if (pageError) {
+          console.error(`Error fetching page translation group ID:`, pageError);
+        } else if (linkedPage) {
+          pageTranslationGroupId = linkedPage.translation_group_id;
+        }
+      }
+
       let placeholderCreations = 0;
       for (const lang of languages) {
+        let translatedParentId: number | null = null;
+        if (parentTranslationGroupId) {
+          const { data: translatedParent } = await supabase
+            .from("navigation_items")
+            .select("id")
+            .eq("translation_group_id", parentTranslationGroupId)
+            .eq("language_id", lang.id)
+            .single();
+          if (translatedParent) {
+            translatedParentId = translatedParent.id;
+          }
+        }
+
+        let translatedPageId: number | null = null;
+        if (pageTranslationGroupId) {
+        const { data: translatedPage } = await supabase
+          .from("pages")
+          .select("id")
+          .eq("translation_group_id", pageTranslationGroupId)
+          .eq("language_id", lang.id)
+          .single();
+          if (translatedPage) {
+            translatedPageId = translatedPage.id;
+          }
+        }
+
         const placeholderNavItemData: UpsertNavigationItemPayload = {
           language_id: lang.id,
           menu_key: newNavItem.menu_key,
           label: generatePlaceholderLabel(newNavItem.label, lang.code),
-          url: '#', 
-          parent_id: null, 
-          order: newNavItem.order, 
-          page_id: null,
-          translation_group_id: newNavItem.translation_group_id, 
+          url: newNavItem.url,
+          parent_id: translatedParentId,
+          order: newNavItem.order,
+          page_id: translatedPageId,
+          translation_group_id: newNavItem.translation_group_id,
         };
+
         const { error: placeholderError } = await supabase.from("navigation_items").insert(placeholderNavItemData);
         if (placeholderError) {
           console.error(`Error auto-creating nav item for language ${lang.code}:`, placeholderError);
@@ -116,8 +172,9 @@ export async function createNavigationItem(formData: FormData) {
           placeholderCreations++;
         }
       }
+
       if (placeholderCreations > 0) {
-        successMessage += ` ${placeholderCreations} placeholder version(s) also created (please edit their details).`;
+        successMessage += ` ${placeholderCreations} translated version(s) also created (please edit their details).`;
       }
     }
   }
@@ -189,26 +246,42 @@ export async function deleteNavigationItem(itemId: number) {
   const supabase = createClient();
 
   if (!(await isAdminUser(supabase))) {
-    // Not returning an object here for DropdownMenuItem form action
-    // It relies on redirect or throwing an error.
-    // For client components calling this directly, an error object would be better.
-    // Consider how this action is called.
-    console.error("Unauthorized delete attempt for nav item:", itemId);
     return { error: "Unauthorized: Admin role required." };
   }
 
-  const { error } = await supabase
+  // First, get the translation_group_id for the item being deleted
+  const { data: itemToDelete, error: fetchError } = await supabase
+    .from("navigation_items")
+    .select("translation_group_id")
+    .eq("id", itemId)
+    .single();
+
+  if (fetchError || !itemToDelete) {
+    console.error("Error finding navigation item to delete:", fetchError);
+    return { error: "Failed to find the navigation item to delete." };
+  }
+
+  const { translation_group_id } = itemToDelete;
+
+  if (!translation_group_id) {
+    console.error("Navigation item is missing a translation_group_id:", itemId);
+    return { error: "Cannot delete item as it is missing translation information." };
+  }
+
+  // Now, delete all items in the same translation group
+  const { error: deleteError } = await supabase
     .from("navigation_items")
     .delete()
-    .eq("id", itemId);
+    .eq("translation_group_id", translation_group_id);
 
-  if (error) {
-    console.error("Error deleting navigation item:", error);
-    return { error: `Failed to delete item: ${error.message}` };
+  if (deleteError) {
+    console.error("Error deleting navigation item and its translations:", deleteError);
+    return { error: `Failed to delete item and its translations: ${deleteError.message}` };
   }
 
   revalidatePath("/cms/navigation");
-  redirect("/cms/navigation?success=Item deleted successfully");
+
+  return { success: true };
 }
 
 

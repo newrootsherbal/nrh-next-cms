@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Trash2 } from "lucide-react";
 import { deleteNavigationItem } from "../actions";
@@ -8,21 +9,19 @@ import { ConfirmationModal } from "@/app/cms/components/ConfirmationModal";
 
 interface DeleteNavItemButtonProps {
   itemId: number;
-  onDelete?: () => void;
 }
 
-export default function DeleteNavItemButton({ itemId, onDelete }: DeleteNavItemButtonProps) {
+export default function DeleteNavItemButton({ itemId }: DeleteNavItemButtonProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const router = useRouter();
 
-  const handleDelete = async () => {
+  const onConfirm = async () => {
     try {
       const result = await deleteNavigationItem(itemId);
-      if (result?.error) {
-        console.error("Delete operation failed:", result.error);
+      if (result.success) {
+        window.location.reload();
       } else {
-        if (onDelete) {
-          onDelete();
-        }
+        console.error("Delete operation failed:", result.error);
       }
     } catch (error) {
       console.error("Exception during delete action:", error);
@@ -46,7 +45,7 @@ export default function DeleteNavItemButton({ itemId, onDelete }: DeleteNavItemB
       <ConfirmationModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onConfirm={handleDelete}
+        onConfirm={onConfirm}
         title="Are you sure?"
         description="This will permanently delete the navigation item. This action cannot be undone."
       />

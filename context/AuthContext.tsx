@@ -75,17 +75,14 @@ export const AuthProvider = ({ children, serverUser, serverProfile }: AuthProvid
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        console.log('[AuthContext] Page visible. Re-subscribing to auth state changes.');
         subscribeToAuth();
       } else {
-        console.log('[AuthContext] Page hidden. Unsubscribing from auth state changes.');
         unsubscribeFromAuth();
       }
     };
 
     const handlePageHide = (event: PageTransitionEvent) => {
       if (!event.persisted) {
-        console.log('[AuthContext] pagehide event. Tearing down all real-time connections for bf-cache.');
         unsubscribeFromAuth(); // This is crucial
         supabase.removeAllChannels();
       }
@@ -93,7 +90,6 @@ export const AuthProvider = ({ children, serverUser, serverProfile }: AuthProvid
 
     const handlePageShow = (event: PageTransitionEvent) => {
       if (event.persisted) {
-        console.log('[AuthContext] Page restored from bf-cache. Re-subscribing to auth state changes.');
         subscribeToAuth();
       }
     };

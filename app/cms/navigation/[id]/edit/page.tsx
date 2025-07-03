@@ -3,16 +3,15 @@ import React from "react";
 import { createClient } from "@/utils/supabase/server";
 import NavigationItemForm from "../../components/NavigationItemForm";
 import { updateNavigationItem } from "../../actions";
-import type { Database } from "@/utils/supabase/types"; // Ensure Language is imported
+import { getLanguages, getNavigationItems, getPages } from "../../utils";
+import type { Database } from "@/utils/supabase/types";
 import { notFound, redirect } from "next/navigation";
 
 type NavigationItem = Database['public']['Tables']['navigation_items']['Row'];
-type Language = Database['public']['Tables']['languages']['Row'];
-import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
+import { AnimatedLink } from "@/components/transitions";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Languages as LanguagesIcon } from "lucide-react"; // Changed icon
-import NavigationLanguageSwitcher from "../../components/NavigationLanguageSwitcher"; // Import the new switcher
-import { getActiveLanguagesServerSide } from "@/utils/supabase/server"; // To get all languages
+import { ArrowLeft } from "lucide-react";
+import NavigationLanguageSwitcher from "../../components/NavigationLanguageSwitcher";
 
 async function getNavigationItemData(id: number): Promise<NavigationItem | null> {
   const supabase = createClient();
@@ -46,9 +45,11 @@ export default async function EditNavigationItemPage(props: { params: Promise<{ 
       return <div className="p-6 text-center text-red-500">Access Denied. Admin privileges required.</div>;
   }
 
-  const [item, allSiteLanguages] = await Promise.all([
+  const [item, allLanguages, allNavItems, allPages] = await Promise.all([
     getNavigationItemData(itemId),
-    getActiveLanguagesServerSide()
+    getLanguages(),
+    getNavigationItems(),
+    getPages(),
   ]);
 
   if (!item) {
@@ -79,10 +80,10 @@ export default async function EditNavigationItemPage(props: { params: Promise<{ 
                 <p className="text-sm text-muted-foreground truncate max-w-xs" title={item.label}>{item.label}</p>
             </div>
         </div>
-        {item.translation_group_id && allSiteLanguages.length > 0 && (
+        {item.translation_group_id && allLanguages.length > 0 && (
           <NavigationLanguageSwitcher
             currentItem={item}
-            allSiteLanguages={allSiteLanguages}
+            allSiteLanguages={allLanguages}
           />
         )}
       </div>
@@ -91,6 +92,9 @@ export default async function EditNavigationItemPage(props: { params: Promise<{ 
         formAction={updateItemWithId}
         actionButtonText="Update Item"
         isEditing={true}
+        languages={allLanguages}
+        parentItems={allNavItems}
+        pages={allPages}
       />
     </div>
   );
