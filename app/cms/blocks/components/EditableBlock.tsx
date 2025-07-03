@@ -107,7 +107,10 @@ export default function EditableBlock({
           <p className="text-xs text-muted-foreground">Click edit to modify content</p>
         </div>
         {/* This button is for non-section blocks which are not yet implemented for inline editing */}
-        <Button variant="outline" size="sm" onClick={() => console.log('Edit for this block type not implemented')}>
+        <Button variant="outline" size="sm" onClick={(e) => {
+          e.stopPropagation();
+          handleEditClick();
+        }}>
           Edit Block
         </Button>
       </div>
