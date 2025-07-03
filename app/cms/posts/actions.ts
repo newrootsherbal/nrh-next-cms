@@ -219,6 +219,22 @@ export async function deletePost(postId: number) {
     return encodedRedirect("error", "/cms/posts", "Post not found or error fetching details for deletion.");
   }
 
+  // Also delete associated navigation links
+  if (postToDelete.slug) {
+    const path = `/blog/${postToDelete.slug}`;
+    const { error: navDeleteError } = await supabase
+      .from("navigation_items")
+      .delete()
+      .eq("path", path);
+
+    if (navDeleteError) {
+      console.error("Error deleting navigation links:", navDeleteError);
+      // Decide if this should be a critical error. For now, we'll log it and proceed.
+      // For a stricter approach, you could return an error here:
+      // return encodedRedirect("error", "/cms/posts", `Failed to delete navigation links: ${navDeleteError.message}`);
+    }
+  }
+
   const { count, error: countError } = await supabase
     .from("posts")
     .select('*', { count: 'exact', head: true })

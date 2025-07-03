@@ -176,6 +176,21 @@ export async function deletePage(pageId: number) {
     return encodedRedirect("error", "/cms/pages", "Page not found or error fetching details for deletion.");
   }
 
+  // Also delete associated navigation links
+  if (pageToDelete.slug) {
+    const path = `/${pageToDelete.slug}`;
+    const { error: navError } = await supabase
+      .from("navigation_items")
+      .delete()
+      .eq("path", path);
+
+    if (navError) {
+      console.error("Error deleting navigation links:", navError);
+      // For now, we'll log it and proceed with page deletion.
+      // A more robust solution might wrap these in a transaction.
+    }
+  }
+
   const { error } = await supabase.from("pages").delete().eq("id", pageId);
 
   if (error) {
@@ -185,7 +200,8 @@ export async function deletePage(pageId: number) {
 
   revalidatePath("/cms/pages");
   if (pageToDelete.slug) revalidatePath(`/${pageToDelete.slug}`);
-  encodedRedirect("success", "/cms/pages", "Page deleted successfully.");
+  revalidatePath("/cms/navigation"); // Revalidate nav since items were removed
+  encodedRedirect("success", "/cms/pages", "Page and associated navigation links deleted successfully.");
 }
 
 // Helper function to generate a unique slug (simple version, needs improvement for production)
