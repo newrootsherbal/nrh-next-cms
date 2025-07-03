@@ -6,7 +6,14 @@ import type { Database } from "../../../../utils/supabase/types";
 
 type Language = Database['public']['Tables']['languages']['Row'];
 
-export default async function NewPage() {
+interface NewPageProps {
+  searchParams: {
+    from_group?: string;
+    target_lang_id?: string;
+  };
+}
+
+export default async function NewPage({ searchParams }: NewPageProps) {
   const supabase = createClient();
   const { data: fetchedLanguages, error: languagesError } = await supabase
     .from("languages")
@@ -28,6 +35,8 @@ export default async function NewPage() {
         actionButtonText="Create Page"
         isEditing={false}
         availableLanguagesProp={availableLanguages}
+        translationGroupId={searchParams.from_group}
+        target_lang_id={searchParams.target_lang_id}
       />
     </div>
   );

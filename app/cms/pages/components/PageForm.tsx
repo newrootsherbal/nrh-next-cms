@@ -28,6 +28,8 @@ interface PageFormProps {
   actionButtonText?: string;
   isEditing?: boolean;
   availableLanguagesProp: Language[]; // New prop
+  translationGroupId?: string;
+  target_lang_id?: string;
 }
 
 export default function PageForm({
@@ -36,6 +38,8 @@ export default function PageForm({
   actionButtonText = "Save Page",
   isEditing = false,
   availableLanguagesProp, // Use the new prop
+  translationGroupId,
+  target_lang_id,
 }: PageFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -44,9 +48,27 @@ export default function PageForm({
 
   const [title, setTitle] = useState(page?.title || "");
   const [slug, setSlug] = useState(page?.slug || "");
-  const [languageId, setLanguageId] = useState<string>(
-    page?.language_id?.toString() || ""
-  );
+  const [languageId, setLanguageId] = useState<string>(() => {
+    // If editing, use the page's language
+    if (page?.language_id) {
+      return page.language_id.toString();
+    }
+    // If creating a translation, use the target language
+    if (target_lang_id) {
+      return target_lang_id;
+    }
+    // Otherwise, find the default language from the available languages
+    if (availableLanguagesProp && availableLanguagesProp.length > 0) {
+      const defaultLang = availableLanguagesProp.find((l) => l.is_default);
+      if (defaultLang) {
+        return defaultLang.id.toString();
+      }
+      // As a fallback, use the first available language
+      return availableLanguagesProp[0].id.toString();
+    }
+    // If no languages are available, default to an empty string
+    return "";
+  });
   const [status, setStatus] = useState<PageStatus>(page?.status || "draft");
   const [metaTitle, setMetaTitle] = useState(page?.meta_title || "");
   const [metaDescription, setMetaDescription] = useState(
@@ -70,15 +92,6 @@ export default function PageForm({
     }
   }, [searchParams]);
 
-  // Initialize languageId if creating new page and languages are available
-  useEffect(() => {
-    if (!page?.language_id && availableLanguages.length > 0 && !languageId) {
-      const defaultLang = availableLanguages.find(l => l.is_default) || availableLanguages[0];
-      if (defaultLang) {
-          setLanguageId(defaultLang.id.toString());
-      }
-    }
-  }, [page?.language_id, availableLanguages, languageId]);
 
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,6 +138,9 @@ export default function PageForm({
           {formMessage.text}
         </div>
       )}
+      {translationGroupId && (
+        <input type="hidden" name="translation_group_id" value={translationGroupId} />
+      )}
       <div>
         <Label htmlFor="title">Title</Label>
         <Input
@@ -155,6 +171,7 @@ export default function PageForm({
         {availableLanguages.length > 0 ? (
           <Select
             name="language_id"
+            defaultValue={target_lang_id}
             value={languageId}
             onValueChange={setLanguageId}
             required

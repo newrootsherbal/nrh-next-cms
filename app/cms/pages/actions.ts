@@ -33,19 +33,39 @@ export async function createPage(formData: FormData) {
     return encodedRedirect("error", "/cms/pages/new", "Missing required fields: title, slug, language, or status.");
   }
 
-  const newTranslationGroupId = uuidv4();
+  const translation_group_id = formData.get("translation_group_id") as string || uuidv4();
 
-  const pageData: UpsertPagePayload = {
-    ...rawFormData,
-    author_id: user.id,
-    translation_group_id: newTranslationGroupId,
-  };
+  // Check if a translation for this language already exists
+  if (formData.get("translation_group_id")) {
+    const { data: existingTranslation, error: checkError } = await supabase
+      .from("pages")
+      .select("id")
+      .eq("translation_group_id", formData.get("translation_group_id") as string)
+      .eq("language_id", rawFormData.language_id)
+      .maybeSingle();
 
-  const { data: newPage, error: createError } = await supabase
-    .from("pages")
-    .insert(pageData)
-    .select("id, title, slug, language_id, translation_group_id")
-    .single();
+    if (checkError) {
+      console.error("Error checking for existing translation:", checkError);
+      // Decide if we should halt or just log. For now, we'll proceed.
+    }
+
+    if (existingTranslation) {
+      // A translation for this language already exists, redirect to its edit page.
+      redirect(`/cms/pages/${existingTranslation.id}/edit?warning=${encodeURIComponent("A page for this language already exists. You are now editing it.")}`);
+    }
+  }
+ 
+   const pageData: UpsertPagePayload = {
+     ...rawFormData,
+     author_id: user.id,
+     translation_group_id: translation_group_id,
+   };
+ 
+   const { data: newPage, error: createError } = await supabase
+     .from("pages")
+     .insert(pageData)
+     .select("id, title, slug, language_id, translation_group_id")
+     .single();
 
   if (createError) {
     console.error("Error creating page:", createError);
@@ -55,50 +75,13 @@ export async function createPage(formData: FormData) {
     return encodedRedirect("error", "/cms/pages/new", `Failed to create page: ${createError.message}`);
   }
 
-  let successMessage = "Page created successfully.";
-
-  if (newPage) {
-    const { data: languages, error: langError } = await supabase
-      .from("languages")
-      .select("id, code")
-      .neq("id", newPage.language_id);
-
-    if (langError) {
-      console.error("Error fetching other languages for auto-creation:", langError);
-    } else if (languages && languages.length > 0) {
-      let placeholderCreations = 0;
-      for (const lang of languages) {
-        const placeholderSlug = generatePlaceholderSlug(newPage.title, lang.code);
-        const placeholderPageData: Omit<UpsertPagePayload, 'author_id'> & {author_id?: string | null} = {
-          language_id: lang.id,
-          title: `[${lang.code.toUpperCase()}] ${newPage.title}`,
-          slug: placeholderSlug,
-          status: 'draft',
-          meta_title: null,
-          meta_description: null,
-          translation_group_id: newPage.translation_group_id,
-          author_id: user.id,
-        };
-        const { error: placeholderError } = await supabase.from("pages").insert(placeholderPageData);
-        if (placeholderError) {
-          console.error(`Error auto-creating page for language ${lang.code} (slug: ${placeholderSlug}):`, placeholderError);
-        } else {
-          placeholderCreations++;
-        }
-      }
-      if (placeholderCreations > 0) {
-        successMessage += ` ${placeholderCreations} placeholder version(s) also created (draft status, please edit their slugs and content).`;
-      }
-    }
-  }
-
   revalidatePath("/cms/pages");
   if (newPage?.slug) revalidatePath(`/${newPage.slug}`);
 
   if (newPage?.id) {
-    redirect(`/cms/pages/${newPage.id}/edit?success=${encodeURIComponent(successMessage)}`);
+    redirect(`/cms/pages/${newPage.id}/edit?success=${encodeURIComponent("Page created successfully.")}`);
   } else {
-    redirect(`/cms/pages?success=${encodeURIComponent(successMessage)}`);
+    redirect(`/cms/pages?success=${encodeURIComponent("Page created successfully.")}`);
   }
 }
 
@@ -166,52 +149,73 @@ export async function updatePage(pageId: number, formData: FormData) {
 
 export async function deletePage(pageId: number) {
   const supabase = createClient();
-  const { data: pageToDelete, error: fetchErr } = await supabase
+
+  // 1. Fetch the Translation Group
+  const { data: page, error: fetchError } = await supabase
     .from("pages")
-    .select("slug")
+    .select("translation_group_id")
     .eq("id", pageId)
     .single();
 
-  if (fetchErr || !pageToDelete) {
-    return encodedRedirect("error", "/cms/pages", "Page not found or error fetching details for deletion.");
+  if (fetchError || !page) {
+    console.error("Error fetching page for deletion:", fetchError);
+    return encodedRedirect("error", "/cms/pages", "Page not found.");
   }
 
-  // Also delete associated navigation links
-  if (pageToDelete.slug) {
-    const path = `/${pageToDelete.slug}`;
-    const { error: navError } = await supabase
-      .from("navigation_items")
-      .delete()
-      .eq("path", path);
+  const { translation_group_id } = page;
 
-    if (navError) {
-      console.error("Error deleting navigation links:", navError);
-      // For now, we'll log it and proceed with page deletion.
-      // A more robust solution might wrap these in a transaction.
+  // 2. Find All Related Pages
+  const { data: relatedPages, error: relatedPagesError } = await supabase
+    .from("pages")
+    .select("slug")
+    .eq("translation_group_id", translation_group_id);
+
+  if (relatedPagesError) {
+    console.error("Error fetching related pages:", relatedPagesError);
+    return encodedRedirect("error", "/cms/pages", "Could not fetch related pages for deletion.");
+  }
+
+  // 3. Delete All Associated Navigation Links
+  if (relatedPages && relatedPages.length > 0) {
+    const slugs = relatedPages.map(p => p.slug).filter((s): s is string => s !== null);
+    if (slugs.length > 0) {
+        const pathsToDelete = slugs.map(slug => `/${slug}`);
+        const { error: navError } = await supabase
+          .from("navigation_items")
+          .delete()
+          .in("url", pathsToDelete);
+
+        if (navError) {
+          console.error("Error deleting navigation links:", navError);
+          // Do not block deletion of pages if nav items fail to delete
+        }
     }
   }
 
-  const { error } = await supabase.from("pages").delete().eq("id", pageId);
+  // 4. Delete All Related Pages
+  const { error: deletePagesError } = await supabase
+    .from("pages")
+    .delete()
+    .eq("translation_group_id", translation_group_id);
 
-  if (error) {
-    console.error("Error deleting page:", error);
-    return encodedRedirect("error", "/cms/pages", `Failed to delete page: ${error.message}`);
+  if (deletePagesError) {
+    console.error("Error deleting pages:", deletePagesError);
+    return encodedRedirect("error", "/cms/pages", `Failed to delete pages: ${deletePagesError.message}`);
   }
 
+  // Revalidate paths to reflect the deletion
   revalidatePath("/cms/pages");
-  if (pageToDelete.slug) revalidatePath(`/${pageToDelete.slug}`);
-  revalidatePath("/cms/navigation"); // Revalidate nav since items were removed
-  encodedRedirect("success", "/cms/pages", "Page and associated navigation links deleted successfully.");
-}
+  revalidatePath("/cms/navigation");
+  if (relatedPages) {
+    relatedPages.forEach(p => {
+      if (p.slug) {
+        revalidatePath(`/${p.slug}`);
+      }
+    });
+  }
 
-// Helper function to generate a unique slug (simple version, needs improvement for production)
-// For auto-generated placeholders, to avoid immediate collision before user edits.
-function generatePlaceholderSlug(title: string, langCode: string): string {
-  const baseSlug = title.toLowerCase()
-    .replace(/\s+/g, '-') // Replace spaces with -
-    .replace(/[^\w-]+/g, '') // Remove all non-word chars
-    .substring(0, 50); // Truncate
-  return `${baseSlug}-${langCode}-${uuidv4().substring(0, 4)}`;
+  // 5. Update Redirect Message
+  redirect(`/cms/pages?success=${encodeURIComponent("Page and all its translations were deleted successfully.")}`);
 }
 
 type UpsertPagePayload = {

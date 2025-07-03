@@ -209,58 +209,67 @@ export async function updatePost(postId: number, formData: FormData) {
 
 export async function deletePost(postId: number) {
   const supabase = createClient();
-  const { data: postToDelete, error: fetchErr } = await supabase
+
+  // 1. Fetch the Translation Group
+  const { data: post, error: fetchError } = await supabase
     .from("posts")
-    .select("slug, translation_group_id, language_id")
+    .select("translation_group_id")
     .eq("id", postId)
     .single();
 
-  if (fetchErr || !postToDelete) {
-    return encodedRedirect("error", "/cms/posts", "Post not found or error fetching details for deletion.");
+  if (fetchError || !post) {
+    return encodedRedirect("error", "/cms/posts", "Post not found or error fetching details.");
   }
 
-  // Also delete associated navigation links
-  if (postToDelete.slug) {
-    const path = `/blog/${postToDelete.slug}`;
-    const { error: navDeleteError } = await supabase
+  const { translation_group_id } = post;
+
+  // 2. Find All Related Posts
+  const { data: relatedPosts, error: relatedPostsError } = await supabase
+    .from("posts")
+    .select("slug")
+    .eq("translation_group_id", translation_group_id);
+
+  if (relatedPostsError) {
+    return encodedRedirect("error", "/cms/posts", "Could not fetch related posts for deletion.");
+  }
+
+  // 3. Delete All Associated Navigation Links
+  if (relatedPosts && relatedPosts.length > 0) {
+    const urlsToDelete = relatedPosts.map(p => `/blog/${p.slug}`);
+    const { error: navError } = await supabase
       .from("navigation_items")
       .delete()
-      .eq("path", path);
+      .in("url", urlsToDelete);
 
-    if (navDeleteError) {
-      console.error("Error deleting navigation links:", navDeleteError);
-      // Decide if this should be a critical error. For now, we'll log it and proceed.
-      // For a stricter approach, you could return an error here:
-      // return encodedRedirect("error", "/cms/posts", `Failed to delete navigation links: ${navDeleteError.message}`);
+    if (navError) {
+      console.error("Error deleting navigation links:", navError);
+      // Not returning an error to the user, but logging it.
     }
   }
 
-  const { count, error: countError } = await supabase
+  // 4. Delete All Related Posts
+  const { error: deletePostsError } = await supabase
     .from("posts")
-    .select('*', { count: 'exact', head: true })
-    .eq("translation_group_id", postToDelete.translation_group_id);
+    .delete()
+    .eq("translation_group_id", translation_group_id);
 
-  if (countError) {
-    console.error("Error counting translations:", countError);
-    // Proceed with deletion but this is a warning/log
+  if (deletePostsError) {
+    return encodedRedirect("error", "/cms/posts", `Failed to delete posts: ${deletePostsError.message}`);
   }
 
-  const { error: deleteError } = await supabase.from("posts").delete().eq("id", postId);
-
-  if (deleteError) {
-    console.error("Error deleting post:", deleteError);
-    return encodedRedirect("error", "/cms/posts", `Failed to delete post: ${deleteError.message}`);
-  }
-
+  // Revalidate paths
   revalidatePath("/cms/posts");
-  if (postToDelete.slug) revalidatePath(`/blog/${postToDelete.slug}`);
-
-  let successMessage = "Post version deleted successfully.";
-  if (count === 1) {
-    successMessage = "Post (including all its translations as this was the last one) deleted successfully.";
+  revalidatePath("/cms/navigation");
+  if (relatedPosts) {
+    relatedPosts.forEach(p => {
+      if (p.slug) {
+        revalidatePath(`/blog/${p.slug}`);
+      }
+    });
   }
 
-  encodedRedirect("success", "/cms/posts", successMessage);
+  // 5. Update Redirect Message
+  redirect(`/cms/posts?success=${encodeURIComponent("Post and all its translations were deleted successfully.")}`);
 }
 
 // Helper function (already defined in page actions, ensure consistent or shared)
