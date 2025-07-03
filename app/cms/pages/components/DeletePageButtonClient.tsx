@@ -1,46 +1,47 @@
 // app/cms/pages/components/DeletePageButtonClient.tsx
 "use client";
 
-import React from 'react';
+import React, { useState, useTransition } from 'react';
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Trash2 } from "lucide-react";
-import { deletePage } from "../actions"; // Server action from app/cms/pages/actions.ts
+import { deletePage } from "../actions";
+import { ConfirmationModal } from '@/app/cms/components/ConfirmationModal';
 
 interface DeletePageButtonClientProps {
   pageId: number;
-  pageTitle: string; // For the confirmation message
+  pageTitle: string;
 }
 
 export default function DeletePageButtonClient({ pageId, pageTitle }: DeletePageButtonClientProps) {
-  // Bind the pageId directly to the deletePage server action.
-  const deletePageActionWithId = deletePage.bind(null, pageId);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
-  const handleSelect = (event: Event) => {
-    event.preventDefault(); // Prevent DropdownMenu from closing before confirm
-    if (confirm(`Are you sure you want to delete the page "${pageTitle}"? This action cannot be undone.`)) {
-      // Find the form and submit it.
-      // This assumes the button is a direct child of the form.
-      const form = (event.currentTarget as HTMLElement)?.closest('form');
-      if (form) {
-        form.requestSubmit();
-      } else {
-        // This should ideally not happen with the current structure.
-        console.error("Form not found for delete page button.");
-      }
-    }
+  const handleDelete = () => {
+    startTransition(() => {
+      deletePage(pageId);
+    });
   };
 
   return (
-    <form action={deletePageActionWithId} className="w-full">
-      <button type="submit" className="w-full text-left">
-        <DropdownMenuItem
-          className="text-red-600 hover:!text-red-600 hover:!bg-red-50 dark:hover:!bg-red-700/20 cursor-pointer"
-          onSelect={handleSelect} // Now handleSelect is defined and used within this Client Component
-        >
-          <Trash2 className="mr-2 h-4 w-4" />
-          Delete
-        </DropdownMenuItem>
-      </button>
-    </form>
+    <>
+      <DropdownMenuItem
+        className="text-red-600 hover:!text-red-600 hover:!bg-red-50 dark:hover:!bg-red-700/20 cursor-pointer"
+        onSelect={(e) => {
+          e.preventDefault();
+          setIsModalOpen(true);
+        }}
+      >
+        <Trash2 className="mr-2 h-4 w-4" />
+        Delete
+      </DropdownMenuItem>
+      <ConfirmationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={handleDelete}
+        title="Are you sure?"
+        description={`This will permanently delete the page '${pageTitle}'. This action cannot be undone.`}
+        confirmText={isPending ? "Deleting..." : "Delete"}
+      />
+    </>
   );
 }
