@@ -66,7 +66,7 @@ const PostsGridBlock: React.FC<PostsGridBlockProps> = async ({ block, languageId
 
   if (!initialPosts || initialPosts.length === 0) {
     return (
-      <section className="py-8">
+      <section className="py-8 container mx-auto">
         {title && <h2 className="text-2xl font-semibold mb-4">{title}</h2>}
         <p>No posts found.</p>
       </section>
@@ -74,7 +74,7 @@ const PostsGridBlock: React.FC<PostsGridBlockProps> = async ({ block, languageId
   }
 
   return (
-    <section className="py-8">
+    <section className="py-8 container mx-auto">
       {title && <h2 className="text-2xl font-semibold mb-6">{title}</h2>}
       <PostsGridClient
         initialPosts={initialPosts}

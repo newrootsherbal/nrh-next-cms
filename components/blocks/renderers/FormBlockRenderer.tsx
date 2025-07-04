@@ -32,7 +32,7 @@ const FormBlockRenderer: React.FC<FormBlockRendererProps> = ({ content }) => {
   }
 
   return (
-    <form action={formAction} className="space-y-4 my-6">
+    <form action={formAction} className="space-y-4 my-6 container mx-auto">
       {content.fields.map((field: FormField) => (
         <div key={field.temp_id} className="space-y-2">
           <Label htmlFor={field.temp_id}>

@@ -15,7 +15,7 @@ const TextBlockRenderer: React.FC<TextBlockRendererProps> = ({
 }) => {
   return (
     <div
-      className="my-4 prose dark:prose-invert max-w-none"
+      className="my-4 prose dark:prose-invert container mx-auto"
       dangerouslySetInnerHTML={{
         __html: content.html_content || "",
       }}

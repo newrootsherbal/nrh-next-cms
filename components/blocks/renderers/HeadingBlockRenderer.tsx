@@ -29,7 +29,7 @@ const HeadingBlockRenderer: React.FC<HeadingBlockRendererProps> = ({
     colorClass = `text-${content.textColor}`;
   }
 
-  const combinedClasses = `my-6 font-bold ${alignmentClass} ${colorClass}`.trim();
+  const combinedClasses = `my-6 font-bold container mx-auto ${alignmentClass} ${colorClass}`.trim();
   return (
     <Tag className={combinedClasses}>
       {content.text_content}
