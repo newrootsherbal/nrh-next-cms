@@ -160,9 +160,43 @@ export interface SectionBlockContent {
 export type HeroBlockContent = SectionBlockContent;
 
 /**
+ * Represents a single option for select, radio, or checkbox group fields.
+ */
+export interface FormFieldOption {
+  label: string;
+  value: string;
+}
+
+/**
+ * Represents a single field within the form block.
+ */
+export interface FormField {
+  temp_id: string; // For client-side keying and reordering
+  field_type: 'text' | 'email' | 'textarea' | 'select' | 'radio' | 'checkbox';
+  label: string;
+  placeholder?: string;
+  is_required: boolean;
+  options?: FormFieldOption[];
+}
+
+/**
+ * Content interface for the main form block.
+ */
+export interface FormBlockContent {
+  /** The email address where form submissions will be sent. */
+  recipient_email: string;
+  /** The text to display on the submit button. */
+  submit_button_text: string;
+  /** The message to show after a successful submission. */
+  success_message: string;
+  /** An array of form field configurations. */
+  fields: FormField[];
+}
+
+/**
  * Available block types - defined here as the source of truth
  */
-export const availableBlockTypes = ["text", "heading", "image", "button", "posts_grid", "video_embed", "section", "hero"] as const;
+export const availableBlockTypes = ["text", "heading", "image", "button", "posts_grid", "video_embed", "section", "hero", "form"] as const;
 export type BlockType = (typeof availableBlockTypes)[number];
 
 /**
@@ -684,6 +718,57 @@ hero: {
       notes: ['This block reuses the Section editor but has a different renderer for optimized image loading.'],
     },
   },
+  form: {
+    type: "form",
+    label: "Form",
+    initialContent: {
+      recipient_email: "your-email@example.com",
+      submit_button_text: "Submit",
+      success_message: "Thank you for your submission!",
+      fields: [],
+    } as FormBlockContent,
+    editorComponentFilename: "FormBlockEditor.tsx",
+    rendererComponentFilename: "FormBlockRenderer.tsx",
+    contentSchema: {
+      recipient_email: {
+        type: 'string',
+        required: true,
+        description: 'The email address where form submissions will be sent.',
+        default: 'your-email@example.com',
+      },
+      submit_button_text: {
+          type: 'string',
+          required: true,
+          description: 'The text to display on the submit button.',
+          default: 'Submit',
+      },
+      success_message: {
+          type: 'string',
+          required: true,
+          description: 'The message shown to the user after successful submission.',
+          default: 'Thank you for your submission!',
+      },
+      fields: {
+        type: 'array',
+        required: true,
+        description: 'The fields that make up the form.',
+        default: [],
+        arrayElementType: 'object',
+      },
+    },
+    documentation: {
+      description: 'Creates an interactive form that can be submitted to a specified email address.',
+      useCases: [
+        'Contact forms',
+        'Lead generation forms',
+        'Simple surveys',
+      ],
+      notes: [
+        'The actual email sending functionality depends on a separate server action.',
+        'Form submissions are not stored in the database by this block.',
+      ],
+    },
+  },
 };
 
 /**
@@ -759,11 +844,12 @@ export type AllBlockContent =
   | ({ type: "button" } & ButtonBlockContent)
   | ({ type: "posts_grid" } & PostsGridBlockContent)
   | ({ type: "section" } & SectionBlockContent)
- | ({ type: "hero" } & HeroBlockContent)
- | ({ type: "video_embed" } & VideoEmbedBlockContent);
+  | ({ type: "hero" } & HeroBlockContent)
+  | ({ type: "video_embed" } & VideoEmbedBlockContent)
+  | ({ type: "form" } & FormBlockContent);
 
 /**
- * Validate block content against its schema
+* Validate block content against its schema
  * Performs runtime validation based on the content schema definitions
  * 
  * @param blockType - The type of block to validate
