@@ -170,7 +170,7 @@ export default async function CmsPostsListPage(props: CmsPostsListPageProps) {
                           </AnimatedLink>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DeletePostButtonClient postId={post.id} postTitle={post.title} />
+                        <DeletePostButtonClient postId={post.id} />
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
