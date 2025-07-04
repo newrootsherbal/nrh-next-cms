@@ -2,10 +2,8 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { unstable_noStore as noStore } from "next/cache";
 
 export async function getLanguages() {
-  noStore();
   const supabase = createClient();
   const { data, error } = await supabase
     .from("languages")
@@ -22,7 +20,6 @@ export async function getLanguages() {
 }
 
 export async function getNavigationItems() {
-  noStore();
   const supabase = createClient();
   const { data, error } = await supabase
     .from("navigation_items")
@@ -38,7 +35,6 @@ export async function getNavigationItems() {
 }
 
 export async function getPages() {
-  noStore();
   const supabase = createClient();
   const { data, error } = await supabase
     .from("pages")

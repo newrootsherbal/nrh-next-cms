@@ -76,7 +76,7 @@ export default function NavigationLanguageSwitcher({
     }
 
     fetchTranslations();
-  }, [currentItem.translation_group_id, supabase, allSiteLanguages]);
+  }, [currentItem.translation_group_id]);
 
   const currentLanguageDetails = allSiteLanguages.find(l => l.id === currentItem.language_id);
   const currentLanguageName = currentLanguageDetails?.name || 'Unknown Language';
