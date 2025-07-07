@@ -1,6 +1,6 @@
 // app/cms/navigation/page.tsx
 import { createClient } from "@/utils/supabase/server";
-import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, ListTree } from "lucide-react";
 import type { Database } from "@/utils/supabase/types";
@@ -56,9 +56,9 @@ export default async function CmsNavigationListPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold">Manage Navigation</h1>
         <Button variant="default" asChild>
-          <AnimatedLink href="/cms/navigation/new">
+          <Link href="/cms/navigation/new">
             <PlusCircle className="mr-2 h-4 w-4" /> Create New Item
-          </AnimatedLink>
+          </Link>
         </Button>
       </div>
 
@@ -71,9 +71,9 @@ export default async function CmsNavigationListPage() {
           </p>
           <div className="mt-6">
             <Button asChild>
-              <AnimatedLink href="/cms/navigation/new">
+              <Link href="/cms/navigation/new">
                 <PlusCircle className="mr-2 h-4 w-4" /> Create Item
-              </AnimatedLink>
+              </Link>
             </Button>
           </div>
         </div>

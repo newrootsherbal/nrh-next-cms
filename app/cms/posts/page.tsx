@@ -1,7 +1,7 @@
 // app/cms/posts/page.tsx
 import React from "react";
 import { createClient } from "@/utils/supabase/server";
-import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -88,9 +88,9 @@ export default async function CmsPostsListPage(props: CmsPostsListPageProps) {
             basePath="/cms/posts"
           />
           <Button variant="default" asChild>
-            <AnimatedLink href="/cms/posts/new">
+            <Link href="/cms/posts/new">
               <PlusCircle className="mr-2 h-4 w-4" /> Create New Post
-            </AnimatedLink>
+            </Link>
           </Button>
         </div>
       </div>
@@ -112,9 +112,9 @@ export default async function CmsPostsListPage(props: CmsPostsListPageProps) {
           </p>
           <div className="mt-6">
             <Button asChild>
-              <AnimatedLink href="/cms/posts/new">
+              <Link href="/cms/posts/new">
                 <PlusCircle className="mr-2 h-4 w-4" /> Create Post
-              </AnimatedLink>
+              </Link>
             </Button>
           </div>
         </div>
@@ -135,13 +135,13 @@ export default async function CmsPostsListPage(props: CmsPostsListPageProps) {
               {postsWithDetails.map(({ post, languageCode }) => (
                 <TableRow key={post.id} className="dark:border-slate-700">
                   <TableCell className="font-medium">
-                    <AnimatedLink
+                    <Link
                       href={`/cms/posts/${post.id}/edit`}
                       className="flex items-center cursor-pointer"
                     >
                       <Edit3 className="mr-2 h-4 w-4" />
                       {post.title}
-                    </AnimatedLink>
+                    </Link>
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -173,9 +173,9 @@ export default async function CmsPostsListPage(props: CmsPostsListPageProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <AnimatedLink href={`/cms/posts/${post.id}/edit`} className="flex items-center cursor-pointer">
+                          <Link href={`/cms/posts/${post.id}/edit`} className="flex items-center cursor-pointer">
                             <Edit3 className="mr-2 h-4 w-4" /> Edit
-                          </AnimatedLink>
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DeletePostButtonClient postId={post.id} />

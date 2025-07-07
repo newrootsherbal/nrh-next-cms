@@ -4,7 +4,7 @@ import { FormMessage, Message } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
+import Link from "next/link";
 
 export default async function ForgotPassword(props: {
   searchParams: Promise<Message>;
@@ -17,9 +17,9 @@ export default async function ForgotPassword(props: {
           <h1 className="text-2xl font-medium">Reset Password</h1>
           <p className="text-sm text-secondary-foreground">
             Already have an account?{" "}
-            <AnimatedLink className="text-primary underline" href="/sign-in">
+            <Link className="text-primary underline" href="/sign-in">
               Sign in
-            </AnimatedLink>
+            </Link>
           </p>
         </div>
         <div className="flex flex-col gap-2 [&>input]:mb-3 mt-8">

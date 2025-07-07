@@ -4,7 +4,6 @@
 import { useLanguage } from '@/context/LanguageContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRouter, usePathname } from 'next/navigation';
-import { usePageTransition } from '@/components/transitions'; // Added
 import { getPageTranslations, getPageMetadataBySlugAndLocale } from '@/app/actions/languageActions';
 import type { Language } from '@/app/actions/languageActions';
 
@@ -21,7 +20,6 @@ export default function LanguageSwitcher({ currentPageData }: LanguageSwitcherPr
   const { currentLocale, setCurrentLocale, availableLanguages, isLoadingLanguages } = useLanguage();
   const router = useRouter();
   const pathname = usePathname();
-  const { setTransitioning } = usePageTransition(); // Added
 
   if (isLoadingLanguages || availableLanguages.length <= 1) {
     return null;
@@ -76,8 +74,6 @@ export default function LanguageSwitcher({ currentPageData }: LanguageSwitcherPr
       }
     }
 
-    setTransitioning(true); // Added: Start transition
-    // Small delay to allow exit animation to start, similar to AnimatedLink
     setTimeout(() => {
       if (pathname !== targetPath) {
         router.push(targetPath);
@@ -85,7 +81,6 @@ export default function LanguageSwitcher({ currentPageData }: LanguageSwitcherPr
         // If path is the same, refresh to ensure content updates for the new locale
         router.refresh();
       }
-      // setTransitioning(false) will be handled by PageTransitionProvider
     }, 50); // Adjust delay as needed
   };
 

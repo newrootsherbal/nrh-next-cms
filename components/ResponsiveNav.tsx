@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatedLink } from '@/components/transitions'; // Changed to AnimatedLink
+import Link from 'next/link';
 import React, { useState, useEffect, useMemo } from 'react'
 import { usePathname } from 'next/navigation'
 import type { Database } from '../utils/supabase/types' // Relative path from components/
@@ -134,16 +134,15 @@ export default function ResponsiveNav({
           className={`flex items-center justify-between w-full text-base font-medium text-foreground rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 ${level > 0 ? 'px-3 py-2' : 'px-3 py-2'}`}
         >
           {/* Only the label is a clickable link */}
-          <AnimatedLink
+          <Link
             href={item.url}
-            prefetchOnIntersect={true}
             className="py-0 px-0 mr-2 focus:underline focus:outline-none"
             onClick={() => {
               toggleMobileMenu();
             }}
           >
             {item.label}
-          </AnimatedLink>
+          </Link>
           {/* If item has children, the rest of the row (whitespace + chevron) is a single button to toggle submenu */}
           {item.children && item.children.length > 0 && (
             <button
@@ -174,16 +173,15 @@ export default function ResponsiveNav({
   const renderDesktopNavItems = (items: HierarchicalNavigationItem[], isSubmenu = false): React.JSX.Element[] => {
     return items.map(item => (
       <div key={item.id} className={`relative group ${isSubmenu ? 'w-full' : ''}`}>
-        <AnimatedLink
+        <Link
           href={item.url}
-          prefetchOnIntersect={true}
           className={`flex items-center justify-between hover:underline px-3 py-2 text-sm text-foreground ${isSubmenu ? 'w-full hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md' : ''}`}
         >
           {item.label}
           {item.children && item.children.length > 0 && (
             <ChevronDownIcon className={`ml-1 h-4 w-4 transition-transform duration-200 group-hover:rotate-180 ${isSubmenu ? '' : ''}`} />
           )}
-        </AnimatedLink>
+        </Link>
         {item.children && item.children.length > 0 && (
           <div
             className={`
@@ -205,7 +203,7 @@ export default function ResponsiveNav({
       <div className="flex justify-between items-center w-full">
         {/* Left side: Home link (visible on desktop and mobile) */}
         <div className="flex items-center">
-          <AnimatedLink
+          <Link
             href={homeLinkHref}
             className="flex items-center space-x-2 rtl:space-x-reverse"
           >
@@ -223,7 +221,7 @@ export default function ResponsiveNav({
                 {siteTitle}
               </span>
             )}
-          </AnimatedLink>
+          </Link>
           {/* Desktop: Additional Nav items */}
           <div className="hidden md:flex items-baseline font-semibold ml-6 space-x-1"> {/* Adjusted space-x for items with internal padding */}
             {hierarchicalNavItems.length > 0 && renderDesktopNavItems(hierarchicalNavItems)}
@@ -233,14 +231,14 @@ export default function ResponsiveNav({
         {/* Right side: Auth, LangSwitcher (desktop), Hamburger (mobile) */}
         <div className="hidden md:flex items-center space-x-4">
           {canAccessCms && editPathDetails && (
-            <AnimatedLink href={editPathDetails.href} prefetchOnHover={true} className="hover:underline font-semibold text-sm text-foreground mr-3">
+            <Link href={editPathDetails.href} className="hover:underline font-semibold text-sm text-foreground mr-3">
               {editPathDetails.label}
-            </AnimatedLink>
+            </Link>
           )}
           {canAccessCms && (
-            <AnimatedLink href={cmsDashboardLinkHref} prefetchOnHover={true} className="hover:underline font-semibold text-sm text-foreground">
+            <Link href={cmsDashboardLinkHref} className="hover:underline font-semibold text-sm text-foreground">
               {cmsDashboardLinkLabel}
-            </AnimatedLink>
+            </Link>
           )}
           {headerAuthComponent}
           {languageSwitcherComponent}
@@ -289,26 +287,24 @@ export default function ResponsiveNav({
           <nav className="flex-grow flex flex-col space-y-1 overflow-y-auto pt-6"> 
             {renderMobileNavItems(hierarchicalNavItems)}
             {canAccessCms && editPathDetails && (
-              <AnimatedLink
+              <Link
                 href={editPathDetails.href}
-                prefetchOnHover={true}
                 className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:bg-gray-100 dark:hover:bg-gray-700"
                 onClick={() => {
                   toggleMobileMenu();
                 }}
               >
                 {editPathDetails.label}
-              </AnimatedLink>
+              </Link>
             )}
             {canAccessCms && (
-              <AnimatedLink
+              <Link
                 href={cmsDashboardLinkHref}
-                prefetchOnHover={true}
                 className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:bg-gray-100 dark:hover:bg-gray-700"
                 onClick={toggleMobileMenu}
               >
                 {cmsDashboardLinkLabel}
-              </AnimatedLink>
+              </Link>
             )}
           </nav>
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 export type ButtonBlockContent = {
@@ -37,9 +37,9 @@ const ButtonBlockRenderer: React.FC<ButtonBlockRendererProps> = ({
           variant={buttonVariant}
           size={buttonSize}
         >
-          <AnimatedLink href={content.url}>
+          <Link href={content.url!}>
             {buttonText}
-          </AnimatedLink>
+          </Link>
         </Button>
       ) : /* Case 2: External or Anchor link (has URL) */
       (isExternal || isAnchor) && !!content.url ? (

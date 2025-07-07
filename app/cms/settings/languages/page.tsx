@@ -1,7 +1,7 @@
 // app/cms/settings/languages/page.tsx
 import React from 'react';
 import { createClient } from "@/utils/supabase/server";
-import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -59,9 +59,9 @@ export default async function CmsLanguagesListPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold">Manage Languages</h1>
         <Button variant="default" asChild>
-          <AnimatedLink href="/cms/settings/languages/new">
+          <Link href="/cms/settings/languages/new">
             <PlusCircle className="mr-2 h-4 w-4" /> Add New Language
-          </AnimatedLink>
+          </Link>
         </Button>
       </div>
 
@@ -80,9 +80,9 @@ export default async function CmsLanguagesListPage() {
           </p>
           <div className="mt-6">
             <Button asChild>
-              <AnimatedLink href="/cms/settings/languages/new">
+              <Link href="/cms/settings/languages/new">
                 <PlusCircle className="mr-2 h-4 w-4" /> Add Language
-              </AnimatedLink>
+              </Link>
             </Button>
           </div>
         </div>
@@ -125,9 +125,9 @@ export default async function CmsLanguagesListPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <AnimatedLink href={`/cms/settings/languages/${lang.id}/edit`} className="flex items-center cursor-pointer">
+                          <Link href={`/cms/settings/languages/${lang.id}/edit`} className="flex items-center cursor-pointer">
                             <Edit3 className="mr-2 h-4 w-4" /> Edit
-                          </AnimatedLink>
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DeleteLanguageClientButton language={lang} />

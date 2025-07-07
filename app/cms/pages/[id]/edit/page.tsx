@@ -11,7 +11,7 @@ type Page = Database['public']['Tables']['pages']['Row'];
 type Block = Database['public']['Tables']['blocks']['Row'];
 type Language = Database['public']['Tables']['languages']['Row'];
 import BlockEditorArea from "@/app/cms/blocks/components/BlockEditorArea";
-import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Eye, ArrowLeft } from "lucide-react";
 import ContentLanguageSwitcher from "@/app/cms/components/ContentLanguageSwitcher";
@@ -79,9 +79,9 @@ export default async function EditPage(props: { params: Promise<{ id: string }> 
       <div className="flex justify-between items-center flex-wrap gap-4 w-full">
         <div className="flex items-center gap-3">
             <Button variant="outline" size="icon" aria-label="Back to pages" asChild>
-                <AnimatedLink href="/cms/pages">
+                <Link href="/cms/pages">
                     <ArrowLeft className="h-4 w-4" />
-                </AnimatedLink>
+                </Link>
             </Button>
             <div>
                 <h1 className="text-2xl font-bold">Edit Page</h1>
@@ -109,9 +109,9 @@ export default async function EditPage(props: { params: Promise<{ id: string }> 
              />
            )}
             <Button variant="outline" asChild>
-              <AnimatedLink href={publicPageUrl} target="_blank" rel="noopener noreferrer">
+              <Link href={publicPageUrl} target="_blank" rel="noopener noreferrer">
                 <Eye className="mr-2 h-4 w-4" /> View Live
-              </AnimatedLink>
+              </Link>
             </Button>
         </div>
       </div>

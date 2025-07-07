@@ -1,4 +1,4 @@
-import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
+import Link from "next/link";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 
@@ -16,7 +16,7 @@ export function EnvVarWarning() {
           disabled
           className="opacity-75 cursor-none pointer-events-none"
         >
-          <AnimatedLink href="/sign-in">Sign in</AnimatedLink>
+          <Link href="/sign-in">Sign in</Link>
         </Button>
         <Button
           asChild
@@ -25,7 +25,7 @@ export function EnvVarWarning() {
           disabled
           className="opacity-75 cursor-none pointer-events-none"
         >
-          <AnimatedLink href="/sign-up">Sign up</AnimatedLink>
+          <Link href="/sign-up">Sign up</Link>
         </Button>
       </div>
     </div>

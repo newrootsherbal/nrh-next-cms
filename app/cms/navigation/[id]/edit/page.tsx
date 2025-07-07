@@ -8,7 +8,7 @@ import type { Database } from "@/utils/supabase/types";
 import { notFound, redirect } from "next/navigation";
 
 type NavigationItem = Database['public']['Tables']['navigation_items']['Row'];
-import { AnimatedLink } from "@/components/transitions";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import NavigationLanguageSwitcher from "../../components/NavigationLanguageSwitcher";
@@ -71,9 +71,9 @@ export default async function EditNavigationItemPage(props: { params: Promise<{ 
       <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-3">
             <Button variant="outline" size="icon" aria-label="Back to navigation items" asChild>
-                <AnimatedLink href="/cms/navigation">
+                <Link href="/cms/navigation">
                     <ArrowLeft className="h-4 w-4" />
-                </AnimatedLink>
+                </Link>
             </Button>
             <div>
                 <h1 className="text-2xl font-semibold">Edit Navigation Item</h1>

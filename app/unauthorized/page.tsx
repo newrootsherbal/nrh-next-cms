@@ -1,6 +1,6 @@
 // app/unauthorized/page.tsx
 'use client';
-import { AnimatedLink } from '@/components/transitions'; // Changed to AnimatedLink
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
 export default function UnauthorizedPage() {
@@ -19,9 +19,9 @@ export default function UnauthorizedPage() {
       {reason && <p className="text-sm text-gray-500 mt-1">Details: {reason}</p>}
       {error && <p className="text-sm text-red-500 mt-1">Error code: {error}</p>}
       <p className="mb-6 mt-4">Please contact your administrator if you believe this is an error.</p>
-      <AnimatedLink href="/" className="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+      <Link href="/" className="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
         Go to Homepage
-      </AnimatedLink>
+      </Link>
     </div>
   );
 }

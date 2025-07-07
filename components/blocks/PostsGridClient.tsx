@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import type { Database } from '../../utils/supabase/types';
-import { AnimatedLink } from '@/components/transitions'; // Changed to AnimatedLink
+import Link from 'next/link';
 
 type PostWithMediaDimensions = Database['public']['Tables']['posts']['Row'] & {
     feature_image_url: string | null;
@@ -115,7 +115,7 @@ const PostsGridClient: React.FC<PostsGridClientProps> = ({
           ))
         ) : posts.length > 0 ? (
           posts.map((post, index) => (
-            <AnimatedLink href={`/blog/${post.slug}`} key={post.id} className="block group" prefetchOnHover={true}>
+            <Link href={`/blog/${post.slug}`} key={post.id} className="block group">
               <div className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-card text-card-foreground">
                 {/* Basic Post Card Structure - Enhanced with Feature Image */}
                 {post.feature_image_url && typeof post.feature_image_width === 'number' && typeof post.feature_image_height === 'number' && post.feature_image_width > 0 && post.feature_image_height > 0 ? (
@@ -144,7 +144,7 @@ const PostsGridClient: React.FC<PostsGridClientProps> = ({
                   <span className="text-xs text-primary group-hover:underline">Read more</span>
                 </div>
               </div>
-            </AnimatedLink>
+            </Link>
           ))
         ) : (
           !error && <div className="col-span-full text-center py-10">No posts found.</div> // Show if no posts and no error, and not loading

@@ -12,7 +12,7 @@ type BlockType = Database['public']['Tables']['blocks']['Row'];
 type Language = Database['public']['Tables']['languages']['Row'];
 type Media = Database['public']['Tables']['media']['Row'];
 import BlockEditorArea from "@/app/cms/blocks/components/BlockEditorArea";
-import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Eye, ArrowLeft } from "lucide-react"; // Removed SeparatorVertical, use <Separator />
 import ContentLanguageSwitcher from "@/app/cms/components/ContentLanguageSwitcher";
@@ -119,9 +119,9 @@ export default async function EditPostPage(props: { params: Promise<{ id: string
       <div className="flex justify-between items-center flex-wrap gap-4 w-full">
         <div className="flex items-center gap-3">
             <Button variant="outline" size="icon" aria-label="Back to posts" asChild>
-                <AnimatedLink href="/cms/posts">
+                <Link href="/cms/posts">
                     <ArrowLeft className="h-4 w-4" />
-                </AnimatedLink>
+                </Link>
             </Button>
             <div>
                 <h1 className="text-2xl font-bold">Edit Post</h1>
@@ -146,9 +146,9 @@ export default async function EditPostPage(props: { params: Promise<{ id: string
               />
             )}
             <Button variant="outline" asChild>
-              <AnimatedLink href={publicPostUrl} target="_blank" rel="noopener noreferrer">
+              <Link href={publicPostUrl} target="_blank" rel="noopener noreferrer">
                 <Eye className="mr-2 h-4 w-4" /> View Live Post
-              </AnimatedLink>
+              </Link>
             </Button>
         </div>
       </div>

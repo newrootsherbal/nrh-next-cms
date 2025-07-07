@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { AnimatedLink } from '@/components/transitions'; // Changed to AnimatedLink
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Languages as LanguagesIcon, CheckCircle, PlusCircle } from 'lucide-react'; // Changed icon name
 import type { Database } from '@/utils/supabase/types';
@@ -109,7 +109,7 @@ export default function NavigationLanguageSwitcher({
 
           return (
             <DropdownMenuItem key={lang.id} asChild disabled={isCurrent && !!version} className={cn(isCurrent && !!version && "bg-accent font-semibold")}>
-              <AnimatedLink href={editUrl} className="w-full">
+              <Link href={editUrl} className="w-full">
                 <div className="flex justify-between items-center w-full">
                   <span>{lang.name} ({lang.code.toUpperCase()})</span>
                   {isCurrent && version && <CheckCircle className="h-4 w-4 text-primary" />}
@@ -122,7 +122,7 @@ export default function NavigationLanguageSwitcher({
                 ) : (
                   <div className="text-xs text-blue-500">Create new translation</div>
                 )}
-              </AnimatedLink>
+              </Link>
             </DropdownMenuItem>
           );
         })}

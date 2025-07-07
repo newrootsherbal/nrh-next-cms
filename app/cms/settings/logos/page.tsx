@@ -1,5 +1,5 @@
 import React from 'react'
-import { AnimatedLink } from '@/components/transitions'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -30,9 +30,9 @@ export default async function CmsLogosListPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold">Manage Logos</h1>
         <Button variant="default" asChild>
-          <AnimatedLink href="/cms/settings/logos/new">
+          <Link href="/cms/settings/logos/new">
             <PlusCircle className="mr-2 h-4 w-4" /> New Logo
-          </AnimatedLink>
+          </Link>
         </Button>
       </div>
 
@@ -45,9 +45,9 @@ export default async function CmsLogosListPage() {
           </p>
           <div className="mt-6">
             <Button asChild>
-              <AnimatedLink href="/cms/settings/logos/new">
+              <Link href="/cms/settings/logos/new">
                 <PlusCircle className="mr-2 h-4 w-4" /> Create Logo
-              </AnimatedLink>
+              </Link>
             </Button>
           </div>
         </div>
@@ -93,10 +93,10 @@ export default async function CmsLogosListPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <AnimatedLink href={`/cms/settings/logos/${logo.id}/edit`}>
+                          <Link href={`/cms/settings/logos/${logo.id}/edit`}>
                             <Edit3 className="mr-2 h-4 w-4" />
                             Edit
-                          </AnimatedLink>
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <form action={deleteLogo.bind(null, logo.id)}>

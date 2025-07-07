@@ -1,5 +1,5 @@
 // components/FooterNavigation.tsx
-import { AnimatedLink } from '@/components/transitions'; // Changed to AnimatedLink
+import Link from 'next/link';
 import type { Database } from '@/utils/supabase/types';
 import { getNavigationMenu } from '@/app/cms/navigation/actions';
 
@@ -29,9 +29,9 @@ export default async function FooterNavigation() {
     return items
       .filter(item => !item.parent_id) // Render only top-level items for simplicity
       .map(item => (
-        <AnimatedLink key={item.id} href={item.url} className="text-sm text-muted-foreground hover:text-foreground hover:underline px-2 py-1">
+        <Link key={item.id} href={item.url} className="text-sm text-muted-foreground hover:text-foreground hover:underline px-2 py-1">
           {item.label}
-        </AnimatedLink>
+        </Link>
       ));
   };
 

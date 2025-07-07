@@ -1,6 +1,6 @@
 import React from "react";
 import { createClient } from "@/utils/supabase/server";
-import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -160,9 +160,9 @@ export default async function CmsUsersListPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <AnimatedLink href={`/cms/users/${authUser.id}/edit`} className="flex items-center">
+                          <Link href={`/cms/users/${authUser.id}/edit`} className="flex items-center">
                             <Edit3 className="mr-2 h-4 w-4" /> Edit Role/Profile
-                          </AnimatedLink>
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DeleteUserButtonClient userId={authUser.id} userEmail={authUser.email} currentAdminId={currentAdmin.id} />

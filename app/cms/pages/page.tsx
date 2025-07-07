@@ -1,7 +1,7 @@
 // app/cms/pages/page.tsx
 import React from "react";
 import { createClient } from "@/utils/supabase/server";
-import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -104,9 +104,9 @@ export default async function CmsPagesListPage(props: CmsPagesListPageProps) {
             basePath="/cms/pages"
           />
           <Button variant="default" asChild>
-            <AnimatedLink href="/cms/pages/new">
+            <Link href="/cms/pages/new">
               <PlusCircle className="mr-2 h-4 w-4" /> Create New Page
-            </AnimatedLink>
+            </Link>
           </Button>
         </div>
       </div>
@@ -130,9 +130,9 @@ export default async function CmsPagesListPage(props: CmsPagesListPageProps) {
           </p>
           <div className="mt-6">
             <Button asChild>
-              <AnimatedLink href="/cms/pages/new">
+              <Link href="/cms/pages/new">
                 <PlusCircle className="mr-2 h-4 w-4" /> Create Page
-              </AnimatedLink>
+              </Link>
             </Button>
           </div>
         </div>
@@ -155,13 +155,13 @@ export default async function CmsPagesListPage(props: CmsPagesListPageProps) {
               {pagesWithDetails.map(({ page, languageCode }) => (
                 <TableRow key={page.id} className="dark:border-slate-700">
                   <TableCell className="font-medium">
-                    <AnimatedLink
+                    <Link
                       href={`/cms/pages/${page.id}/edit`}
                       className="flex items-center cursor-pointer"
                     >
                       <Edit3 className="mr-2 h-4 w-4" />
                       {page.title}
-                    </AnimatedLink>
+                    </Link>
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -207,12 +207,12 @@ export default async function CmsPagesListPage(props: CmsPagesListPageProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <AnimatedLink
+                          <Link
                             href={`/cms/pages/${page.id}/edit`}
                             className="flex items-center cursor-pointer"
                           >
                             <Edit3 className="mr-2 h-4 w-4" /> Edit
-                          </AnimatedLink>
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         {/* Use the Client Component for the delete button */}

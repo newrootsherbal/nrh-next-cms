@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 type Media = Database['public']['Tables']['media']['Row'];
 import { Checkbox } from "@/components/ui/checkbox";
 import { Trash2, Edit3, MoreHorizontal, FileText, Image as ImageIconLucideHost, AlertCircle } from "lucide-react";
-import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
+import Link from "next/link";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -165,9 +165,9 @@ export default function MediaGridClient({ initialMediaItems, r2BaseUrl }: MediaG
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                            <AnimatedLink href={`/cms/media/${item.id}/edit`} className="flex items-center cursor-pointer">
+                            <Link href={`/cms/media/${item.id}/edit`} className="flex items-center cursor-pointer">
                                 <Edit3 className="mr-2 h-4 w-4" /> Edit Details
-                            </AnimatedLink>
+                            </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DeleteMediaButtonClient mediaItem={item} />

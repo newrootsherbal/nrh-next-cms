@@ -7,7 +7,7 @@ import type { Database } from "@/utils/supabase/types";
 import { notFound } from "next/navigation";
 
 type Language = Database['public']['Tables']['languages']['Row'];
-import { AnimatedLink } from "@/components/transitions"; // Changed to AnimatedLink
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
@@ -59,9 +59,9 @@ export default async function EditLanguagePage(props: { params: Promise<{ id: st
     <div className="max-w-xl mx-auto">
       <div className="mb-6 flex items-center gap-3">
             <Button variant="outline" size="icon" asChild>
-                <AnimatedLink href="/cms/settings/languages">
+                <Link href="/cms/settings/languages">
                     <ArrowLeft className="h-4 w-4" />
-                </AnimatedLink>
+                </Link>
             </Button>
             <h1 className="text-2xl font-semibold">Edit Language: {language.name}</h1>
       </div>
