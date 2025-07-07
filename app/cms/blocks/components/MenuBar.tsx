@@ -6,13 +6,13 @@ import { Editor } from '@tiptap/react';
 import {
   Bold, Italic, Strikethrough, Code, List, ListOrdered, Quote, Undo, Redo, Pilcrow, Palette, Baseline, FileCode, X as XIcon
 } from 'lucide-react';
-import { Button } from '../../../../components/ui/button';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '../../../../components/ui/dropdown-menu';
+} from '@/components/ui/dropdown-menu';
 // import { MediaLibraryModal } from './MediaLibraryModal'; // Will be dynamically imported
 
 // Dynamically import MediaLibraryModal

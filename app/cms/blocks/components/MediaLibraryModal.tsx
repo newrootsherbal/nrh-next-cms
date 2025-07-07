@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Editor } from '@tiptap/react';
 import { Image as ImageIconLucide, Search, CheckCircle } from 'lucide-react';
-import { Button } from '../../../../components/ui/button';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -12,10 +12,10 @@ import {
   DialogTrigger,
   DialogFooter,
   DialogClose,
-} from '../../../../components/ui/dialog';
-import { Input } from '../../../../components/ui/input';
-import type { Database } from '../../../../utils/supabase/types';
-import { createClient as createBrowserClient } from '../../../../utils/supabase/client';
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import type { Database } from '@/utils/supabase/types';
+import { createClient as createBrowserClient } from '@/utils/supabase/client';
 
 type Media = Database['public']['Tables']['media']['Row'];
 

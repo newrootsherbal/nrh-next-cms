@@ -1,8 +1,8 @@
 // app/cms/pages/new/page.tsx
 import PageForm from "../components/PageForm";
 import { createPage } from "../actions"; // Server action for creating a page
-import { createClient } from "../../../../utils/supabase/server";
-import type { Database } from "../../../../utils/supabase/types";
+import { createClient } from "@/utils/supabase/server";
+import type { Database } from "@/utils/supabase/types";
 
 type Language = Database['public']['Tables']['languages']['Row'];
 

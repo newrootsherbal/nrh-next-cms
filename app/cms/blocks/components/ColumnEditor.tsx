@@ -2,16 +2,17 @@
 "use client";
 
 import React, { useState, lazy } from 'react';
-import { cn } from '../../../../lib/utils';
-import { Button } from '../../../../components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PlusCircle, Trash2, Edit2, GripVertical } from "lucide-react";
-import type { SectionBlockContent } from '../../../../lib/blocks/blockRegistry';
-import { availableBlockTypes, getBlockDefinition, getInitialContent, BlockType } from '../../../../lib/blocks/blockRegistry';
+import type { SectionBlockContent } from '@/lib/blocks/blockRegistry';
+import { availableBlockTypes, getBlockDefinition, getInitialContent, BlockType } from '@/lib/blocks/blockRegistry';
 import { useDroppable } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { BlockEditorModal } from './BlockEditorModal';
+import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog';
 
 
 type ColumnBlock = SectionBlockContent['column_blocks'][0][0];
@@ -121,6 +122,8 @@ export default function ColumnEditor({ columnIndex, blocks, onBlocksChange, bloc
   const [editingBlock, setEditingBlock] = useState<EditingBlock | null>(null);
   const [selectedBlockType, setSelectedBlockType] = useState<BlockType | "">("");
   const [LazyEditor, setLazyEditor] = useState<React.LazyExoticComponent<React.ComponentType<any>> | null>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [blockToDeleteIndex, setBlockToDeleteIndex] = useState<number | null>(null);
 
   const { setNodeRef: setDroppableNodeRef, isOver } = useDroppable({
     id: `${blockType}-column-droppable-${columnIndex}`,
@@ -148,8 +151,16 @@ export default function ColumnEditor({ columnIndex, blocks, onBlocksChange, bloc
   };
 
   const handleDeleteBlock = (index: number) => {
-    const newBlocks = blocks.filter((_, i) => i !== index);
+    setBlockToDeleteIndex(index);
+    setIsConfirmOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (blockToDeleteIndex === null) return;
+    const newBlocks = blocks.filter((_, i) => i !== blockToDeleteIndex);
     onBlocksChange(newBlocks);
+    setIsConfirmOpen(false);
+    setBlockToDeleteIndex(null);
   };
 
   const handleStartEdit = (block: ColumnBlock, index: number) => {
@@ -250,6 +261,15 @@ export default function ColumnEditor({ columnIndex, blocks, onBlocksChange, bloc
           EditorComponent={LazyEditor}
         />
       )}
+      <ConfirmationDialog
+        isOpen={isConfirmOpen}
+        onOpenChange={setIsConfirmOpen}
+        onConfirm={confirmDelete}
+        title="Are you sure?"
+        description="This action cannot be undone. This will permanently delete the block."
+        confirmText="Delete"
+        isDestructive={true}
+      />
     </div>
   );
 }

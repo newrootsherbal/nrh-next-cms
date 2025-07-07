@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { GripVertical, Trash2, Edit2 } from "lucide-react";
 import { getBlockDefinition, blockRegistry, BlockType } from "@/lib/blocks/blockRegistry";
 import { BlockEditorModal } from './BlockEditorModal';
+import { DeleteBlockButtonClient } from './DeleteBlockButtonClient';
 import { cn } from '@/lib/utils';
 
 // Define R2_BASE_URL, ideally this would come from a shared config or context
@@ -146,9 +147,11 @@ export default function EditableBlock({
             >
               <Edit2 className="h-4 w-4 text-muted-foreground" />
             </Button>
-          <Button variant="ghost" size="icon" onClick={() => onDelete(block.id)} title="Delete">
-            <Trash2 className="h-4 w-4 text-red-600" />
-          </Button>
+          <DeleteBlockButtonClient
+            blockId={block.id}
+            blockTitle={blockDefinition?.label || block.block_type}
+            onDelete={() => onDelete(block.id)}
+          />
         </div>
       </div>
       {isSection ? (
