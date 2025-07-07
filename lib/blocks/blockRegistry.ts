@@ -233,6 +233,8 @@ export interface BlockDefinition<T = any> {
   type: BlockType;
   /** User-friendly display name for the block */
   label: string;
+  /** Optional icon for the block, using lucide-react icon names */
+  icon?: string;
   /** Default content structure for new blocks of this type */
   initialContent: T;
   /** Filename of the editor component (assumed to be in app/cms/blocks/editors/) */
@@ -270,6 +272,7 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
   text: {
     type: "text",
     label: "Rich Text Block",
+    icon: "FileText",
     initialContent: { html_content: "<p>New text block...</p>" } as TextBlockContent,
     editorComponentFilename: "TextBlockEditor.tsx",
     rendererComponentFilename: "TextBlockRenderer.tsx",
@@ -303,6 +306,7 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
   heading: {
     type: "heading",
     label: "Heading",
+    icon: "Heading",
     initialContent: { level: 1, text_content: "New Heading", textAlign: 'left', textColor: undefined } as HeadingBlockContent,
     editorComponentFilename: "HeadingBlockEditor.tsx",
     rendererComponentFilename: "HeadingBlockRenderer.tsx",
@@ -368,6 +372,7 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
   image: {
     type: "image",
     label: "Image",
+    icon: "Image",
     initialContent: { media_id: null, alt_text: "", caption: "" } as ImageBlockContent,
     editorComponentFilename: "ImageBlockEditor.tsx",
     rendererComponentFilename: "ImageBlockRenderer.tsx",
@@ -431,6 +436,7 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
   button: {
     type: "button",
     label: "Button",
+    icon: "SquareMousePointer",
     initialContent: { text: "Click Me", url: "#", variant: "default", size: "default" } as ButtonBlockContent,
     editorComponentFilename: "ButtonBlockEditor.tsx",
     rendererComponentFilename: "ButtonBlockRenderer.tsx",
@@ -491,6 +497,7 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
   posts_grid: {
     type: "posts_grid",
     label: "Posts Grid",
+    icon: "LayoutGrid",
     initialContent: { postsPerPage: 12, columns: 3, showPagination: true, title: "Recent Posts" } as PostsGridBlockContent,
     editorComponentFilename: "PostsGridBlockEditor.tsx",
     rendererComponentFilename: "PostsGridBlockRenderer.tsx",
@@ -550,6 +557,7 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
   video_embed: {
     type: "video_embed",
     label: "Video Embed",
+    icon: "SquarePlay",
     initialContent: {
       url: "",
       title: "",
@@ -606,6 +614,7 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
   section: {
     type: "section",
     label: "Section Layout",
+    icon: "Columns3",
     initialContent: {
       container_type: "container",
       background: { type: "none" },
@@ -691,6 +700,7 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
 hero: {
     type: "hero",
     label: "Hero Section",
+    icon: "LayoutTemplate",
     initialContent: {
       container_type: 'container',
       background: { type: "none" },
@@ -721,6 +731,7 @@ hero: {
   form: {
     type: "form",
     label: "Form",
+    icon: "NotebookPen",
     initialContent: {
       recipient_email: "your-email@example.com",
       submit_button_text: "Submit",

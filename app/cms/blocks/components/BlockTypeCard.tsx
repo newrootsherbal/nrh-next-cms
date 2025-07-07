@@ -1,0 +1,34 @@
+// app/cms/blocks/components/BlockTypeCard.tsx
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import * as LucideIcons from 'lucide-react';
+
+interface BlockTypeCardProps {
+  icon?: string;
+  name: string;
+  description?: string;
+  onClick: () => void;
+}
+
+const BlockTypeCard: React.FC<BlockTypeCardProps> = ({ icon, name, description, onClick }) => {
+  const IconComponent = icon ? (LucideIcons as any)[icon] : LucideIcons.Package;
+
+  return (
+    <Card
+      onClick={onClick}
+      className="cursor-pointer hover:shadow-lg hover:border-primary transition-all duration-200 ease-in-out"
+    >
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{name}</CardTitle>
+        {IconComponent && <IconComponent className="h-4 w-4 text-muted-foreground" />}
+      </CardHeader>
+      <CardContent>
+        <p className="text-xs text-muted-foreground">
+          {description || 'No description available.'}
+        </p>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default BlockTypeCard;

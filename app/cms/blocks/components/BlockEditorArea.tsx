@@ -5,7 +5,7 @@ import React, { useState, useTransition, useEffect, ComponentType, useCallback, 
 import dynamic from 'next/dynamic';
 import debounce from 'lodash.debounce';
 import type { Database } from "@/utils/supabase/types";
-import { availableBlockTypes, type BlockType } from "@/lib/blocks/blockRegistry";
+import { type BlockType } from "@/lib/blocks/blockRegistry";
 
 type Block = Database["public"]["Tables"]["blocks"]["Row"];
 import { getBlockDefinition, type SectionBlockContent } from "@/lib/blocks/blockRegistry";
@@ -19,14 +19,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
+import BlockTypeSelector from "./BlockTypeSelector";
 import {
   createBlockForPage,
   createBlockForPost,
@@ -78,7 +71,7 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
   const lastSavedBlocks = useRef(blocks);
   const [isPending, startTransition] = useTransition();
   const [isSavingNested, startSavingNestedTransition] = useTransition();
-  const [selectedBlockTypeToAdd, setSelectedBlockTypeToAdd] = useState<BlockType | "">("");
+  const [isBlockSelectorOpen, setIsBlockSelectorOpen] = useState(false);
   const [activeBlock, setActiveBlock] = useState<Block | null>(null);
   const [editingNestedBlockInfo, setEditingNestedBlockInfo] = useState<EditingNestedBlockInfo | null>(null);
   const [NestedBlockEditorComponent, setNestedBlockEditorComponent] = useState<ComponentType<any> | null>(null);
@@ -245,15 +238,15 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
     })
   );
 
-  const handleAddBlock = () => {
-    if (!selectedBlockTypeToAdd) return;
+  const handleAddBlock = (blockType: BlockType) => {
+    if (!blockType) return;
     startTransition(async () => {
       const newOrder = blocks.length > 0 ? Math.max(...blocks.map(b => b.order)) + 1 : 0;
       let result;
       if (parentType === "page") {
-        result = await createBlockForPage(parentId, languageId, selectedBlockTypeToAdd as BlockType, newOrder);
+        result = await createBlockForPage(parentId, languageId, blockType, newOrder);
       } else if (parentType === "post") {
-        result = await createBlockForPost(parentId, languageId, selectedBlockTypeToAdd as BlockType, newOrder);
+        result = await createBlockForPost(parentId, languageId, blockType, newOrder);
       } else {
         console.error("Unknown parent type:", parentType);
         return;
@@ -262,7 +255,6 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
         const newBlock = result.newBlock as Block;
         setBlocks(prev => [...prev, newBlock].sort((a,b) => a.order - b.order));
         lastSavedBlocks.current = [...blocks, newBlock].sort((a,b) => a.order - b.order);
-        setSelectedBlockTypeToAdd("");
       } else if (result?.error) {
         alert(`Error adding block: ${result.error}`);
       }
@@ -347,26 +339,17 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
 
   return (
     <div className="space-y-6 w-full mx-auto px-6">
-      <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border dark:border-slate-700">
-        <Label htmlFor="add-block-select" className="mb-2 block font-medium">Add New Block</Label>
-        <div className="flex gap-2">
-          <Select value={selectedBlockTypeToAdd} onValueChange={(value) => setSelectedBlockTypeToAdd(value as BlockType)}>
-            <SelectTrigger id="add-block-select" className="flex-grow bg-background">
-              <SelectValue placeholder="Select block type..." />
-            </SelectTrigger>
-            <SelectContent>
-              {availableBlockTypes.map((type) => (
-                <SelectItem key={type} value={type} className="capitalize">
-                  {type.replace("_", " ")}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button onClick={handleAddBlock} disabled={isPending || !selectedBlockTypeToAdd}>
-            <PlusCircle className="mr-2 h-4 w-4" /> Add Block
-          </Button>
-        </div>
+      <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border dark:border-slate-700 flex justify-center">
+        <Button onClick={() => setIsBlockSelectorOpen(true)} disabled={isPending}>
+          <PlusCircle className="mr-2 h-4 w-4" /> Add New Block
+        </Button>
       </div>
+
+      <BlockTypeSelector
+        isOpen={isBlockSelectorOpen}
+        onOpenChange={setIsBlockSelectorOpen}
+        onSelectBlockType={handleAddBlock}
+      />
 
       {blocks.length === 0 && (
         <p className="text-muted-foreground text-center py-4">No blocks yet. Add one above to get started!</p>
