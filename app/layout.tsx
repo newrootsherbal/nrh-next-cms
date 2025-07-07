@@ -104,7 +104,9 @@ export default async function RootLayout({
   return (
     <html lang={serverDeterminedLocale} suppressHydrationWarning>
       <head>
-<link rel="preconnect" href="https://ppcppwsfnrptznvbxnsz.supabase.co" />
+        <title>{metadata.title as string}</title>
+        <meta name="description" content={metadata.description as string} />
+        <link rel="preconnect" href="https://ppcppwsfnrptznvbxnsz.supabase.co" />
         <link rel="dns-prefetch" href="https://ppcppwsfnrptznvbxnsz.supabase.co" />
         <link rel="dns-prefetch" href="https://pub-a31e3f1a87d144898aeb489a8221f92e.r2.dev" />
         <link rel="dns-prefetch" href="https://aws-0-us-east-1.pooler.supabase.com" />
