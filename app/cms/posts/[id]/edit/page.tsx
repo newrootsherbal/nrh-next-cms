@@ -37,9 +37,6 @@ async function getPostDataWithBlocks(id: number): Promise<PostWithBlocks | null>
     .eq("id", id)
     .order('order', { foreignTable: 'blocks', ascending: true })
     .single();
-// ROO: Log raw Supabase response for postData and postError
-  console.log("DEBUG getPostDataWithBlocks - Supabase query result for postData:", JSON.stringify(postData, null, 2));
-  console.log("DEBUG getPostDataWithBlocks - Supabase query error for postError:", JSON.stringify(postError, null, 2));
 
   if (postError) {
     console.error("Error fetching post with blocks for edit:", postError);

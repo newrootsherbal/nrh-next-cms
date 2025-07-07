@@ -134,7 +134,15 @@ export default async function CmsPostsListPage(props: CmsPostsListPageProps) {
             <TableBody>
               {postsWithDetails.map(({ post, languageCode }) => (
                 <TableRow key={post.id} className="dark:border-slate-700">
-                  <TableCell className="font-medium">{post.title}</TableCell>
+                  <TableCell className="font-medium">
+                    <AnimatedLink
+                      href={`/cms/posts/${post.id}/edit`}
+                      className="flex items-center cursor-pointer"
+                    >
+                      <Edit3 className="mr-2 h-4 w-4" />
+                      {post.title}
+                    </AnimatedLink>
+                  </TableCell>
                   <TableCell>
                     <Badge
                       variant={
