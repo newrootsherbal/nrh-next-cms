@@ -20,6 +20,10 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'pub-a31e3f1a87d144898aeb489a8221f92e.r2.dev',
       },
+      {
+        protocol: 'https',
+        hostname: 'e260676f72b0b18314b868f136ed72ae.r2.cloudflarestorage.com',
+      },
       // Add other necessary hostnames, for example, from NEXT_PUBLIC_URL if it's different
       // and used for images. This example assumes NEXT_PUBLIC_R2_BASE_URL's hostname is the one above.
       // If NEXT_PUBLIC_URL is also an image source and has a different hostname:

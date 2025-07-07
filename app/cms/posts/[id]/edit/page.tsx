@@ -105,7 +105,7 @@ export default async function EditPostPage(props: { params: Promise<{ id: string
       // Not critical enough to notFound(), form will just not have initial image.
     } else if (mediaItem) {
       initialFeatureImageIdProp = mediaItem.id; // string UUID from media table
-      const r2BaseUrl = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
+      const r2BaseUrl = process.env.NEXT_PUBLIC_R2_BASE_URL;
       if (r2BaseUrl && mediaItem.object_key) {
         initialFeatureImageUrl = `${r2BaseUrl}/${mediaItem.object_key}`;
       } else if (!r2BaseUrl) {
