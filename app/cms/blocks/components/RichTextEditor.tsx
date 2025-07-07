@@ -80,7 +80,9 @@ export default function RichTextEditor({ initialContent, onChange, editable = tr
     // When initialContent prop changes:
     setHtmlSource(initialContent);
     if (editor && !isSourceView) {
-      editor.commands.setContent(initialContent, false);
+      if (initialContent !== editor.getHTML()) {
+        editor.commands.setContent(initialContent, false);
+      }
     }
     // If isSourceView is true, the textarea will automatically pick up the new htmlSource.
     // eslint-disable-next-line react-hooks/exhaustive-deps
