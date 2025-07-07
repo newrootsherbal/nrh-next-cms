@@ -1,5 +1,6 @@
 'use server';
 
+import { cache } from 'react';
 import { createClient } from '../../utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { Database } from '../../utils/supabase/types';
@@ -29,7 +30,7 @@ export async function fetchPaginatedPublishedPosts(languageId: number, page: num
 }
 
 // You could also move fetchInitialPublishedPosts here if it makes sense for organization
-export async function fetchInitialPublishedPosts(languageId: number, limit: number): Promise<{ posts: PostWithMediaDimensions[], totalCount: number, error?: string | null }> {
+export const fetchInitialPublishedPosts = cache(async (languageId: number, limit: number): Promise<{ posts: PostWithMediaDimensions[], totalCount: number, error?: string | null }> => {
   const supabase = createClient(); // This createClient is from utils/supabase/server
   const { data: posts, error, count } = await supabase
     .from('posts')
@@ -45,7 +46,7 @@ export async function fetchInitialPublishedPosts(languageId: number, limit: numb
   }
   
   return { posts: posts as PostWithMediaDimensions[], totalCount: count || 0, error: null };
-}
+});
 export async function revalidateAndLog(path: string): Promise<{ success: boolean; error?: string }> {
   try {
     // Step 1: Revalidate the path
