@@ -16,13 +16,23 @@ interface BlockTypeSelectorProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onSelectBlockType: (blockType: BlockType) => void;
+  allowedBlockTypes?: BlockType[];
 }
 
-const BlockTypeSelector: React.FC<BlockTypeSelectorProps> = ({ isOpen, onOpenChange, onSelectBlockType }) => {
+const BlockTypeSelector: React.FC<BlockTypeSelectorProps> = ({
+  isOpen,
+  onOpenChange,
+  onSelectBlockType,
+  allowedBlockTypes,
+}) => {
   const handleSelect = (blockType: BlockType) => {
     onSelectBlockType(blockType);
     onOpenChange(false);
   };
+
+  const blockDefs = Object.values(blockRegistry).filter(
+    (blockDef) => !allowedBlockTypes || allowedBlockTypes.includes(blockDef.type)
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -34,7 +44,7 @@ const BlockTypeSelector: React.FC<BlockTypeSelectorProps> = ({ isOpen, onOpenCha
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
-          {Object.values(blockRegistry).map((blockDef) => (
+          {blockDefs.map((blockDef) => (
             <BlockTypeCard
               key={blockDef.type}
               name={blockDef.label}

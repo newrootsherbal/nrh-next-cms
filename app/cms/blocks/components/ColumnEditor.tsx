@@ -4,7 +4,7 @@
 import React, { useState, lazy } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PlusCircle, Trash2, Edit2, GripVertical } from "lucide-react";
 import type { SectionBlockContent } from '@/lib/blocks/blockRegistry';
 import { availableBlockTypes, getBlockDefinition, getInitialContent, BlockType } from '@/lib/blocks/blockRegistry';
@@ -13,6 +13,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { BlockEditorModal } from './BlockEditorModal';
 import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog';
+import BlockTypeSelector from './BlockTypeSelector';
 
 
 type ColumnBlock = SectionBlockContent['column_blocks'][0][0];
@@ -120,7 +121,7 @@ type EditingBlock = ColumnBlock & { index: number };
 
 export default function ColumnEditor({ columnIndex, blocks, onBlocksChange, blockType }: ColumnEditorProps) {
   const [editingBlock, setEditingBlock] = useState<EditingBlock | null>(null);
-  const [selectedBlockType, setSelectedBlockType] = useState<BlockType | "">("");
+  const [isBlockSelectorOpen, setIsBlockSelectorOpen] = useState(false);
   const [LazyEditor, setLazyEditor] = useState<React.LazyExoticComponent<React.ComponentType<any>> | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [blockToDeleteIndex, setBlockToDeleteIndex] = useState<number | null>(null);
@@ -129,7 +130,7 @@ export default function ColumnEditor({ columnIndex, blocks, onBlocksChange, bloc
     id: `${blockType}-column-droppable-${columnIndex}`,
   });
 
-  const handleAddBlock = () => {
+  const handleAddBlock = (selectedBlockType: BlockType) => {
     if (!selectedBlockType) return;
     const initialContent = getInitialContent(selectedBlockType);
     const newBlock: ColumnBlock = {
@@ -138,7 +139,11 @@ export default function ColumnEditor({ columnIndex, blocks, onBlocksChange, bloc
       temp_id: `temp-${Date.now()}-${Math.random()}`
     };
     onBlocksChange([...blocks, newBlock]);
-    setSelectedBlockType("");
+  };
+
+  const handleSelectBlockType = (selectedBlockType: BlockType) => {
+    handleAddBlock(selectedBlockType);
+    setIsBlockSelectorOpen(false);
   };
 
   const handleCardClick = (e: React.MouseEvent<HTMLDivElement>, block: ColumnBlock, index: number) => {
@@ -200,21 +205,10 @@ export default function ColumnEditor({ columnIndex, blocks, onBlocksChange, bloc
             </span>
           </div>
         </div>
-        <div className="flex gap-2 mt-2">
-          <Select value={selectedBlockType} onValueChange={(value: string) => setSelectedBlockType(value as BlockType)}>
-            <SelectTrigger className="flex-1 h-8 text-xs">
-              <SelectValue placeholder="Add block..." />
-            </SelectTrigger>
-            <SelectContent>
-              {availableBlockTypes.filter((type: BlockType) => type !== 'section' && type !== 'hero').map((type: BlockType) => (
-                <SelectItem key={type} value={type} className="text-xs capitalize">
-                  {getBlockDefinition(type)?.label || type.replace("_", " ")}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button onClick={handleAddBlock} disabled={!selectedBlockType} size="sm" className="h-8 px-2">
-            <PlusCircle className="h-3 w-3" />
+        <div className="mt-2">
+          <Button onClick={() => setIsBlockSelectorOpen(true)} size="sm" className="w-full h-8">
+            <PlusCircle className="h-3 w-3 mr-2" />
+            Add Block
           </Button>
         </div>
       </div>
@@ -269,6 +263,14 @@ export default function ColumnEditor({ columnIndex, blocks, onBlocksChange, bloc
         description="This action cannot be undone. This will permanently delete the block."
         confirmText="Delete"
         isDestructive={true}
+      />
+      <BlockTypeSelector
+        isOpen={isBlockSelectorOpen}
+        onOpenChange={setIsBlockSelectorOpen}
+        onSelectBlockType={handleSelectBlockType}
+        allowedBlockTypes={availableBlockTypes.filter(
+          (type) => type !== 'section' && type !== 'hero'
+        )}
       />
     </div>
   );
