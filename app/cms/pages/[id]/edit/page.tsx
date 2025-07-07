@@ -126,7 +126,7 @@ export default async function EditPage(props: { params: Promise<{ id: string }> 
 
       <Separator className="my-8" />
 
-      <div className="space-y-6 w-full mx-auto px-6">
+      <div className="w-full mx-auto px-6">
         <h2 className="text-xl font-semibold mb-4">Page Content Blocks</h2>
         <BlockEditorArea
           parentId={pageWithBlocks.id}

@@ -37,7 +37,7 @@ export function SortableBlockItem(props: EditableBlockProps) {
   // The EditableBlock component should then spread these onto its drag handle element.
   // If EditableBlock doesn't have a specific handle, spread them on its root.
   return (
-    <div ref={setNodeRef} style={style} className="mb-4">
+    <div ref={setNodeRef} style={style}>
       {/*
         Pass attributes and listeners to the element you want to be the drag handle.
         If the whole block is draggable, pass it to the root of EditableBlock.

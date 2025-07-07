@@ -175,7 +175,7 @@ export default async function EditPostPage(props: { params: Promise<{ id: string
 
       <Separator className="my-8" />
 
-      <div className="space-y-6 w-full mx-auto px-6">
+      <div className="w-full mx-auto px-6">
         <h2 className="text-xl font-semibold mb-4">Post Content Blocks</h2>
         <BlockEditorArea
           parentId={postWithBlocks.id}

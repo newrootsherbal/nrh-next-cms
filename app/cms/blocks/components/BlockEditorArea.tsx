@@ -73,6 +73,7 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
   const [isSavingNested, startSavingNestedTransition] = useTransition();
   const [isBlockSelectorOpen, setIsBlockSelectorOpen] = useState(false);
   const [activeBlock, setActiveBlock] = useState<Block | null>(null);
+  const [insertionIndex, setInsertionIndex] = useState<number | null>(null);
   const [editingNestedBlockInfo, setEditingNestedBlockInfo] = useState<EditingNestedBlockInfo | null>(null);
   const [NestedBlockEditorComponent, setNestedBlockEditorComponent] = useState<ComponentType<any> | null>(null);
   const [tempNestedBlockContent, setTempNestedBlockContent] = useState<any>(null);
@@ -238,26 +239,74 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
     })
   );
 
+  const handleOpenBlockSelector = (index: number) => {
+    setInsertionIndex(index);
+    setIsBlockSelectorOpen(true);
+  };
+
   const handleAddBlock = (blockType: BlockType) => {
-    if (!blockType) return;
+    if (insertionIndex === null) {
+      console.error("Attempted to add a block without an insertion index.");
+      return;
+    }
+
     startTransition(async () => {
-      const newOrder = blocks.length > 0 ? Math.max(...blocks.map(b => b.order)) + 1 : 0;
-      let result;
+      const newOrder = insertionIndex;
+
+      const blocksToUpdate = blocks
+        .filter((b) => b.order >= newOrder)
+        .map((b) => ({ id: b.id, order: b.order + 1 }));
+
+      if (blocksToUpdate.length > 0) {
+        const updateResult = await updateMultipleBlockOrders(
+          blocksToUpdate,
+          parentType === "page" ? parentId : null,
+          parentType === "post" ? parentId : null
+        );
+
+        if (updateResult?.error) {
+          alert(`Error making space for new block: ${updateResult.error}`);
+          return;
+        }
+      }
+
+      let createResult;
       if (parentType === "page") {
-        result = await createBlockForPage(parentId, languageId, blockType, newOrder);
-      } else if (parentType === "post") {
-        result = await createBlockForPost(parentId, languageId, blockType, newOrder);
+        createResult = await createBlockForPage(
+          parentId,
+          languageId,
+          blockType,
+          newOrder
+        );
       } else {
-        console.error("Unknown parent type:", parentType);
-        return;
+        createResult = await createBlockForPost(
+          parentId,
+          languageId,
+          blockType,
+          newOrder
+        );
       }
-      if (result && result.success && result.newBlock) {
-        const newBlock = result.newBlock as Block;
-        setBlocks(prev => [...prev, newBlock].sort((a,b) => a.order - b.order));
-        lastSavedBlocks.current = [...blocks, newBlock].sort((a,b) => a.order - b.order);
-      } else if (result?.error) {
-        alert(`Error adding block: ${result.error}`);
+
+      if (createResult?.success && createResult.newBlock) {
+        const newBlock = createResult.newBlock as Block;
+
+        const updatedOldBlocks = blocks.map((b) =>
+          b.order >= newOrder ? { ...b, order: b.order + 1 } : b
+        );
+
+        const finalBlocks = [...updatedOldBlocks, newBlock].sort(
+          (a, b) => a.order - b.order
+        );
+
+        setBlocks(finalBlocks);
+        lastSavedBlocks.current = finalBlocks;
+      } else {
+        alert(`Error adding block: ${createResult?.error}`);
+        // TODO: Revert order changes if creation fails
       }
+
+      setIsBlockSelectorOpen(false);
+      setInsertionIndex(null);
     });
   };
 
@@ -338,13 +387,7 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
   };
 
   return (
-    <div className="space-y-6 w-full mx-auto px-6">
-      <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border dark:border-slate-700 flex justify-center">
-        <Button onClick={() => setIsBlockSelectorOpen(true)} disabled={isPending}>
-          <PlusCircle className="mr-2 h-4 w-4" /> Add New Block
-        </Button>
-      </div>
-
+    <div className="w-full mx-auto px-6">
       <BlockTypeSelector
         isOpen={isBlockSelectorOpen}
         onOpenChange={setIsBlockSelectorOpen}
@@ -352,49 +395,84 @@ export default function BlockEditorArea({ parentId, parentType, initialBlocks, l
       />
 
       {blocks.length === 0 && (
-        <p className="text-muted-foreground text-center py-4">No blocks yet. Add one above to get started!</p>
+        <p className="text-muted-foreground text-center py-4">No blocks yet. Add one below to get started!</p>
       )}
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
-          <div>
-            {blocks.map((block) => (
-              <SortableBlockItem
-                key={block.id}
-                block={block}
-                onContentChange={handleContentChange}
-                onDelete={async (blockIdToDelete) => {
+        <SortableContext items={blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
+          <div className="w-full">
+            {blocks.map((block, index) => (
+              <div key={block.id}>
+                <div
+                  className="group relative py-4 w-full flex items-center justify-center cursor-pointer"
+                  onClick={() => handleOpenBlockSelector(index)}
+                  aria-label={`Add block before ${block.block_type}`}
+                >
+                  {/* Vertical Line */}
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-slate-200 dark:bg-slate-700 transform origin-center scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-100 transition-all duration-300" />
+                  {/* Plus Icon and Animated Circle */}
+                  <div className="relative z-10">
+                    {/* Animated Circle */}
+                    <div className="absolute -inset-2 rounded-full bg-primary/10 dark:bg-primary/30 scale-0 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-300 ease-in-out" />
+                    {/* Plus Icon Container */}
+                    <div className="relative bg-background p-1 rounded-full">
+                      <PlusCircle className="h-5 w-5 text-slate-400 group-hover:text-primary transition-colors" />
+                    </div>
+                  </div>
+                </div>
+                <SortableBlockItem
+                  block={block}
+                  onContentChange={handleContentChange}
+                  onDelete={async (blockIdToDelete) => {
                     startTransition(async () => {
-                        const result = await import("@/app/cms/blocks/actions").then(({ deleteBlock }) =>
-                            deleteBlock(blockIdToDelete, parentType === "page" ? parentId : null, parentType === "post" ? parentId : null)
-                        );
-                        if (result && result.success) {
-                            const newBlocks = blocks.filter(b => b.id !== blockIdToDelete);
-                            setBlocks(newBlocks);
-                            lastSavedBlocks.current = newBlocks;
-                        } else if (result?.error) {
-                            alert(`Error deleting block: ${result.error}`);
-                        }
+                      const result = await import("@/app/cms/blocks/actions").then(({ deleteBlock }) =>
+                        deleteBlock(
+                          blockIdToDelete,
+                          parentType === "page" ? parentId : null,
+                          parentType === "post" ? parentId : null
+                        )
+                      );
+                      if (result && result.success) {
+                        const newBlocks = blocks.filter((b) => b.id !== blockIdToDelete);
+                        setBlocks(newBlocks);
+                        lastSavedBlocks.current = newBlocks;
+                      } else if (result?.error) {
+                        alert(`Error deleting block: ${result.error}`);
+                      }
                     });
-                }}
-                onEditNestedBlock={handleEditNestedBlock}
-              />
+                  }}
+                  onEditNestedBlock={handleEditNestedBlock}
+                />
+              </div>
             ))}
           </div>
         </SortableContext>
         <DragOverlay>
-            {activeBlock ? (
-                <div className="bg-white shadow-lg rounded-md">
-                    <EditableBlock
-                        block={activeBlock}
-                        className="h-full"
-                        onDelete={() => {}}
-                        onContentChange={() => {}}
-                    />
-                </div>
-            ) : null}
+          {activeBlock ? (
+            <div className="bg-white shadow-lg rounded-md">
+              <EditableBlock block={activeBlock} className="h-full" onDelete={() => {}} onContentChange={() => {}} />
+            </div>
+          ) : null}
         </DragOverlay>
       </DndContext>
+
+      <div
+        className="group relative py-4 w-full flex items-center justify-center cursor-pointer"
+        onClick={() => handleOpenBlockSelector(blocks.length)}
+        aria-label="Add block at the end"
+      >
+        {/* Vertical Line */}
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-slate-200 dark:bg-slate-700 transform origin-center scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-100 transition-all duration-300" />
+        {/* Plus Icon and Animated Circle */}
+        <div className="relative z-10">
+          {/* Animated Circle */}
+          <div className="absolute -inset-2 rounded-full bg-primary/10 dark:bg-primary/30 scale-0 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-300 ease-in-out" />
+          {/* Plus Icon Container */}
+          <div className="relative bg-background p-1 rounded-full">
+            <PlusCircle className="h-5 w-5 text-slate-400 group-hover:text-primary transition-colors" />
+          </div>
+        </div>
+      </div>
 
       {editingNestedBlockInfo && (
         <Dialog open={!!editingNestedBlockInfo} onOpenChange={(isOpen) => {
