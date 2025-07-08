@@ -56,7 +56,8 @@
     "react-dom": "19.0.0",
     "react-transition-group": "^4.4.5",
     "server-only": "^0.0.1",
-    "sharp": "^0.34.2"
+    "sharp": "^0.34.2",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^15.3.3",

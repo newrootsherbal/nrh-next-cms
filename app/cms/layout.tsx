@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext"
 import { useRouter, usePathname } from "next/navigation" // Import usePathname
 import Link from "next/link"
 import {
-  LayoutDashboard, FileText, PenTool, Users, Settings, ChevronRight, LogOut, Menu, ListTree, Image as ImageIconLucide, X, Languages as LanguagesIconLucide,
+  LayoutDashboard, FileText, PenTool, Users, Settings, ChevronRight, LogOut, Menu, ListTree, Image as ImageIconLucide, X, Languages as LanguagesIconLucide, MessageSquare,
   Copyright as CopyrightIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -202,6 +202,7 @@ export default function CmsLayout({ children }: { children: ReactNode }) {
   else if (pathname.startsWith("/cms/settings/logos")) pageTitle = "Logos";
   else if (pathname.startsWith("/cms/settings/copyright")) pageTitle = "Copyright Settings";
   else if (pathname.startsWith("/cms/settings/copyright")) pageTitle = "Copyright Settings";
+  else if (pathname.startsWith("/cms/settings/extra-translations")) pageTitle = "Extra Translations";
   else if (pathname.startsWith("/cms/settings")) pageTitle = "Settings";
 
 
@@ -291,6 +292,9 @@ export default function CmsLayout({ children }: { children: ReactNode }) {
                    </NavItem>
                     <NavItem href="/cms/settings/copyright" icon={CopyrightIcon} isActive={pathname.startsWith("/cms/settings/copyright")} adminOnly isAdmin={isAdmin}>
                       Copyright
+                    </NavItem>
+                    <NavItem href="/cms/settings/extra-translations" icon={MessageSquare} isActive={pathname.startsWith("/cms/settings/extra-translations")} adminOnly isAdmin={isAdmin}>
+                      Extra Translations
                     </NavItem>
                  </CollapsibleNavItem>
                 </>

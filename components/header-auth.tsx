@@ -1,26 +1,18 @@
+'use client';
+
 import { signOutAction } from "@/app/actions";
 import { hasEnvVars } from "@/utils/supabase/check-env-vars";
 import Link from "next/link";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { createClient } from "@/utils/supabase/server";
+import { useAuth } from "@/context/AuthContext";
+import { useTranslations } from "@/context/TranslationsContext";
+import { useLanguage } from "@/context/LanguageContext";
 
-export default async function AuthButton() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  let username: string | null = null;
-  if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('id', user.id)
-      .single();
-    username = profile?.username || null;
-  }
+export default function AuthButton() {
+  const { user, profile } = useAuth();
+  const { t } = useTranslations();
+  const username = profile?.username || null;
 
   if (!hasEnvVars) {
     return (
@@ -42,7 +34,7 @@ export default async function AuthButton() {
               disabled
               className="opacity-75 cursor-none pointer-events-none"
             >
-              <Link href="/sign-in">Sign in</Link>
+              <Link href="/sign-in">{t('sign_in')}</Link>
             </Button>
             <Button
               asChild
@@ -51,7 +43,7 @@ export default async function AuthButton() {
               disabled
               className="opacity-75 cursor-none pointer-events-none"
             >
-              <Link href="/sign-up">Sign up</Link>
+              <Link href="/sign-up">{t('sign_up')}</Link>
             </Button>
           </div>
         </div>
@@ -63,17 +55,17 @@ export default async function AuthButton() {
       Hey, {username ? username : user.email}!
       <form action={signOutAction}>
         <Button type="submit" variant={"outline"}>
-          Sign out
+          {t('sign_out')}
         </Button>
       </form>
     </div>
   ) : (
     <div className="flex gap-2">
       <Button asChild size="sm" variant={"outline"}>
-        <Link href="/sign-in">Sign in</Link>
+        <Link href="/sign-in">{t('sign_in')}</Link>
       </Button>
       <Button asChild size="sm" variant={"default"}>
-        <Link href="/sign-up">Sign up</Link>
+        <Link href="/sign-up">{t('sign_up')}</Link>
       </Button>
     </div>
   );

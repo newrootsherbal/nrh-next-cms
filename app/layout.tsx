@@ -12,6 +12,8 @@ import { CurrentContentProvider } from "@/context/CurrentContentContext"; // Imp
 import { getActiveLanguagesServerSide } from "@/utils/supabase/server"; // Import server-side language fetcher
 import { getCopyrightSettings } from '@/app/cms/settings/copyright/actions';
 import { getNavigationMenu } from '@/app/cms/navigation/actions';
+import { getTranslations } from '@/app/cms/settings/extra-translations/actions';
+import { TranslationsProvider } from '@/context/TranslationsContext';
 import type { Database } from "@/utils/supabase/types"; // Import Language type
 import type { Metadata } from 'next';
 
@@ -89,6 +91,7 @@ export default async function RootLayout({
   const copyrightText = copyrightTemplate.replace('{year}', new Date().getFullYear().toString());
 
   const nonce = headerList.get('x-nonce') || '';
+  const translations = await getTranslations();
   return (
     <html lang={serverDeterminedLocale} suppressHydrationWarning>
       <head>
@@ -111,9 +114,10 @@ export default async function RootLayout({
             initialDefaultLanguage={defaultLanguage}
           >
             <CurrentContentProvider>
-              <ThemeProvider
-                attribute="class"
-                defaultTheme="system"
+              <TranslationsProvider translations={translations} lang={serverDeterminedLocale}>
+                <ThemeProvider
+                  attribute="class"
+                  defaultTheme="system"
                 enableSystem
                 disableTransitionOnChange
                 nonce={nonce}
@@ -137,7 +141,8 @@ export default async function RootLayout({
                     </div>
                   </footer>
                 </div>
-              </ThemeProvider>
+                </ThemeProvider>
+              </TranslationsProvider>
             </CurrentContentProvider>
           </LanguageProvider>
         </AuthProvider>

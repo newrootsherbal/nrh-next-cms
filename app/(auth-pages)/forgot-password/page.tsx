@@ -1,3 +1,5 @@
+'use client';
+
 import React from "react";
 import { forgotPasswordAction } from "@/app/actions";
 import { FormMessage, Message } from "@/components/form-message";
@@ -5,30 +7,46 @@ import { SubmitButton } from "@/components/submit-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { useTranslations } from "@/context/TranslationsContext";
+import { useSearchParams } from "next/navigation";
 
-export default async function ForgotPassword(props: {
-  searchParams: Promise<Message>;
-}) {
-  const searchParams = await props.searchParams;
+function getMessage(searchParams: URLSearchParams): Message | undefined {
+    if (searchParams.has('error')) {
+        return { error: searchParams.get('error')! };
+    }
+    if (searchParams.has('success')) {
+        return { success: searchParams.get('success')! };
+    }
+    if (searchParams.has('message')) {
+        return { message: searchParams.get('message')! };
+    }
+    return undefined;
+}
+
+export default function ForgotPassword() {
+  const { t } = useTranslations();
+  const searchParams = useSearchParams();
+  const formMessage = getMessage(searchParams);
+
   return (
     <>
       <form className="flex-1 flex flex-col w-full gap-2 text-foreground [&>input]:mb-6 min-w-64 max-w-64 mx-auto">
         <div>
-          <h1 className="text-2xl font-medium">Reset Password</h1>
+          <h1 className="text-2xl font-medium">{t('reset_password')}</h1>
           <p className="text-sm text-secondary-foreground">
-            Already have an account?{" "}
+            {t('already_have_account')}{" "}
             <Link className="text-primary underline" href="/sign-in">
-              Sign in
+              {t('sign_in')}
             </Link>
           </p>
         </div>
         <div className="flex flex-col gap-2 [&>input]:mb-3 mt-8">
-          <Label htmlFor="email">Email</Label>
-          <Input name="email" placeholder="you@example.com" required />
+          <Label htmlFor="email">{t('email')}</Label>
+          <Input name="email" placeholder={t('you_at_example_com')} required />
           <SubmitButton formAction={forgotPasswordAction}>
-            Reset Password
+            {t('reset_password')}
           </SubmitButton>
-          <FormMessage message={searchParams} />
+          <FormMessage message={formMessage} />
         </div>
       </form>
     </>
