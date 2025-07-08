@@ -187,6 +187,13 @@ const HeroBlockRenderer: React.FC<SectionBlockRendererProps> = ({
   const paddingTopClass = paddingClasses[content.padding.top] || paddingClasses.md;
   const paddingBottomClass = paddingClasses[content.padding.bottom] || paddingClasses.md;
 
+  const imageProps = backgroundImage?.blur_data_url
+    ? {
+        placeholder: 'blur' as const,
+        blurDataURL: backgroundImage.blur_data_url,
+      }
+    : {};
+
   return (
     <section
       className={`relative w-full flex items-center ${paddingTopClass} ${paddingBottomClass} ${backgroundClassName}`.trim()}
@@ -204,8 +211,7 @@ const HeroBlockRenderer: React.FC<SectionBlockRendererProps> = ({
           sizes="100vw"
           priority
           quality={60}
-          placeholder={backgroundImage.blur_data_url ? 'blur' : 'empty'}
-          blurDataURL={backgroundImage.blur_data_url}
+          {...imageProps}
         />
       )}
       {backgroundImage?.overlay?.gradient && (

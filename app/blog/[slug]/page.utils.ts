@@ -9,11 +9,12 @@ type BlockType = Database['public']['Tables']['blocks']['Row'];
 export type ImageBlockContent = {
   media_id: string | null;
   object_key?: string; // Optional because it's added later
+  blur_data_url?: string | null;
 };
 
 // Fetches post data by its language-specific slug.
 // Includes logic to fetch object_key for image blocks.
-export async function getPostDataBySlug(slug: string): Promise<(PostType & { blocks: BlockType[]; language_code: string; language_id: number; translation_group_id: string; feature_image_url?: string | null; }) | null> {
+export async function getPostDataBySlug(slug: string): Promise<(PostType & { blocks: BlockType[]; language_code: string; language_id: number; translation_group_id: string; feature_image_url?: string | null; feature_image_blur_data_url?: string | null; }) | null> {
   const supabase = createClient();
 
   const { data: postData, error: postError } = await supabase
@@ -22,7 +23,7 @@ export async function getPostDataBySlug(slug: string): Promise<(PostType & { blo
       *,
       languages!inner (id, code),
       blocks (*),
-      media ( object_key )
+      media ( object_key, blur_data_url )
     `)
     .eq("slug", slug) // Find the post by its unique slug for this language
     .eq("status", "published")
@@ -52,24 +53,59 @@ export async function getPostDataBySlug(slug: string): Promise<(PostType & { blo
 
   let blocksWithMediaData: BlockType[] = postData.blocks || [];
   if (blocksWithMediaData.length > 0) {
-    const imageBlockMediaIds = blocksWithMediaData
-      .filter(block => block.block_type === 'image' && (block.content as ImageBlockContent)?.media_id)
-      .map(block => (block.content as ImageBlockContent).media_id)
-      .filter(id => id !== null && typeof id === 'string') as string[];
+    const mediaIds = blocksWithMediaData
+      .map(block => {
+        if (block.block_type === 'image') {
+          return (block.content as ImageBlockContent)?.media_id;
+        }
+        if (block.block_type === 'section' || block.block_type === 'hero') {
+          const content = block.content as any;
+          if (content.background?.type === 'image' && content.background?.image?.media_id) {
+            return content.background.image.media_id;
+          }
+        }
+        return null;
+      })
+      .filter((id): id is string => id !== null && typeof id === 'string');
 
-    if (imageBlockMediaIds.length > 0) {
+    if (mediaIds.length > 0) {
       const { data: mediaItems, error: mediaError } = await supabase
-        .from('media').select('id, object_key').in('id', imageBlockMediaIds);
+        .from('media')
+        .select('id, object_key, blur_data_url')
+        .in('id', mediaIds);
+
       if (mediaError) {
         console.error("SSG (Posts): Error fetching media items for blocks:", mediaError);
       } else if (mediaItems) {
-        const mediaMap = new Map(mediaItems.map(m => [m.id, m.object_key]));
+        const mediaMap = new Map(mediaItems.map(m => [m.id, { object_key: m.object_key, blur_data_url: m.blur_data_url }]));
         blocksWithMediaData = blocksWithMediaData.map(block => {
-          if (block.block_type === 'image' && (block.content as ImageBlockContent)?.media_id) {
-            const currentContent = block.content as ImageBlockContent;
-            const objectKey = mediaMap.get(currentContent.media_id!);
-            if (objectKey) {
-              return { ...block, content: { ...currentContent, object_key: objectKey } };
+          if (block.block_type === 'image') {
+            const content = block.content as ImageBlockContent;
+            if (content.media_id) {
+              const mediaData = mediaMap.get(content.media_id);
+              if (mediaData) {
+                return { ...block, content: { ...content, object_key: mediaData.object_key, blur_data_url: mediaData.blur_data_url } };
+              }
+            }
+          }
+          if (block.block_type === 'section' || block.block_type === 'hero') {
+            const content = block.content as any;
+            if (content.background?.type === 'image' && content.background?.image?.media_id) {
+              const mediaData = mediaMap.get(content.background.image.media_id);
+              if (mediaData) {
+                const newContent = {
+                  ...content,
+                  background: {
+                    ...content.background,
+                    image: {
+                      ...content.background.image,
+                      object_key: mediaData.object_key,
+                      blur_data_url: mediaData.blur_data_url,
+                    },
+                  },
+                };
+                return { ...block, content: newContent };
+              }
             }
           }
           return block;
@@ -85,5 +121,6 @@ export async function getPostDataBySlug(slug: string): Promise<(PostType & { blo
     language_id: langInfo.id,
     translation_group_id: postData.translation_group_id,
     feature_image_url: postData.media?.object_key ? `${process.env.NEXT_PUBLIC_R2_BASE_URL}/${postData.media.object_key}` : null,
-  } as (PostType & { blocks: BlockType[]; language_code: string; language_id: number; translation_group_id: string; feature_image_url?: string | null; });
+    feature_image_blur_data_url: postData.media?.blur_data_url,
+  } as (PostType & { blocks: BlockType[]; language_code: string; language_id: number; translation_group_id: string; feature_image_url?: string | null; feature_image_blur_data_url?: string | null; });
 }
