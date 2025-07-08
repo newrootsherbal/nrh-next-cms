@@ -1,13 +1,12 @@
 // app/[slug]/page.tsx
 import React from 'react';
-import Head from 'next/head';
-import { getSsgSupabaseClient } from "@/utils/supabase/ssg-client"; // Correct import
+import { getSsgSupabaseClient } from "@/utils/supabase/ssg-client";
 import { notFound } from "next/navigation";
 import type { Metadata, ResolvingMetadata } from 'next';
 import PageClientContent from "./PageClientContent";
 import { getPageDataBySlug } from "./page.utils";
 import BlockRenderer from "../../components/BlockRenderer";
-import type { SectionBlockContent } from '@/lib/blocks/blockRegistry';
+import type { HeroBlockContent } from '@/lib/blocks/blockRegistry';
 
 export const dynamicParams = true;
 export const revalidate = 3600;
@@ -21,7 +20,7 @@ interface PageProps {
 }
 
 export async function generateStaticParams(): Promise<ResolvedPageParams[]> {
-  const supabase = getSsgSupabaseClient(); // Use the SSG-safe client
+  const supabase = getSsgSupabaseClient();
   const { data: pages, error } = await supabase
     .from("pages")
     .select("slug")
@@ -39,7 +38,6 @@ export async function generateMetadata(
   parent: ResolvingMetadata
 ): Promise<Metadata> {
   const params = await paramsPromise;
-  // getPageDataBySlug now uses the SSG-safe client internally
   const pageData = await getPageDataBySlug(params.slug);
 
   if (!pageData) {
@@ -47,7 +45,7 @@ export async function generateMetadata(
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
-  const supabase = getSsgSupabaseClient(); // Use SSG-safe client for additional queries
+  const supabase = getSsgSupabaseClient();
   const { data: languages } = await supabase.from('languages').select('id, code');
   const { data: pageTranslations } = await supabase
     .from('pages')
@@ -77,7 +75,6 @@ export async function generateMetadata(
 
 export default async function DynamicPage({ params: paramsPromise }: PageProps) {
   const params = await paramsPromise;
-  // getPageDataBySlug uses SSG-safe client, suitable for build and request time for public data
   const pageData = await getPageDataBySlug(params.slug);
 
   if (!pageData) {
@@ -106,18 +103,16 @@ export default async function DynamicPage({ params: paramsPromise }: PageProps) 
   const r2BaseUrl = process.env.NEXT_PUBLIC_R2_BASE_URL || "";
 
   if (pageData && pageData.blocks && r2BaseUrl) {
-    for (const block of pageData.blocks) {
-      if (block.block_type === "section" && block.content) {
-        const sectionContent = block.content as unknown as SectionBlockContent;
-        if (
-          sectionContent.background &&
-          sectionContent.background.type === "image" &&
-          sectionContent.background.image &&
-          sectionContent.background.image.object_key
-        ) {
-          lcpImageUrl = `${r2BaseUrl}/${sectionContent.background.image.object_key}`;
-          break;
-        }
+    const heroBlock = pageData.blocks.find(block => block.block_type === 'hero');
+    if (heroBlock) {
+      const heroContent = heroBlock.content as unknown as HeroBlockContent;
+      if (
+        heroContent.background &&
+        heroContent.background.type === "image" &&
+        heroContent.background.image &&
+        heroContent.background.image.object_key
+      ) {
+        lcpImageUrl = `${r2BaseUrl}/${heroContent.background.image.object_key}`;
       }
     }
   }
@@ -127,9 +122,7 @@ export default async function DynamicPage({ params: paramsPromise }: PageProps) 
   return (
     <>
       {lcpImageUrl && (
-        <Head>
-          <link rel="preload" as="image" href={lcpImageUrl} />
-        </Head>
+        <link rel="preload" as="image" href={lcpImageUrl} />
       )}
       <PageClientContent initialPageData={pageData} currentSlug={params.slug} translatedSlugs={translatedSlugs}>
         {pageBlocks}
