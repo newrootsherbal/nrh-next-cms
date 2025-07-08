@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import type { Database } from '../utils/supabase/types' // Relative path from components/
 import { useCurrentContent } from '@/context/CurrentContentContext';
@@ -86,6 +86,9 @@ export default function ResponsiveNav({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [expandedMobileItems, setExpandedMobileItems] = useState<Record<string, boolean>>({});
 
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const menuContainerRef = useRef<HTMLDivElement>(null);
+
   const hierarchicalNavItems = useMemo(() => buildHierarchy(navItems), [navItems]);
   const { currentContent } = useCurrentContent();
   const pathname = usePathname(); // Keep for other potential uses, or if preliminary check is still desired
@@ -127,6 +130,56 @@ export default function ResponsiveNav({
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, [isMobileMenuOpen]);
+
+  useEffect(() => {
+    const menuElement = menuContainerRef.current;
+    if (!menuElement) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return;
+
+      const focusableElements = menuElement.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), details, [tabindex]:not([tabindex="-1"])'
+      );
+
+      if (focusableElements.length === 0) return;
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (event.shiftKey) {
+        // Shift + Tab
+        if (document.activeElement === firstElement) {
+          lastElement.focus();
+          event.preventDefault();
+        }
+      } else {
+        // Tab
+        if (document.activeElement === lastElement) {
+          firstElement.focus();
+          event.preventDefault();
+        }
+      }
+    };
+
+    if (isMobileMenuOpen) {
+      const focusableElements = menuElement.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), details, [tabindex]:not([tabindex="-1"])'
+      );
+      
+      if (focusableElements.length > 0) {
+        focusableElements[0].focus();
+      }
+      
+      document.addEventListener('keydown', handleKeyDown);
+    } else {
+      menuButtonRef.current?.focus();
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, [isMobileMenuOpen]);
 
   const renderMobileNavItems = (items: HierarchicalNavigationItem[], level = 0): React.JSX.Element[] => {
@@ -212,7 +265,7 @@ export default function ResponsiveNav({
             {logo && logo.media ? (
               <Image
                 src={`${R2_BASE_URL}/${logo.media.object_key}`}
-                alt={logo.media.alt_text || 'Site logo'}
+                alt={logo.media.alt_text || 'Home'}
                 width={logo.media.width || 100}
                 height={logo.media.height || 32}
                 className="h-14 w-auto object-contain"
@@ -248,6 +301,7 @@ export default function ResponsiveNav({
 
         <div className="md:hidden flex items-center z-[60]">
           <button
+            ref={menuButtonRef}
             onClick={toggleMobileMenu}
             className="p-2 rounded-md text-foreground hover:text-primary focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
             aria-label={t('open_main_menu')}
@@ -277,6 +331,7 @@ export default function ResponsiveNav({
 
       {/* Slide-in Mobile Menu Container (for the sliding content) */}
       <div
+        ref={menuContainerRef}
         className={`fixed inset-0 z-40 transform transition-transform ease-in-out duration-300 md:hidden ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}

@@ -130,7 +130,7 @@ export default function EditableBlock({
     >
       <div className="flex justify-between items-center mb-2 pb-2 border-b">
         <div className="flex items-center gap-2">
-          <button {...dragHandleProps} className="p-1 rounded-md hover:bg-muted cursor-grab" title="Drag to reorder">
+          <button {...dragHandleProps} className="p-1 rounded-md hover:bg-muted cursor-grab" aria-label="Drag to reorder">
             <GripVertical className="h-5 w-5" />
           </button>
           <h3 className="font-semibold">{blockDefinition?.label || block.block_type}</h3>
@@ -143,7 +143,7 @@ export default function EditableBlock({
                 e.stopPropagation();
                 handleEditClick();
               }}
-              title={isSection ? "Toggle Section Config" : "Edit"}
+              aria-label={isSection ? "Toggle Section Config" : "Edit block"}
             >
               <Edit2 className="h-4 w-4 text-muted-foreground" />
             </Button>

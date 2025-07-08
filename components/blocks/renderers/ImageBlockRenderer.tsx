@@ -55,7 +55,7 @@ const ImageBlockRenderer: React.FC<ImageBlockRendererProps> = ({
       >
         <Image
           src={displayImageUrl}
-          alt={content.alt_text || "Uploaded image"}
+          alt={content.alt_text || ""}
           width={content.width}
           height={content.height}
           sizes="(max-width: 768px) 100vw, (max-width: 1280px) 75vw, 66vw"

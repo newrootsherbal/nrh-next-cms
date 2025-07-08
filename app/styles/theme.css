@@ -10,16 +10,16 @@
     --primary: 215 45% 30%; /* A strong, modern blue from your logo/cover accents */
     --primary-foreground: 0 0% 100%; /* White text on primary */
 
-    --secondary: 215 45% 75%; /* A darker, more desaturated blue for secondary elements */
-    --secondary-foreground: 0 0% 100%; /* White text on secondary */
+    --secondary: 215 45% 45%; /* A darker, more desaturated blue for secondary elements */ /* Accessibility Check: Verify contrast ratio of secondary-foreground on secondary background. */
+    --secondary-foreground: 0 0% 100%; /* White text on secondary */ /* Accessibility Check: Verify contrast ratio of secondary-foreground on secondary background. */
 
-    --muted: 220 30% 94%; /* Very light cool grey/blue for muted backgrounds */
-    --muted-foreground: 215 25% 45%; /* Desaturated blue-grey for text on muted */
+    --muted: 220 30% 94%; /* Very light cool grey/blue for muted backgrounds */ /* Accessibility Check: Verify contrast ratio of muted-foreground on muted background. */
+    --muted-foreground: 215 25% 45%; /* Desaturated blue-grey for text on muted */ /* Accessibility Check: Verify contrast ratio of muted-foreground on muted background. */
 
     --accent: 190 70% 50%; /* Bright cyan/teal from cover image glows */
     --accent-foreground: 210 40% 98%; /* Almost white, for high contrast on cyan */
 
-    --destructive: 0 70% 55%; /* A clear, but not overly harsh red (current is fine) */
+    --destructive: 0 70% 42%; /* A clear, but not overly harsh red (current is fine) */
     --destructive-foreground: 0 0% 98%; /* Light text on destructive (current is fine) */
 
     --border: 220 20% 88%; /* Light cool grey border */
@@ -56,7 +56,7 @@
     --accent: 195 80% 55%; /* Cyan/teal accent, kept vibrant for dark mode */
     --accent-foreground: 220 25% 10%; /* Very dark text on dark mode accent */
 
-    --destructive: 0 70% 60%; /* Red for destructive actions (current is fine) */
+    --destructive: 0 65% 42%; /* Red for destructive actions (current is fine) */
     --destructive-foreground: 0 0% 98%; /* Current is fine */
 
     --border: 220 15% 25%; /* Darker border, slightly blue-tinted */
