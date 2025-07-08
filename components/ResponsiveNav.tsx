@@ -309,8 +309,8 @@ export default function ResponsiveNav({
           </nav>
 
           <div className="mt-auto pt-6 border-t border-foreground/20 space-y-4">
-            <div onClick={toggleMobileMenu}>{headerAuthComponent}</div>
-            <div onClick={toggleMobileMenu}>{languageSwitcherComponent}</div>
+            <div >{headerAuthComponent}</div>
+            <div >{languageSwitcherComponent}</div>
           </div>
         </div>
       </div>
