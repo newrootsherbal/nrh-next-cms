@@ -26,37 +26,6 @@ interface PostClientContentProps {
   translatedSlugs?: { [key: string]: string };
 }
 
-// Fetches the slug for a given translation_group_id and target language_code
-// This function is no longer needed here as slugs are pre-fetched.
-// async function getSlugForTranslatedPost(
-//   translationGroupId: string,
-//   targetLanguageCode: string,
-//   supabase: ReturnType<typeof createClient>
-// ): Promise<string | null> {
-//   const { data: langInfo, error: langErr } = await supabase
-//     .from("languages").select("id").eq("code", targetLanguageCode).single();
-
-//   if (langErr || !langInfo) {
-//     console.warn(`Client (Posts): Target language '${targetLanguageCode}' not found for translation group '${translationGroupId}'.`);
-//     return null;
-//   }
-
-//   const { data: post, error: postErr } = await supabase
-//     .from("posts")
-//     .select("slug")
-//     .eq("translation_group_id", translationGroupId)
-//     .eq("language_id", langInfo.id)
-//     .eq("status", "published")
-//     .or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`)
-//     .single();
-  
-//   if (postErr || !post) {
-//     if (postErr) console.error(`Client (Posts): Error fetching translated post slug:`, postErr);
-//     return null;
-//   }
-//   return post.slug;
-// }
-
 export default function PostClientContent({ initialPostData, currentSlug, children, translatedSlugs }: PostClientContentProps) {
   const { currentLocale, isLoadingLanguages } = useLanguage();
   const { currentContent, setCurrentContent } = useCurrentContent();
@@ -173,11 +142,11 @@ export default function PostClientContent({ initialPostData, currentSlug, childr
       {isLoadingTargetLang && <div className="text-center py-2 text-sm text-muted-foreground">Switching language...</div>}
       
       {currentPostData?.feature_image_url && (
-        <div className="mb-8 -mt-8 sm:-mx-4 md:-mx-8 lg:-mx-12 xl:-mx-16"> {/* Adjust negative margins for full-bleed effect if container has padding */}
+        <div className="mb-8"> {/* Adjust negative margins for full-bleed effect if container has padding */}
           <img
             src={currentPostData.feature_image_url}
             alt={`Hero image for ${currentPostData.title}`}
-            className="w-full h-auto max-h-[400px] md:max-h-[500px] object-cover rounded-md shadow-lg" // Adjust max-h as needed, add rounded corners/shadow
+            className="w-full h-auto max-h-[400px] md:max-h-[500px] object-cover shadow-lg" // Adjust max-h as needed, add rounded corners/shadow
           />
         </div>
       )}
