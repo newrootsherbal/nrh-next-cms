@@ -23,7 +23,7 @@ export default function AuthButton() {
               variant={"default"}
               className="font-normal pointer-events-none"
             >
-              Please update .env.local file with anon key and url
+              {t('update_env_file_warning')}
             </Badge>
           </div>
           <div className="flex gap-2">
@@ -52,7 +52,7 @@ export default function AuthButton() {
   }
   return user ? (
     <div className="flex items-center gap-4">
-      Hey, {username ? username : user.email}!
+      {t('greeting', { username: username || user.email || 'User' })}
       <form action={signOutAction}>
         <Button type="submit" variant={"outline"}>
           {t('sign_out')}

@@ -12,6 +12,7 @@ import { createClient as createSupabaseServerClient } from '../utils/supabase/se
  import { getActiveLogo } from '@/app/cms/settings/logos/actions';
  // import { headers } from 'next/headers'; // No longer needed here
  import ResponsiveNav from './ResponsiveNav'; // Import the new client component
+ import { getTranslator } from '@/lib/translations';
 
 interface HeaderProps {
   currentLocale: string;
@@ -19,6 +20,7 @@ interface HeaderProps {
 }
 
 export default async function Header({ currentLocale, currentPageData }: HeaderProps) {
+  const t = await getTranslator(currentLocale);
   const supabase = createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -49,7 +51,7 @@ export default async function Header({ currentLocale, currentPageData }: HeaderP
       navItems={headerNavItems}
       canAccessCms={canAccessCms}
       cmsDashboardLinkHref="/cms/dashboard"
-      cmsDashboardLinkLabel="CMS Dashboard"
+      cmsDashboardLinkLabel={t('cms_dashboard')}
       headerAuthComponent={<HeaderAuth />}
       languageSwitcherComponent={
         <LanguageSwitcher currentPageData={currentPageData} />

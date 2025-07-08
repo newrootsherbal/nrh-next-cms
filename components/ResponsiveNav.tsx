@@ -4,7 +4,8 @@ import Link from 'next/link';
 import React, { useState, useEffect, useMemo } from 'react'
 import { usePathname } from 'next/navigation'
 import type { Database } from '../utils/supabase/types' // Relative path from components/
-import { useCurrentContent } from '@/context/CurrentContentContext'
+import { useCurrentContent } from '@/context/CurrentContentContext';
+import { useTranslations } from '@/context/TranslationsContext';
 
 type Logo = Database['public']['Tables']['logos']['Row'] & { media: (Database['public']['Tables']['media']['Row'] & { alt_text: string | null }) | null };
 type NavigationItem = Database['public']['Tables']['navigation_items']['Row'];
@@ -81,6 +82,7 @@ export default function ResponsiveNav({
   logo,
   siteTitle,
 }: ResponsiveNavProps) {
+  const { t } = useTranslations();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [expandedMobileItems, setExpandedMobileItems] = useState<Record<string, boolean>>({});
 
@@ -94,12 +96,12 @@ export default function ResponsiveNav({
     if (currentContent.type === 'page') {
       editPathDetails = {
         href: `/cms/pages/${currentContent.id}/edit`,
-        label: "Edit Page",
+        label: t('edit_page'),
       };
     } else if (currentContent.type === 'post') {
       editPathDetails = {
         href: `/cms/posts/${currentContent.id}/edit`,
-        label: "Edit Post",
+        label: t('edit_post'),
       };
     }
   }
@@ -248,7 +250,7 @@ export default function ResponsiveNav({
           <button
             onClick={toggleMobileMenu}
             className="p-2 rounded-md text-foreground hover:text-primary focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
-            aria-label="Open main menu"
+            aria-label={t('open_main_menu')}
             aria-expanded={isMobileMenuOpen}
           >
             {isMobileMenuOpen ? (
@@ -280,7 +282,7 @@ export default function ResponsiveNav({
         }`}
         role="dialog"
         aria-modal="true"
-        aria-label="Mobile navigation menu"
+        aria-label={t('mobile_navigation_menu')}
       >
         {/* Menu Content (this part slides with the container above) */}
         <div className="fixed top-16 left-0 h-[calc(100vh-4rem)] w-full max-w-sm bg-background text-foreground shadow-xl p-5 z-50 flex flex-col">

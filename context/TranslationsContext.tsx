@@ -10,7 +10,7 @@ type Translations = {
 
 type TranslationsContextType = {
   translations: Translations;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 };
 
 const TranslationsContext = createContext<TranslationsContextType | undefined>(undefined);
@@ -32,17 +32,25 @@ export function TranslationsProvider({
     return result;
   }, [translations]);
 
-  const translate = (key: string, currentLang: string): string => {
+  const translate = (key: string, currentLang: string, params?: Record<string, string | number>): string => {
     const translationSet = processedTranslations[key];
     if (!translationSet) {
       return key; // Return key if not found
     }
-    return translationSet[currentLang] || translationSet['en'] || key;
+    let text = translationSet[currentLang] || translationSet['en'] || key;
+
+    if (params) {
+      Object.entries(params).forEach(([paramKey, value]) => {
+        text = text.replace(`{${paramKey}}`, String(value));
+      });
+    }
+
+    return text;
   };
 
   const value = {
     translations: processedTranslations,
-    t: (key: string) => translate(key, lang),
+    t: (key: string, params?: Record<string, string | number>) => translate(key, lang, params),
   };
 
   return (
