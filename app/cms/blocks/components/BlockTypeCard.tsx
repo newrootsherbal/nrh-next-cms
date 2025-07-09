@@ -1,7 +1,31 @@
 // app/cms/blocks/components/BlockTypeCard.tsx
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import * as LucideIcons from 'lucide-react';
+import {
+  FileText,
+  Heading,
+  Image,
+  SquareMousePointer,
+  LayoutGrid,
+  SquarePlay,
+  Columns3,
+  LayoutTemplate,
+  NotebookPen,
+  Package,
+  type LucideProps,
+} from 'lucide-react';
+
+const iconMap: { [key: string]: React.FC<LucideProps> } = {
+  FileText,
+  Heading,
+  Image,
+  SquareMousePointer,
+  LayoutGrid,
+  SquarePlay,
+  Columns3,
+  LayoutTemplate,
+  NotebookPen,
+};
 
 interface BlockTypeCardProps {
   icon?: string;
@@ -11,7 +35,7 @@ interface BlockTypeCardProps {
 }
 
 const BlockTypeCard: React.FC<BlockTypeCardProps> = ({ icon, name, description, onClick }) => {
-  const IconComponent = icon ? (LucideIcons as any)[icon] : LucideIcons.Package;
+  const IconComponent = icon && iconMap[icon] ? iconMap[icon] : Package;
 
   return (
     <Card

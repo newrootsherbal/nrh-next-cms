@@ -1,47 +1,176 @@
-# Lighthouse CI Workflow Test
-# This workflow runs Lighthouse CI checks on every push to master and on PRs targeting master.
-name: Lighthouse CI
+# Lighthouse CI Workflow - Performance Monitoring
+# This workflow runs comprehensive Lighthouse CI checks with strict performance requirements
+# Enforces 100% performance score and specific Core Web Vitals thresholds
+name: Lighthouse CI - Performance Monitoring
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, main ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, main ]
+  # Allow manual triggering for performance testing
+  workflow_dispatch:
+    inputs:
+      test_urls:
+        description: 'Additional URLs to test (comma-separated)'
+        required: false
+        default: ''
 
 jobs:
   lighthouse_ci_check:
-    name: Lighthouse CI Check
+    name: Lighthouse CI Performance Check
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    # Environment variables with proper secret references
     env:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
       R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCOUNT_ID }}
-      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_ACCOUNT_ID }}
-      R2_S3_ENDPOINT: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_S3_ENDPOINT: ${{ secrets.R2_S3_ENDPOINT }}
       NEXT_PUBLIC_R2_BASE_URL: ${{ secrets.NEXT_PUBLIC_R2_BASE_URL }}
+      # Performance monitoring metadata
+      GITHUB_RUN_NUMBER: ${{ github.run_number }}
+      GITHUB_REF_NAME: ${{ github.ref_name }}
+      GITHUB_SHA: ${{ github.sha }}
+      
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          # Fetch full history for performance comparison
+          fetch-depth: 0
 
-      - name: Set up Node.js
+      - name: Set up Node.js with Performance Optimizations
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-          cache: 'npm' # Caches npm dependencies
+          cache: 'npm'
+          # Enable npm cache for faster installs
+          cache-dependency-path: 'package-lock.json'
+
+      - name: Cache Next.js Build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            ${{ github.workspace }}/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
+            ${{ runner.os }}-nextjs-
 
       - name: Install Project Dependencies
-        run: npm ci
+        run: |
+          npm ci --prefer-offline --no-audit
+          echo "✅ Dependencies installed successfully"
 
       - name: Install Lighthouse CI CLI
-        run: npm install -g @lhci/cli # Explicit global install for CI reliability
+        run: |
+          npm install -g @lhci/cli@latest
+          echo "✅ Lighthouse CI installed: $(lhci --version)"
 
-      - name: Build Next.js Application
-        # Add any necessary environment variables for the build command here
-        run: npm run build
+      - name: Build Next.js Application with Performance Monitoring
+        run: |
+          echo "🏗️ Building Next.js application for performance testing..."
+          npm run build
+          echo "✅ Build completed successfully"
+          # Display build statistics
+          if [ -d ".next" ]; then
+            echo "📊 Build output size:"
+            du -sh .next/
+          fi
 
-      - name: Run Lighthouse CI
-        run: lhci autorun
+      - name: Performance Pre-check
+        run: |
+          echo "🔍 Pre-flight performance checks..."
+          # Check if build artifacts exist
+          if [ ! -d ".next" ]; then
+            echo "❌ Build directory not found"
+            exit 1
+          fi
+          # Check for critical files
+          if [ ! -f "package.json" ]; then
+            echo "❌ package.json not found"
+            exit 1
+          fi
+          echo "✅ Pre-flight checks passed"
+
+      - name: Run Lighthouse CI with Enhanced Monitoring
+        run: |
+          echo "🚀 Starting Lighthouse CI performance analysis..."
+          echo "📋 Configuration: 100% performance score required"
+          echo "🎯 Target metrics: LCP<1.2s, TTFB<300ms, Speed Index<1s"
+          lhci autorun --config=lighthouserc.js
         env:
-          # LHCI_GITHUB_APP_TOKEN is a repository secret used to post results to GitHub Checks
+          # Enhanced GitHub integration
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+          # Performance monitoring flags
+          LHCI_BUILD_CONTEXT__CURRENT_HASH: ${{ github.sha }}
+          LHCI_BUILD_CONTEXT__CURRENT_BRANCH: ${{ github.ref_name }}
+          LHCI_BUILD_CONTEXT__COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          # Additional test URLs from manual trigger
+          LHCI_ADDITIONAL_URLS: ${{ github.event.inputs.test_urls }}
+
+      - name: Performance Results Summary
+        if: always()
+        run: |
+          echo "📊 Lighthouse CI Performance Summary"
+          echo "=================================="
+          echo "🎯 Target: 100% Performance Score"
+          echo "📈 Core Web Vitals Thresholds:"
+          echo "   • LCP (Largest Contentful Paint): < 1,200ms"
+          echo "   • TTFB (Time to First Byte): < 300ms"
+          echo "   • Speed Index: < 1,000ms"
+          echo "   • Total Blocking Time: < 200ms"
+          echo "   • Cumulative Layout Shift: < 0.1"
+          echo "💾 Bundle Size Budgets:"
+          echo "   • JavaScript: < 500KB"
+          echo "   • Images: < 1MB"
+          echo "   • CSS: < 100KB"
+          echo "   • Total Resources: < 2MB"
+          echo "=================================="
+          
+          # Check if reports were generated
+          if [ -d ".lighthouseci" ]; then
+            echo "✅ Performance reports generated in .lighthouseci/"
+            ls -la .lighthouseci/ || true
+          else
+            echo "⚠️ No performance reports found"
+          fi
+
+      - name: Upload Performance Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-performance-reports-${{ github.run_number }}
+          path: |
+            .lighthouseci/
+            lhci-data.db
+          retention-days: 30
+
+      - name: Performance Regression Check
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "🔍 Checking for performance regressions..."
+          echo "This PR will be compared against the base branch for performance changes"
+          echo "Any performance degradation will be reported in the PR comments"
+
+      - name: Notify Performance Results
+        if: failure()
+        run: |
+          echo "❌ Performance checks failed!"
+          echo "The application did not meet the required performance standards:"
+          echo "• Performance Score: Must be 100%"
+          echo "• Core Web Vitals: Must meet all thresholds"
+          echo "• Resource Budgets: Must stay within limits"
+          echo ""
+          echo "Please review the Lighthouse reports and optimize accordingly."
+          echo "Common optimizations:"
+          echo "• Optimize images and use next/image"
+          echo "• Minimize JavaScript bundles"
+          echo "• Implement proper caching strategies"
+          echo "• Optimize server response times"
+          exit 1

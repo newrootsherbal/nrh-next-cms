@@ -46,12 +46,19 @@ export async function generateMetadata(
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
   const supabase = getSsgSupabaseClient();
-  const { data: languages } = await supabase.from('languages').select('id, code');
-  const { data: pageTranslations } = await supabase
-    .from('pages')
-    .select('language_id, slug')
-    .eq('translation_group_id', pageData.translation_group_id)
-    .eq('status', 'published');
+  
+  // Parallel queries for better performance
+  const [languagesResult, pageTranslationsResult] = await Promise.all([
+    supabase.from('languages').select('id, code'),
+    supabase
+      .from('pages')
+      .select('language_id, slug')
+      .eq('translation_group_id', pageData.translation_group_id)
+      .eq('status', 'published')
+  ]);
+
+  const { data: languages } = languagesResult;
+  const { data: pageTranslations } = pageTranslationsResult;
 
   const alternates: { [key: string]: string } = {};
   if (languages && pageTranslations) {

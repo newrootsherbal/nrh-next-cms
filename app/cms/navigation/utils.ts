@@ -7,7 +7,7 @@ export async function getLanguages() {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("languages")
-    .select("*")
+    .select("id, code, name, is_default, is_active, created_at, updated_at")
     .eq("is_active", true)
     .order("name");
 

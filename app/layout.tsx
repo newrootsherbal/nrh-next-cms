@@ -45,18 +45,22 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const startTime = Date.now();
+  console.log('[PERF] Layout render started at:', startTime);
 
   const supabase = createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const profile = user ? await getProfileWithRoleServerSide(user.id) : null;
-
+  
+  // Get headers and cookies first (synchronous operations)
+  const headerStart = Date.now();
   const headerList = await headers();
-  const cookieStore = await cookies(); // Await cookies()
+  const cookieStore = await cookies();
+  const nonce = headerList.get('x-nonce') || '';
+  console.log('[PERF] Headers/cookies completed in:', Date.now() - headerStart, 'ms');
 
   const xUserLocaleHeader = headerList.get('x-user-locale');
   const nextUserLocaleCookie = cookieStore.get('NEXT_USER_LOCALE')?.value;
 
-  let serverDeterminedLocale: string; // Explicitly type serverDeterminedLocale
+  let serverDeterminedLocale: string;
   if (xUserLocaleHeader) {
     serverDeterminedLocale = xUserLocaleHeader;
   } else {
@@ -67,42 +71,61 @@ export default async function RootLayout({
     }
   }
 
-  // Fetch languages server-side
-  let availableLanguages: Language[] = [];
-  let defaultLanguage: Language | null = null;
+  // Parallel execution of all database queries for better performance
+  const queryStart = Date.now();
+  const [
+    { data: { user } },
+    availableLanguagesResult,
+    copyrightSettingsResult,
+    translationsResult
+  ] = await Promise.all([
+    supabase.auth.getUser(),
+    getActiveLanguagesServerSide().catch(() => []),
+    getCopyrightSettings().catch(() => ({ en: '© {year} My Ultra-Fast CMS. All rights reserved.' })),
+    getTranslations().catch(() => [])
+  ]);
+  console.log('[PERF] Parallel database queries completed in:', Date.now() - queryStart, 'ms');
 
-  try {
-    availableLanguages = await getActiveLanguagesServerSide();
-    defaultLanguage = availableLanguages.find(lang => lang.is_default) || availableLanguages[0] || null;
-    // Ensure serverDeterminedLocale is valid, fallback to default if not
-    if (!availableLanguages.some(lang => lang.code === serverDeterminedLocale) && defaultLanguage) {
-      serverDeterminedLocale = defaultLanguage.code;
-    } else if (!availableLanguages.some(lang => lang.code === serverDeterminedLocale)) {
-      // If still no valid locale (e.g. no languages in DB), keep layout default
-      serverDeterminedLocale = DEFAULT_LOCALE_FOR_LAYOUT;
-    }
-  } catch (error) {
-    // Fallback to default locale if languages can't be fetched
+  // Get profile only if user exists (conditional parallel execution)
+  const profileStart = Date.now();
+  const profile = user ? await getProfileWithRoleServerSide(user.id) : null;
+  if (user) {
+    console.log('[PERF] Profile query completed in:', Date.now() - profileStart, 'ms');
+  }
+
+  const availableLanguages: Language[] = availableLanguagesResult;
+  const defaultLanguage: Language | null = availableLanguages.find(lang => lang.is_default) || availableLanguages[0] || null;
+  
+  // Ensure serverDeterminedLocale is valid, fallback to default if not
+  if (!availableLanguages.some(lang => lang.code === serverDeterminedLocale) && defaultLanguage) {
+    serverDeterminedLocale = defaultLanguage.code;
+  } else if (!availableLanguages.some(lang => lang.code === serverDeterminedLocale)) {
+    // If still no valid locale (e.g. no languages in DB), keep layout default
     serverDeterminedLocale = DEFAULT_LOCALE_FOR_LAYOUT;
   }
- 
-  const copyrightSettings = await getCopyrightSettings();
-  const copyrightTemplate = copyrightSettings[serverDeterminedLocale] || copyrightSettings['en'] || '© {year} My Ultra-Fast CMS. All rights reserved.';
+
+  const copyrightSettings = copyrightSettingsResult;
+  const copyrightTemplate = (copyrightSettings as any)[serverDeterminedLocale] || (copyrightSettings as any)['en'] || '© {year} My Ultra-Fast CMS. All rights reserved.';
   const copyrightText = copyrightTemplate.replace('{year}', new Date().getFullYear().toString());
 
-  const nonce = headerList.get('x-nonce') || '';
-  const translations = await getTranslations();
+  const translations = Array.isArray(translationsResult) ? translationsResult : [];
+  
+  const totalTime = Date.now() - startTime;
+  console.log('[PERF] Layout render completed in:', totalTime, 'ms');
+  
   return (
     <html lang={serverDeterminedLocale} suppressHydrationWarning>
       <head>
         <title>{metadata.title as string}</title>
         <meta name="description" content={metadata.description as string} />
         <link rel="preconnect" href="https://ppcppwsfnrptznvbxnsz.supabase.co" />
+        <link rel="preconnect" href="https://pub-a31e3f1a87d144898aeb489a8221f92e.r2.dev" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://ppcppwsfnrptznvbxnsz.supabase.co" />
         <link rel="dns-prefetch" href="https://pub-a31e3f1a87d144898aeb489a8221f92e.r2.dev" />
         <link rel="dns-prefetch" href="https://aws-0-us-east-1.pooler.supabase.com" />
         <link rel="dns-prefetch" href="https://db.ppcppwsfnrptznvbxnsz.supabase.co" />
         <link rel="dns-prefetch" href="https://realtime.supabase.com" />
+        <link rel="preload" as="image" href="https://pub-a31e3f1a87d144898aeb489a8221f92e.r2.dev/hero-bg.jpg" fetchPriority="high" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <style id="critical-css" nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `*,:after,:before{box-sizing:border-box;border-width:0;border-style:solid;border-color:hsl(var(--border))}:after,:before{--tw-content:""}html:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif,system-ui,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::-moz-placeholder,textarea::-moz-placeholder{opacity:1;color:hsl(var(--muted-foreground))}input::placeholder,textarea::placeholder{opacity:1;color:hsl(var(--muted-foreground))}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]{display:none}${themeCss}` }} />
       </head>

@@ -42,30 +42,17 @@ export async function generateMetadata(
   {}, // params will be empty for the root page
   parent: ResolvingMetadata
 ): Promise<Metadata> {
-  const head = await headers(); // Use Next.js headers()
-  const supabase = createClient();
+  const head = await headers();
+  let currentLocale = head.get('x-user-locale') || DEFAULT_LOCALE;
 
-  let currentLocale = head.get('x-user-locale') || DEFAULT_LOCALE; // Get locale from middleware header
-
-  // Optionally, verify locale and fetch default from DB if header is missing/invalid
-  // This logic is similar to your original app/page.tsx
+  // Simplified locale detection for metadata
   if (!head.get('x-user-locale')) {
-      const cookieStore = await cookies();
-      const cookieLocale = cookieStore.get(LANGUAGE_COOKIE_KEY)?.value;
-      if (cookieLocale) {
-          currentLocale = cookieLocale;
-      } else {
-        const { data: langData, error: langError } = await supabase
-          .from('languages')
-          .select('code')
-          .eq('is_default', true)
-          .single();
-        if (langData && !langError) {
-          currentLocale = langData.code;
-        }
-      }
+    const cookieStore = await cookies();
+    const cookieLocale = cookieStore.get(LANGUAGE_COOKIE_KEY)?.value;
+    if (cookieLocale) {
+      currentLocale = cookieLocale;
+    }
   }
-
 
   const homepageSlug = await getHomepageSlugForLocale(currentLocale);
   const pageData = await getPageDataBySlug(homepageSlug);
@@ -76,63 +63,42 @@ export async function generateMetadata(
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
 
-  // Fetch translations for hreflang (this part can be reused from your [slug]/page.tsx)
-  const { data: siteLanguages } = await supabase.from('languages').select('id, code');
-  const { data: pageTranslations } = await supabase
-    .from('pages')
-    .select('language_id, slug')
-    .eq('translation_group_id', pageData.translation_group_id) // Assumes homepages share a translation_group_id
-    .eq('status', 'published');
-
-  const alternates: { [key: string]: string } = {};
-  if (siteLanguages && pageTranslations) {
-    pageTranslations.forEach((pt: { language_id: number; slug: string }) => {
-      const langInfo = siteLanguages.find((l: { id: number; code: string }) => l.id === pt.language_id);
-      if (langInfo) {
-        // For the root path, hreflang should point to the root for other languages too,
-        // if they are also served from the root based on cookie/header.
-        // Or, if you want hreflang to point to the explicit slugs:
-        // alternates[langInfo.code] = `${siteUrl}/${pt.slug}`;
-        // Given your goal, pointing hreflang to "/" for all homepages is more accurate
-        alternates[langInfo.code] = `${siteUrl}/`;
-      }
-    });
-  }
-
+  // Simplified metadata without complex hreflang queries for better performance
   return {
     title: pageData.meta_title || pageData.title,
     description: pageData.meta_description || "",
     alternates: {
-      canonical: `${siteUrl}/`, // Canonical for the homepage is the root
-      languages: Object.keys(alternates).length > 0 ? alternates : undefined,
+      canonical: `${siteUrl}/`,
     },
   };
 }
 
 export default async function RootPage() {
+  const startTime = Date.now();
+  console.log('[PERF] RootPage render started at:', startTime);
+  
+  const headerStart = Date.now();
   const head = await headers();
-  const supabase = createClient();
   let currentLocale = head.get('x-user-locale') || DEFAULT_LOCALE;
 
-   if (!head.get('x-user-locale')) {
-      const cookieStore = await cookies();
-      const cookieLocale = cookieStore.get(LANGUAGE_COOKIE_KEY)?.value;
-      if (cookieLocale) {
-          currentLocale = cookieLocale;
-      } else {
-        const { data: langData, error: langError } = await supabase
-          .from('languages')
-          .select('code')
-          .eq('is_default', true)
-          .single();
-        if (langData && !langError) {
-          currentLocale = langData.code;
-        }
-      }
+  // Simplified locale detection - prioritize header/cookie over database query
+  if (!head.get('x-user-locale')) {
+    const cookieStore = await cookies();
+    const cookieLocale = cookieStore.get(LANGUAGE_COOKIE_KEY)?.value;
+    if (cookieLocale) {
+      currentLocale = cookieLocale;
+    }
+    // Skip database query for default language - use fallback
   }
+  console.log('[PERF] Headers/cookies processing completed in:', Date.now() - headerStart, 'ms');
 
+  const slugStart = Date.now();
   const homepageSlug = await getHomepageSlugForLocale(currentLocale);
+  console.log('[PERF] Homepage slug resolution completed in:', Date.now() - slugStart, 'ms');
+  
+  const pageDataStart = Date.now();
   const pageData = await getPageDataBySlug(homepageSlug);
+  console.log('[PERF] Page data query completed in:', Date.now() - pageDataStart, 'ms');
 
   if (!pageData) {
     // This scenario means that for the detected locale, the corresponding homepage slug ('home' or 'accueil')
@@ -144,6 +110,9 @@ export default async function RootPage() {
   }
 
   const pageBlocks = pageData ? <BlockRenderer blocks={pageData.blocks} languageId={pageData.language_id} /> : null;
+
+  const totalTime = Date.now() - startTime;
+  console.log('[PERF] RootPage render completed in:', totalTime, 'ms');
 
   // Pass currentSlug as homepageSlug to PageClientContent, so it knows what content it's rendering.
   // PageClientContent's logic for language switching will still work if the user changes language via the switcher.

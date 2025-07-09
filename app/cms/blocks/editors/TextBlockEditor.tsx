@@ -3,7 +3,7 @@
 
 import React from 'react'; // Ensure React is imported for JSX
 import { Label } from "@/components/ui/label";
-import RichTextEditor from "../components/RichTextEditor"; // Import the new Tiptap editor
+import RoleAwareRichTextEditor from "../components/RoleAwareRichTextEditor"; // Import the role-aware Tiptap editor
 import { BlockEditorProps } from '../components/BlockEditorModal';
 
 export type TextBlockContent = {
@@ -17,7 +17,7 @@ export default function TextBlockEditor({ content, onChange }: BlockEditorProps<
   return (
     <div className="h-full flex flex-col">
       <Label htmlFor={`text-block-editor-tiptap-${Math.random()}`} className="sr-only">Text Content</Label>
-      <RichTextEditor
+      <RoleAwareRichTextEditor
         initialContent={content.html_content || "<p></p>"} // Start with an empty paragraph if no content
         onChange={handleContentChange}
       />

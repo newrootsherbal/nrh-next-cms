@@ -50,7 +50,7 @@ export async function getProfileWithRoleServerSide(userId: string): Promise<Prof
   const supabase = createClient(); // Uses the server client defined above
   const { data: profileData, error: profileError } = await supabase
     .from('profiles')
-    .select('*') // Select all fields including role
+    .select('id, full_name, avatar_url, role, updated_at, username, website')
     .eq('id', userId)
     .single();
 
@@ -67,7 +67,7 @@ export async function getActiveLanguagesServerSide(): Promise<Language[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from('languages')
-    .select('*')
+    .select('id, code, name, is_default, is_active, created_at, updated_at')
     .order('name', { ascending: true });
 
   if (error) {

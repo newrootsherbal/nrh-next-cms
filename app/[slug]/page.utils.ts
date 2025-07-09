@@ -22,12 +22,13 @@ interface SelectedPageType extends PageType { // Assumes PageType includes field
 export async function getPageDataBySlug(slug: string): Promise<(PageType & { blocks: BlockType[]; language_code: string; language_id: number; translation_group_id: string | null; }) | null> {
   const supabase = getSsgSupabaseClient();
 
+  // Optimized query with specific field selection instead of *
   const { data: candidatePagesData, error: pageError } = await supabase
     .from("pages")
     .select(`
-      *,
-      language_details:languages!inner(id, code), 
-      blocks (*)
+      id, slug, title, meta_title, meta_description, status, language_id, translation_group_id, author_id, created_at, updated_at,
+      language_details:languages!inner(id, code),
+      blocks (id, page_id, block_type, content, order)
     `)
     .eq("slug", slug)
     .eq("status", "published")
@@ -37,8 +38,10 @@ export async function getPageDataBySlug(slug: string): Promise<(PageType & { blo
     return null;
   }
 
-  const candidatePages: SelectedPageType[] = (candidatePagesData || []) as SelectedPageType[];
-
+  const candidatePages: SelectedPageType[] = (candidatePagesData || []).map(page => ({
+    ...page,
+    language_details: Array.isArray(page.language_details) ? page.language_details[0] : page.language_details
+  })) as SelectedPageType[];
 
   if (candidatePages.length === 0) {
     return null;
@@ -64,8 +67,8 @@ export async function getPageDataBySlug(slug: string): Promise<(PageType & { blo
   let languageCode: string | undefined = selectedPage.language_details?.code;
   let languageId: number | undefined = selectedPage.language_details?.id;
 
+  // Optimize fallback language query with specific fields
   if (!languageCode || typeof languageId !== 'number') {
-    
     if (typeof selectedPage.language_id === 'number') {
         const { data: fallbackLang, error: langFetchError } = await supabase
             .from("languages")
@@ -92,9 +95,6 @@ export async function getPageDataBySlug(slug: string): Promise<(PageType & { blo
       return null;
   }
 
-  if (!selectedPage.translation_group_id) {
-  }
-
   let blocksWithMediaData: BlockType[] = selectedPage.blocks || [];
   if (blocksWithMediaData.length > 0) {
     const mediaIds = blocksWithMediaData
@@ -113,13 +113,14 @@ export async function getPageDataBySlug(slug: string): Promise<(PageType & { blo
       .filter((id): id is string => id !== null && typeof id === 'string');
 
     if (mediaIds.length > 0) {
+      // Optimized media query with specific fields only
       const { data: mediaItems, error: mediaError } = await supabase
         .from('media')
         .select('id, object_key, blur_data_url')
         .in('id', mediaIds);
 
       if (mediaError) {
-        // Handle error appropriately
+        console.error('Error fetching media data:', mediaError);
       } else if (mediaItems) {
         const mediaMap = new Map(mediaItems.map(m => [m.id, { object_key: m.object_key, blur_data_url: m.blur_data_url }]));
         blocksWithMediaData = blocksWithMediaData.map(block => {

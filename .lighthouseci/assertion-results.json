@@ -1,0 +1,58 @@
+[
+  {
+    "name": "maxNumericValue",
+    "expected": 800,
+    "actual": 853,
+    "values": [
+      853
+    ],
+    "operator": "<=",
+    "passed": false,
+    "auditId": "metrics",
+    "level": "error",
+    "url": "http://localhost:3001/",
+    "auditTitle": "Metrics"
+  },
+  {
+    "name": "maxNumericValue",
+    "expected": 200,
+    "actual": 853,
+    "values": [
+      853
+    ],
+    "operator": "<=",
+    "passed": false,
+    "auditId": "metrics",
+    "level": "error",
+    "url": "http://localhost:3001/",
+    "auditTitle": "Metrics"
+  },
+  {
+    "name": "maxNumericValue",
+    "expected": 0.1,
+    "actual": 853,
+    "values": [
+      853
+    ],
+    "operator": "<=",
+    "passed": false,
+    "auditId": "metrics",
+    "level": "error",
+    "url": "http://localhost:3001/",
+    "auditTitle": "Metrics"
+  },
+  {
+    "name": "maxNumericValue",
+    "expected": 300,
+    "actual": 853,
+    "values": [
+      853
+    ],
+    "operator": "<=",
+    "passed": false,
+    "auditId": "metrics",
+    "level": "error",
+    "url": "http://localhost:3001/",
+    "auditTitle": "Metrics"
+  }
+]

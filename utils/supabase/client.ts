@@ -34,7 +34,7 @@ export async function getProfileWithRoleClientSide(
   // It no longer creates its own client. It uses the one passed to it.
   const { data: profileData, error: profileError } = await supabase
     .from('profiles')
-    .select('*') // Select all fields including role
+    .select('id, full_name, avatar_url, role, updated_at, username, website')
     .eq('id', userId)
     .single();
 
@@ -49,8 +49,8 @@ export async function getActiveLanguagesClientSide(): Promise<Language[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from('languages')
-    .select('*')
-    .order('name', { ascending: true }); 
+    .select('id, code, name, is_default, is_active, created_at, updated_at')
+    .order('name', { ascending: true });
 
   if (error) {
     // console.error('Error fetching languages (client-side):', error.message); // Silenced for production

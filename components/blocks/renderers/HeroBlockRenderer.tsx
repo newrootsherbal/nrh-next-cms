@@ -114,58 +114,56 @@ function generateGradientString(gradient: Gradient) {
   return `${type}-gradient(${direction || 'to right'}, ${gradientStops})`;
 }
 
-// Dynamic block renderer component
-const DynamicNestedBlockRenderer: React.FC<{
+// Static imports for critical hero block components
+import TextBlockRenderer from './TextBlockRenderer';
+import ImageBlockRenderer from './ImageBlockRenderer';
+import ButtonBlockRenderer from './ButtonBlockRenderer';
+import HeadingBlockRenderer from './HeadingBlockRenderer';
+
+// Static nested block renderer component for hero blocks (no dynamic imports)
+const StaticNestedBlockRenderer: React.FC<{
   block: SectionBlockContent['column_blocks'][0][0];
   languageId: number;
 }> = ({ block, languageId }) => {
-  const blockDefinition = getBlockDefinition(block.block_type);
-  
-  if (!blockDefinition) {
-    return (
-      <div className="p-2 border rounded bg-destructive/10 text-destructive text-sm">
-        <strong>Unsupported block type:</strong> {block.block_type}
-      </div>
-    );
+  // Use static imports for common hero block components to eliminate loading delays
+  switch (block.block_type) {
+    case 'text':
+      return (
+        <TextBlockRenderer
+          content={block.content as any}
+          languageId={languageId}
+        />
+      );
+    case 'heading':
+      return (
+        <HeadingBlockRenderer
+          content={block.content as any}
+          languageId={languageId}
+        />
+      );
+    case 'image':
+      return (
+        <ImageBlockRenderer
+          content={block.content as any}
+          languageId={languageId}
+          priority={true}
+        />
+      );
+    case 'button':
+      return (
+        <ButtonBlockRenderer
+          content={block.content as any}
+          languageId={languageId}
+        />
+      );
+    default:
+      // Fallback for unsupported block types in hero
+      return (
+        <div className="p-2 border rounded bg-destructive/10 text-destructive text-sm">
+          <strong>Unsupported hero block type:</strong> {block.block_type}
+        </div>
+      );
   }
-
-  // Create dynamic component with proper SSR handling
-  const RendererComponent = dynamic(
-    () => import(`./${blockDefinition.rendererComponentFilename}`),
-    {
-      loading: () => (
-        <div className="animate-pulse bg-muted rounded h-8"></div>
-      ),
-      ssr: true,
-    }
-  ) as React.ComponentType<any>;
-
-  // Handle different prop requirements for different renderers
-  if (block.block_type === 'image') {
-    return (
-      <RendererComponent
-        content={block.content}
-        languageId={languageId}
-        priority={true}
-      />
-    );
-  }
-  if (block.block_type === 'posts_grid') {
-    return (
-      <RendererComponent
-        content={block.content}
-        languageId={languageId}
-        block={{ ...block, id: 0, language_id: languageId, order: 0, created_at: '', updated_at: '' }}
-      />
-    );
-  }
-
-  return (
-    <RendererComponent
-      content={block.content}
-      languageId={languageId}
-    />
-  );
 };
 
 const HeroBlockRenderer: React.FC<SectionBlockRendererProps> = ({
@@ -208,9 +206,10 @@ const HeroBlockRenderer: React.FC<SectionBlockRendererProps> = ({
             objectFit: backgroundImage.size || 'cover',
             objectPosition: backgroundImage.position || 'center'
           }}
-          sizes="100vw"
-          priority
-          quality={60}
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 100vw"
+          priority={true}
+          fetchPriority="high"
+          quality={35}
           {...imageProps}
         />
       )}
@@ -225,7 +224,7 @@ const HeroBlockRenderer: React.FC<SectionBlockRendererProps> = ({
           {content.column_blocks.map((columnBlocks, columnIndex) => (
             <div key={`column-${columnIndex}`} className="min-h-0 space-y-4">
               {(Array.isArray(columnBlocks) ? columnBlocks : []).map((block, blockIndex) => (
-                <DynamicNestedBlockRenderer
+                <StaticNestedBlockRenderer
                   key={`${block.block_type}-${columnIndex}-${blockIndex}`}
                   block={block}
                   languageId={languageId}

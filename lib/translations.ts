@@ -3,7 +3,7 @@ import { cache } from 'react';
 
 export const getTranslations = cache(async () => {
   const supabase = createClient();
-  const { data, error } = await supabase.from('translations').select('*');
+  const { data, error } = await supabase.from('translations').select('key, translations, created_at, updated_at');
   if (error) {
     console.error('Error fetching translations:', error);
     return {};

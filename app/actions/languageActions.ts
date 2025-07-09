@@ -15,7 +15,7 @@ export interface Language {
 
 export async function getAvailableLanguages(): Promise<Language[]> {
   const supabase = createClient();
-  const { data, error } = await supabase.from('languages').select('*').order('name');
+  const { data, error } = await supabase.from('languages').select('id, code, name, is_default, is_active, created_at, updated_at').order('name');
   if (error) {
     console.error('Error fetching languages:', error);
     return [];

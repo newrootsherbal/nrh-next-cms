@@ -15,6 +15,8 @@ const nextConfig: NextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384, 512],
     deviceSizes: [320, 480, 640, 750, 828, 1080, 1200, 1440, 1920, 2048, 2560],
     minimumCacheTTL: 31536000,
+    dangerouslyAllowSVG: false,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     remotePatterns: [
       {
         protocol: 'https',
@@ -40,6 +42,37 @@ const nextConfig: NextConfig = {
 experimental: {
     optimizeCss: true,
     cssChunking: 'strict',
+  },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Optimize TipTap bundle separation for client-side
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          ...config.optimization.splitChunks,
+          cacheGroups: {
+            ...config.optimization.splitChunks?.cacheGroups,
+            // Create a separate chunk for TipTap and related dependencies
+            tiptap: {
+              test: /[\\/]node_modules[\\/](@tiptap|prosemirror)[\\/]/,
+              name: 'tiptap',
+              chunks: 'async', // Only include in async chunks (dynamic imports)
+              priority: 30,
+              reuseExistingChunk: true,
+            },
+            // Separate chunk for TipTap extensions and custom components
+            tiptapExtensions: {
+              test: /[\\/](tiptap-extensions|RichTextEditor|MenuBar|MediaLibraryModal)[\\/]/,
+              name: 'tiptap-extensions',
+              chunks: 'async',
+              priority: 25,
+              reuseExistingChunk: true,
+            },
+          },
+        },
+      };
+    }
+    return config;
   },
   turbopack: {
     // Turbopack-specific options can be placed here if needed in the future

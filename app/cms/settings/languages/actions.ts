@@ -24,7 +24,7 @@ export async function getLanguages(): Promise<{ data: Language[] | null; error: 
   const supabase = createClient();
   const { data, error } = await supabase
     .from("languages")
-    .select("*")
+    .select("id, code, name, is_default, is_active, created_at, updated_at")
     .order("is_default", { ascending: false }) // Default first
     .order("name", { ascending: true });
 
@@ -38,7 +38,7 @@ export async function getActiveLanguagesServerSide(): Promise<Language[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("languages")
-    .select("*")
+    .select("id, code, name, is_default, is_active, created_at, updated_at")
     .eq("is_active", true) // Assuming there's an is_active column
     .order("name", { ascending: true });
 
@@ -53,7 +53,7 @@ export async function getLanguageByCode(code: string): Promise<{ data: Language 
   const supabase = createClient();
   const { data, error } = await supabase
     .from("languages")
-    .select("*")
+    .select("id, code, name, is_default, is_active, created_at, updated_at")
     .eq("code", code)
     .single();
 
