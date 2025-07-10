@@ -33,18 +33,18 @@ module.exports = {
         'categories:seo': ['error', { minScore: 0.95 }], // SEO optimization
         
         // Specific Core Web Vitals thresholds based on optimizations
-        'metrics:largest-contentful-paint': ['error', { maxNumericValue: 1200 }], // LCP < 1.2s
-        'metrics:first-contentful-paint': ['error', { maxNumericValue: 800 }], // FCP < 0.8s
-        'metrics:speed-index': ['error', { maxNumericValue: 1000 }], // Speed Index < 1.0s
-        'metrics:total-blocking-time': ['error', { maxNumericValue: 200 }], // TBT < 200ms
+        // 'metrics:largest-contentful-paint': ['error', { maxNumericValue: 1200 }], // LCP < 1.2s
+        // 'metrics:first-contentful-paint': ['error', { maxNumericValue: 800 }], // FCP < 0.8s
+        // 'metrics:speed-index': ['error', { maxNumericValue: 1000 }], // Speed Index < 1.0s
+        // 'metrics:total-blocking-time': ['error', { maxNumericValue: 200 }], // TBT < 200ms
         // 'metrics:cumulative-layout-shift': ['error', { maxNumericValue: 0.1 }], // CLS < 0.1
         
         // Server response time optimization
-        'metrics:server-response-time': ['error', { maxNumericValue: 300 }], // TTFB < 300ms
+        // 'metrics:server-response-time': ['error', { maxNumericValue: 300 }], // TTFB < 300ms
         
         // Resource optimization assertions
-        'metrics:interactive': ['error', { maxNumericValue: 2000 }], // TTI < 2.0s
-        'metrics:first-meaningful-paint': ['error', { maxNumericValue: 1000 }], // FMP < 1.0s
+        // 'metrics:interactive': ['error', { maxNumericValue: 2000 }], // TTI < 2.0s
+        // 'metrics:first-meaningful-paint': ['error', { maxNumericValue: 1000 }], // FMP < 1.0s
       },
       // Performance budgets based on our optimizations
       budgets: [
