@@ -8,7 +8,7 @@ module.exports = {
         'http://localhost:3000',
       ],
       // Pattern to match in server output to know when it's ready
-      startServerReadyPattern: 'ready on http://localhost:3000',
+      startServerReadyPattern: 'Ready',
       // Number of runs for more reliable results
       numberOfRuns: 3,
       // Additional settings for consistent testing
